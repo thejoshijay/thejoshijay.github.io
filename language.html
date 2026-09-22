@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <script>
+  /* SmartBlock pre-paint helper for the language page (page itself is not translated).
+     Preloads + caches the chosen language translation and prefetches the next page so
+     navigation to mode.html is instant. Language choice is session-only (sessionStorage). */
+  (function () {
+    try {
+      var SB = window.SB = window.SB || {};
+      SB.TRANS_PREFIX = 'smartblock_translations_';
+      SB._cacheTrans = function (obj, lang) {
+        if (!obj) return;
+        try { localStorage.setItem(SB.TRANS_PREFIX + lang, JSON.stringify(obj)); } catch (e) {}
+      };
+      SB.preloadTrans = function (lang) {
+        if (!lang) return null;
+        if (SB['_tp_' + lang]) return SB['_tp_' + lang];
+        // Warm the browser cache for the NEXT page (mode.html): it loads global + mode files.
+        function get(f) { return fetch(f, { cache: 'default' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(function () { return null; }); }
+        SB['_tp_' + lang] = Promise.all([
+          get('../translations/global/' + lang + '.json'),
+          get('../translations/mode/' + lang + '.json')
+        ]);
+        return SB['_tp_' + lang];
+      };
+      SB.preloadPage = function (href) { try { if (!href) return; var l = document.createElement('link'); l.rel = 'prefetch'; l.as = 'document'; l.href = href; document.head.appendChild(l); } catch (e) {} };
+      /* Likely next page in the flow. */
+      SB.preloadPage('mode.html');
+    } catch (e) {}
+  })();
+  </script>
+  <title>SmartBlock - Choose Your Language</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --purple: #83358C;
+      --purple-deep: #5B2463;
+      --pink: #F01A8C;
+      --yellow: #FFF212;
+      --black: #000000;
+      --white: #FFFFFF;
+      --dark-white: #FAF8FC;
+      --border: #E7D9EA;
+      --text: #171217;
+      --muted: #6B626D;
+      --shadow: 0 12px 30px -18px rgba(131, 53, 140, 0.28);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: var(--white);
+      color: var(--text);
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Exact shared activity header dimensions and brand asset. */
+    .topbar {
+      flex: 0 0 auto;
+      height: clamp(62px, 8vh, 76px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 8px clamp(12px, 2vw, 24px);
+      border-bottom: 3px solid var(--purple);
+      background: var(--yellow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      width: 100%;
+    }
+
+    .topbar .brand {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      flex-shrink: 0;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .topbar .brand:focus-visible {
+      outline: 2px solid var(--purple);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+    .topbar .brand-logo {
+      height: 34px;
+      width: auto;
+      display: block;
+    }
+
+    /* Matching softly squared glass labels; informational, not buttons. */
+    .progress-mini, .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid rgba(131,53,140,.18);
+      -webkit-backdrop-filter: blur(12px) saturate(1.15);
+      backdrop-filter: blur(12px) saturate(1.15);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9),
+        inset 0 -1px 0 rgba(131,53,140,.045),
+        0 3px 8px -5px rgba(92,37,99,.2);
+    }
+    .progress-mini {
+      min-height: 30px;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--purple-deep);
+      background: linear-gradient(155deg, rgba(255,255,255,.88),
+        rgba(255,253,207,.76) 65%, rgba(255,255,255,.64));
+      padding: 6px 12px;
+      white-space: nowrap;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    .hero-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 26px;
+      padding: 34px 28px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      max-width: 620px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .eyebrow {
+      gap: 9px;
+      min-height: 32px;
+      max-width: 100%;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 11.5px;
+      line-height: 1.4;
+      font-weight: 700;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      background: linear-gradient(155deg, rgba(251,246,253,.96),
+        rgba(238,219,245,.88) 65%, rgba(245,232,249,.94));
+      color: var(--purple-deep);
+      padding: 7px 14px;
+      margin-bottom: 12px;
+    }
+    .eyebrow .badge-dot {
+      flex: 0 0 8px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(150deg, #ff73b9, var(--pink) 62%, #bc126e);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.45),
+        0 0 0 3px rgba(240,26,140,.065);
+      display: inline-block;
+    }
+
+    .hero-card h1 {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
+      font-size: clamp(24px, 4.5vw, 32px);
+      color: var(--purple);
+      margin-bottom: 6px;
+    }
+
+    .hero-card .hero-desc {
+      color: #000000;
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .dropdown-container {
+      max-width: 440px;
+      margin: 0 auto;
+      position: relative;
+      text-align: left;
+    }
+
+    .custom-dropdown-trigger {
+      width: 100%;
+      min-height: 54px;
+      background: var(--white);
+      border: 2px solid var(--purple);
+      border-radius: 16px;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      box-shadow: 0 8px 20px -8px rgba(131, 53, 140, 0.22);
+      transition: border-color 160ms ease;
+      user-select: none;
+      outline: none;
+    }
+
+    .custom-dropdown-trigger:hover {
+      border-color: var(--pink);
+      box-shadow: 0 10px 24px -8px rgba(240, 26, 140, 0.28);
+    }
+
+    .custom-dropdown-trigger:focus-visible {
+      outline: 2px solid var(--pink);
+      outline-offset: 2px;
+    }
+
+    .trigger-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--purple-deep);
+    }
+
+    .trigger-globe {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .trigger-text {
+      display: inline-block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .trigger-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .trigger-check {
+      color: #2E8B57;
+      font-size: 16px;
+      font-weight: 700;
+      display: none;
+    }
+
+    .trigger-arrow {
+      color: var(--purple);
+      font-size: 13px;
+      transition: transform 0.25s ease;
+      display: inline-block;
+    }
+
+    .dropdown-container.open .trigger-arrow {
+      transform: rotate(180deg);
+      color: var(--pink);
+    }
+
+    .custom-dropdown-menu {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(-5px);
+      transition: opacity 150ms ease, transform 180ms cubic-bezier(.22,1,.36,1),
+        visibility 0s linear 180ms;
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 16px 36px -8px rgba(91, 36, 99, 0.32);
+      padding: 8px;
+      max-height: 290px;
+      overflow-y: auto;
+      z-index: 200;
+      overscroll-behavior-y: contain;
+      scrollbar-gutter: stable;
+      touch-action: pan-y;
+    }
+
+    .dropdown-container.open .custom-dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+      transition-delay: 0s;
+    }
+    .trigger-left { min-width: 0; }
+    .trigger-right { flex-shrink: 0; }
+    @media (prefers-reduced-motion: reduce) {
+      .custom-dropdown-menu, .trigger-arrow, .custom-dropdown-trigger { transition: none; }
+      .custom-dropdown-menu, .dropdown-container.open .custom-dropdown-menu { transform: none; }
+    }
+
+    .dropdown-option {
+      position: relative;
+      isolation: isolate;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 46px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--purple-deep);
+      margin-bottom: 2px;
+      outline: none;
+      background: transparent;
+      transition: transform 180ms cubic-bezier(.22,1,.36,1), color 160ms ease;
+    }
+    /* Fade a glass surface in, rather than abruptly swapping row colours. */
+    .dropdown-option::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        radial-gradient(ellipse at 18% 0%, rgba(255,255,255,.85), transparent 68%),
+        linear-gradient(155deg, rgba(246,232,252,.92), rgba(225,197,239,.68) 64%, rgba(243,224,250,.87));
+      box-shadow: inset 0 1.5px 0 rgba(255,255,255,.95),
+        inset 0 -1px 0 rgba(131,53,140,.12),
+        inset 0 0 0 1px rgba(255,255,255,.72),
+        0 4px 10px -6px rgba(92,37,99,.28);
+      transition: opacity 180ms ease;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .dropdown-option:hover::before { opacity: 1; }
+      .dropdown-option:hover { transform: translateY(-1px); }
+    }
+    .dropdown-option:focus-visible::before,
+    .dropdown-option:active::before { opacity: 1; }
+    .dropdown-option:focus-visible {
+      outline: 2px solid var(--purple);
+      outline-offset: -2px;
+    }
+    .dropdown-option:active { transform: scale(.992); }
+    .dropdown-option.selected {
+      background: linear-gradient(155deg, #773080, #702578 48%, #762171);
+      color: var(--white);
+      font-weight: 600;
+      box-shadow: inset 0 1px 0 rgba(244,202,255,.3),
+        inset 0 -2px 3px rgba(39,8,46,.18);
+    }
+    .dropdown-option.selected::before {
+      background: linear-gradient(160deg, rgba(255,255,255,.12),
+        rgba(255,255,255,.025) 50%, rgba(221,117,215,.07));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.3),
+        inset 0 0 0 1px rgba(232,188,243,.24);
+    }
+    .dropdown-option.selected:focus-visible { outline-color: var(--yellow); }
+    /* Lift just the language label without shifting adjacent options. */
+    .dropdown-option > span:first-child {
+      display: inline-block;
+      transform-origin: left center;
+      transition: transform 200ms cubic-bezier(.22,1,.36,1);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .dropdown-option:hover > span:first-child {
+        transform: translateY(-1px) scale(1.045);
+      }
+    }
+    .dropdown-option:focus-visible > span:first-child,
+    .dropdown-option:active > span:first-child {
+      transform: translateY(-1px) scale(1.045);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .dropdown-option > span:first-child { transition: none; }
+      .dropdown-option:hover > span:first-child,
+      .dropdown-option:focus-visible > span:first-child,
+      .dropdown-option:active > span:first-child { transform: none; }
+    }
+    .dropdown-option .opt-check {
+      font-size: 15px;
+      font-weight: 700;
+      opacity: 0;
+      color: var(--yellow);
+      transition: opacity 160ms ease;
+    }
+    .dropdown-option.selected .opt-check { opacity: 1; }
+    @media (prefers-reduced-motion: reduce) {
+      .dropdown-option, .dropdown-option::before, .dropdown-option .opt-check { transition: none; }
+      .dropdown-option:hover, .dropdown-option:active { transform: none; }
+    }
+
+    .dropdown-subtext {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13.5px;
+      color: #000000;
+      margin-top: 14px;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 768px) {
+      .wrap { padding: 16px 16px; }
+      .progress-mini { font-size: 11px; }
+      .hero-card { padding: 26px 18px; border-radius: 20px; }
+      .custom-dropdown-trigger { min-height: 50px; padding: 10px 14px; }
+      .trigger-left { font-size: 15px; gap: 10px; }
+
+    }
+    .glass-btn {
+      position: relative;
+      isolation: isolate;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 17.85px;
+      min-height: 68.25px;
+      max-width: 100%;
+      padding: 12.6px 15.75px 12.6px 30.45px;
+      overflow: hidden;
+      border: 1px solid rgba(232,188,243,.45);
+      border-radius: 999px;
+      background:
+        radial-gradient(ellipse at 85% 100%, rgba(183,37,135,.2), transparent 65%),
+        linear-gradient(155deg, #773080 0%, #702578 48%, #762171 100%);
+      color: var(--white);
+      font: 600 19.215px/1.3 'Fredoka', sans-serif;
+      text-shadow: 0 1px 2px rgba(39,8,46,.2);
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow:
+        inset 0 1px 0 rgba(244,202,255,.30),
+        inset 0 -2px 4px rgba(39,8,46,.24),
+        0 5px 0 #46154F,
+        0 13px 23px -9px rgba(92,26,105,.42);
+      transition: transform 180ms cubic-bezier(.22,1,.36,1);
+    }
+    /* Fixed glass highlight: no expensive continuously animated blur. */
+    .glass-btn::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 25% 0%, rgba(255,255,255,.035), transparent 68%),
+        linear-gradient(180deg, rgba(255,255,255,.07),
+          rgba(255,255,255,.018) 42%, transparent 60%);
+      box-shadow: inset 0 0 0 1px rgba(235,176,246,.12);
+    }
+    .glass-btn::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: -60% -25%;
+      pointer-events: none;
+      background: linear-gradient(110deg, transparent 38%, rgba(255,255,255,.13) 50%, transparent 62%);
+      transform: translateX(-100%);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .glass-btn:not(:disabled):hover {
+        transform: translateY(-3px);
+        box-shadow: inset 0 1px 0 rgba(244,202,255,.3),
+          inset 0 -2px 4px rgba(39,8,46,.24), 0 8px 0 #46154F,
+          0 18px 28px -10px rgba(92,26,105,.45);
+      }
+      .glass-btn:not(:disabled):hover::after { animation: glassSweep 650ms ease-out; }
+      .glass-btn:not(:disabled):hover .arr { transform: translateX(3px); }
+    }
+    @keyframes glassSweep { to { transform: translateX(100%); } }
+    .glass-btn:focus-visible {
+      outline: 3px solid var(--purple-deep);
+      outline-offset: 6px;
+    }
+    .glass-btn:not(:disabled):active, .glass-btn.is-leaving {
+      transform: translateY(3px) scale(.98);
+      box-shadow: inset 0 1px 0 rgba(244,202,255,.2),
+        inset 0 -1px 3px rgba(39,8,46,.24), 0 2px 0 #46154F,
+        0 6px 14px -5px rgba(131,53,140,.3);
+    }
+    .glass-btn:disabled { cursor: wait; }
+    .glass-btn .arr {
+      flex: 0 0 39.9px;
+      width: 39.9px;
+      height: 39.9px;
+      display: grid;
+      place-items: center;
+      padding: 5px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,252,193,.88);
+      background: radial-gradient(circle at 32% 20%, #fff76b, #FFF212 56%, #e2c712 100%);
+      box-shadow: inset 0 1.5px 1px rgba(255,255,238,.9),
+        inset 0 -2px 3px rgba(172,126,0,.22),
+        0 2px 0 #c7a812, 0 4px 8px rgba(37,8,42,.28);
+      transition: transform 220ms cubic-bezier(.22,1,.36,1);
+    }
+    .glass-btn .arr svg { display: block; width: 100%; height: 100%; overflow: visible; }
+    .glass-btn.is-leaving .arr { transform: translateX(3px); }
+
+    /* Entrance motion belongs to wrappers so hover and press stay responsive. */
+    .nav-reveal { display: inline-block; max-width: 100%; vertical-align: middle;
+      animation: navPop 560ms cubic-bezier(.22,1,.36,1) both; }
+    .back-reveal { margin-bottom: 16px; }
+    .continue-reveal { animation-delay: 90ms; }
+    @keyframes navPop {
+      0% { opacity: 0; transform: translateY(12px) scale(.88); }
+      62% { opacity: 1; transform: translateY(-3px) scale(1.035); }
+      82% { transform: translateY(1px) scale(.99); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .back-btn { min-height: 46px; gap: 9px; padding: 7px 18px 7px 9px;
+      font-size: 14px; }
+    .back-btn .arr { flex-basis: 28px; width: 28px; height: 28px; padding: 4px; }
+    .back-btn .arr svg { transform: rotate(180deg); }
+    .continue-btn { min-height: 60px; gap: 16px; padding: 11px 14px 11px 28px;
+      font-size: 18px; }
+    .continue-btn .arr { flex-basis: 36px; width: 36px; height: 36px; }
+    .back-btn.is-leaving .arr { transform: translateX(-3px); }
+    @media (hover: hover) and (pointer: fine) {
+      .back-btn:not(:disabled):hover .arr { transform: translateX(-3px); }
+    }
+    @media (max-width: 768px) {
+      .continue-reveal { width: 100%; max-width: 320px; }
+      .continue-btn { width: 100%; font-size: 17px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .nav-reveal { animation: none; }
+      .glass-btn:not(:disabled):hover::after { animation: none; }
+      .glass-btn, .glass-btn .arr { transition: none; }
+      .glass-btn:not(:disabled):hover, .glass-btn:not(:disabled):active,
+      .glass-btn.is-leaving, .glass-btn:not(:disabled):hover .arr,
+      .glass-btn.is-leaving .arr { transform: none; }
+    }
+    /* Frosted lavender surfaces: the full language panel, matching the mode page. */
+    .hero-card {
+      background: #EEE7F4;
+      background:
+        radial-gradient(ellipse at 16% 0%, rgba(255,255,255,.4), transparent 64%),
+        linear-gradient(145deg, rgba(240,232,247,.9), rgba(231,220,240,.76) 62%, rgba(238,229,246,.9));
+      border-color: #C5AED2;
+      -webkit-backdrop-filter: blur(12px) saturate(1.12);
+      backdrop-filter: blur(12px) saturate(1.12);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.9),
+        inset 0 0 0 1px rgba(131,53,140,.075),
+        inset 0 -12px 22px -22px rgba(92,37,99,.15),
+        0 0 0 1px rgba(131,53,140,.1),
+        0 12px 26px -20px rgba(92,37,99,.25);
+    }
+    /* The secondary navigation is lighter; main action buttons stay dark purple. */
+    .back-btn.glass-btn {
+      color: var(--purple-deep);
+      text-shadow: none;
+      border-color: rgba(255,255,255,.8);
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(255,255,255,.42), transparent 68%),
+        linear-gradient(155deg, #DDC8E9, #CDB0DD 62%, #DAC0E7);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,.85),
+        inset 0 -2px 4px rgba(92,37,99,.08),
+        0 3px 0 #B896C6,
+        0 9px 18px -10px rgba(92,37,99,.3);
+    }
+    .back-btn.glass-btn::before {
+      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.03) 48%, transparent 66%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .back-btn.glass-btn:not(:disabled):hover {
+        box-shadow:
+          inset 0 1.5px 0 rgba(255,255,255,.95),
+          inset 0 -2px 4px rgba(92,37,99,.08),
+          0 6px 0 #B896C6,
+          0 13px 22px -11px rgba(92,37,99,.33);
+      }
+    }
+    .back-btn.glass-btn:not(:disabled):active,
+    .back-btn.glass-btn.is-leaving {
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.65),
+        inset 0 -1px 3px rgba(92,37,99,.1),
+        0 1px 0 #B896C6,
+        0 4px 10px -7px rgba(92,37,99,.25);
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .hero-card {
+        background: #EEE7F4;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+    }
+
+
+    /* Same pale page canvas, golden section label and lighter frosted selector. */
+    html, body { background: var(--dark-white); }
+    .eyebrow {
+      background:
+        linear-gradient(155deg, rgba(255,255,255,.70),
+          rgba(255,241,159,.62) 65%, rgba(255,255,255,.40)),
+        #F3D643;
+    }
+    .custom-dropdown-trigger {
+      background: linear-gradient(145deg, rgba(252,249,255,.95), rgba(237,225,246,.92));
+      border-color: #C5AED2;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9),
+        inset 0 -1px 0 rgba(131,53,140,.07), 0 8px 20px -12px rgba(92,37,99,.24);
+    }
+    .custom-dropdown-trigger:hover { border-color: var(--purple); }
+    .dropdown-container.open .custom-dropdown-trigger { border-color: var(--purple); }
+    .custom-dropdown-menu {
+      background: linear-gradient(145deg, #FCF9FE, #F3ECF8);
+      border-color: #C5AED2;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 16px 30px -12px rgba(92,37,99,.28);
+    }
+    .trigger-globe { display: inline-flex; align-items: center; justify-content: center;
+      flex: 0 0 28px; width: 28px; height: 28px; line-height: 1; }
+    .trigger-globe svg { display: block; width: 100%; height: 100%; }
+    @media (max-width: 768px) {
+      .trigger-globe { flex-basis: 26px; width: 26px; height: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar" id="mainHeader">
+    <a class="brand" href="index.html" title="SmartBlock Home" aria-label="SmartBlock home">
+      <img class="brand-logo" src="data:image/png;base64,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" alt="Smart Block">
+    </a>
+    <div class="right">
+      <span class="progress-mini" id="headerLevelBadge">Level 1 • Observe &amp; Sense</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="nav-reveal back-reveal">
+      <button class="back-btn glass-btn" id="backBtn" type="button" onclick="goBack()" aria-label="Go back to welcome page">
+        <span class="arr" aria-hidden="true"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="backArrowFace" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#B775CE"/>
+              <stop offset=".48" stop-color="#83358C"/>
+              <stop offset="1" stop-color="#50205E"/>
+            </linearGradient>
+            <linearGradient id="backArrowGloss" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity=".42"/>
+              <stop offset=".52" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M87 47 L55 17 L55 33 L15 33 L15 61 L55 61 L55 77 Z"
+            transform="translate(0 5)" fill="#3E1249" stroke="#3E1249" stroke-width="6" stroke-linejoin="round"/>
+          <path d="M87 47 L55 17 L55 33 L15 33 L15 61 L55 61 L55 77 Z"
+            fill="url(#backArrowFace)" stroke="url(#backArrowFace)" stroke-width="6" stroke-linejoin="round"/>
+          <path d="M87 47 L55 17 L55 33 L15 33 L15 61 L55 61 L55 77 Z"
+            fill="url(#backArrowGloss)"/>
+          <path d="M21 36 H56 V25 L72 40" fill="none" stroke="#E7C8F2" stroke-opacity=".68"
+            stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg></span>
+        <span id="backBtnText">Back</span>
+      </button>
+    </div>
+
+    <div class="hero-card">
+      <div class="eyebrow" id="pageEyebrow">
+        <span class="badge-dot"></span>
+        <span id="eyebrowText">WELCOME TO SMARTBLOCK</span>
+      </div>
+      
+      <h1 id="pageHeading">Choose Your Language</h1>
+      <p class="hero-desc" id="pageSubheading">Let’s begin your learning adventure!</p>
+
+      <div class="dropdown-container" id="dropdownContainer">
+        <div 
+          class="custom-dropdown-trigger" 
+          id="dropdownTrigger" 
+          role="combobox" 
+          aria-haspopup="listbox" 
+          aria-expanded="false" 
+          aria-controls="dropdownMenu" 
+          tabindex="0"
+          onclick="toggleDropdown(event)"
+          onkeydown="handleTriggerKey(event)">
+          <div class="trigger-left">
+            <span class="trigger-globe" aria-hidden="true"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <radialGradient id="languageGlobeBody" cx=".32" cy=".24" r=".8">
+      <stop stop-color="#B8F6FF"/><stop offset=".34" stop-color="#51D7F3"/>
+      <stop offset=".72" stop-color="#1F9EDD"/><stop offset="1" stop-color="#245CB3"/>
+    </radialGradient>
+    <linearGradient id="languageGlobeGrid" x1="0" y1="0" x2="0.6" y2="1">
+      <stop stop-color="#FFFFFF"/><stop offset=".6" stop-color="#CFF8FF"/>
+      <stop offset="1" stop-color="#7FCBF1"/>
+    </linearGradient>
+    <linearGradient id="languageGlobeShine" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#FFFFFF" stop-opacity=".65"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="languageGlobeClip"><circle cx="50" cy="46" r="39"/></clipPath>
+  </defs>
+  <ellipse cx="50" cy="92" rx="31" ry="4.5" fill="#5C2563" opacity=".16"/>
+  <circle cx="50" cy="48" r="41" fill="#2768AE"/>
+  <circle cx="50" cy="46" r="40" fill="url(#languageGlobeBody)" stroke="#A4E9FF" stroke-width="1.4"/>
+  <g clip-path="url(#languageGlobeClip)" fill="none" stroke="url(#languageGlobeGrid)" stroke-width="2.7" opacity=".93">
+    <ellipse cx="50" cy="46" rx="19" ry="39"/>
+    <path d="M50 7v78M11 46h78M16 26q34 12 68 0M16 66q34-12 68 0"/>
+  </g>
+  <ellipse cx="41" cy="24" rx="28" ry="16" fill="url(#languageGlobeShine)" transform="rotate(-25 41 24)"/>
+  <ellipse cx="31" cy="20" rx="9" ry="4" fill="#FFFFFF" opacity=".86" transform="rotate(-32 31 20)"/>
+  <circle cx="47" cy="13" r="2.5" fill="#FFFFFF" opacity=".7"/>
+  <path d="M69 75q8-5 12-14" fill="none" stroke="#A5E8FF" stroke-width="2.8" opacity=".5" stroke-linecap="round"/>
+</svg></span>
+            <span class="trigger-text" id="selectedText">Select Your Language</span>
+          </div>
+          <div class="trigger-right">
+            <span class="trigger-check" id="triggerCheck" aria-hidden="true">✓</span>
+            <span class="trigger-arrow" aria-hidden="true">▼</span>
+          </div>
+        </div>
+
+        <div class="custom-dropdown-menu" id="dropdownMenu" inert aria-hidden="true" role="listbox" aria-label="Select Language">
+          <!-- Dynamically populated from data/languages.json -->
+        </div>
+      </div>
+
+      <p class="dropdown-subtext" id="pageHelperText">Pick a language and start your learning adventure!</p>
+
+      <div class="nav-reveal continue-reveal">
+      <button type="button"
+        class="continue-btn glass-btn" 
+        id="continueBtn" 
+        onclick="handleContinue()"
+        aria-label="Continue to Exploration Mode">
+        <span id="continueBtnText">Continue</span> <span class="arr" aria-hidden="true"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="continueArrowFace" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#B775CE"/>
+              <stop offset=".48" stop-color="#83358C"/>
+              <stop offset="1" stop-color="#50205E"/>
+            </linearGradient>
+            <linearGradient id="continueArrowGloss" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity=".42"/>
+              <stop offset=".52" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M87 47 L55 17 L55 33 L15 33 L15 61 L55 61 L55 77 Z"
+            transform="translate(0 5)" fill="#3E1249" stroke="#3E1249" stroke-width="6" stroke-linejoin="round"/>
+          <path d="M87 47 L55 17 L55 33 L15 33 L15 61 L55 61 L55 77 Z"
+            fill="url(#continueArrowFace)" stroke="url(#continueArrowFace)" stroke-width="6" stroke-linejoin="round"/>
+          <path d="M87 47 L55 17 L55 33 L15 33 L15 61 L55 61 L55 77 Z"
+            fill="url(#continueArrowGloss)"/>
+          <path d="M21 36 H56 V25 L72 40" fill="none" stroke="#E7C8F2" stroke-opacity=".68"
+            stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg></span>
+      </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // JSON DATA LOADER (Source of Truth: data/languages.json & data/language-page.json)
+    let pageContent = {
+      welcomeBadge: "WELCOME TO SMARTBLOCK",
+      title: "Choose Your Language",
+      subtitle: "Let’s begin your learning adventure!",
+      dropdownPlaceholder: "Select Your Language",
+      instruction: "Pick a language and start your learning adventure!",
+      continueButton: "Continue"
+    };
+
+    let langConfig = {"page": {"eyebrow": "WELCOME TO SMARTBLOCK", "heading": "Choose Your Language", "subheading": "Let\u2019s begin your learning adventure!", "dropdownPlaceholder": "Select Your Language", "helperText": "Pick a language and start your learning adventure!", "continueButtonText": "Continue", "backButtonText": "\u2190 Back", "previousPage": "index.html", "nextPage": "mode.html", "defaultLanguage": "en"}, "languages": [{"code": "en", "label": "English", "native": "English", "status": "active"}, {"code": "gu", "label": "\u0a97\u0ac1\u0a9c\u0ab0\u0abe\u0aa4\u0ac0", "native": "\u0a97\u0ac1\u0a9c\u0ab0\u0abe\u0aa4\u0ac0", "status": "active"}, {"code": "hi", "label": "\u0939\u093f\u0928\u094d\u0926\u0940", "native": "\u0939\u093f\u0928\u094d\u0926\u0940", "status": "active"}, {"code": "ta", "label": "\u0ba4\u0bae\u0bbf\u0bb4\u0bcd", "native": "\u0ba4\u0bae\u0bbf\u0bb4\u0bcd", "status": "active"}, {"code": "te", "label": "\u0c24\u0c46\u0c32\u0c41\u0c17\u0c41", "native": "\u0c24\u0c46\u0c32\u0c41\u0c17\u0c41", "status": "active"}, {"code": "kn", "label": "\u0c95\u0ca8\u0ccd\u0ca8\u0ca1", "native": "\u0c95\u0ca8\u0ccd\u0ca8\u0ca1", "status": "active"}, {"code": "mr", "label": "\u092e\u0930\u093e\u0920\u0940", "native": "\u092e\u0930\u093e\u0920\u0940", "status": "active"}]};
+    let selectedLangCode = null;
+    let nextPageUrl = 'mode.html';
+    let prevPageUrl = 'index.html';
+
+    const container = document.getElementById('dropdownContainer');
+    const trigger = document.getElementById('dropdownTrigger');
+    const menu = document.getElementById('dropdownMenu');
+    const selectedText = document.getElementById('selectedText');
+    const triggerCheck = document.getElementById('triggerCheck');
+    const continueBtn = document.getElementById('continueBtn');
+
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let optionNodes = [];
+    let languageItems = [];
+    let keyboardIntent = false;
+    let typeahead = '';
+    let typeaheadTimer;
+
+    function readCache(key) {
+      try { return JSON.parse(localStorage.getItem(key) || 'null'); }
+      catch (_) { return null; }
+    }
+    const isObject = value => value && typeof value === 'object' && !Array.isArray(value);
+    const validLanguage = l => isObject(l) && typeof l.code === 'string' &&
+      /^[a-zA-Z0-9_-]+$/.test(l.code) && typeof l.label === 'string' && l.label.trim();
+    function validConfig(value) {
+      return isObject(value) && Array.isArray(value.languages) && value.languages.every(validLanguage);
+    }
+    async function fetchConfig(url, key, validate) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1800);
+      try {
+        // Conditional browser caching still checks the server for editable content.
+        const response = await fetch(url, { cache: 'no-cache', signal: controller.signal });
+        if (!response.ok) throw new Error('Configuration unavailable');
+        const data = await response.json();
+        if (!validate(data)) throw new Error('Invalid configuration');
+        try { localStorage.setItem(key, JSON.stringify(data)); } catch (_) {}
+        return data;
+      } catch (_) {
+        const cached = readCache(key);
+        return validate(cached) ? cached : null;
+      } finally { clearTimeout(timeout); }
+    }
+    async function loadLanguagesData() {
+      // Independent requests run concurrently; neither can block forever.
+      menu.setAttribute('aria-busy', 'true');
+      const loading = document.createElement('div');
+      loading.textContent = 'Loading languages…';
+      loading.style.padding = '12px 16px';
+      loading.setAttribute('role', 'status');
+      menu.replaceChildren(loading);
+      const [pageData, languagesData] = await Promise.all([
+        fetchConfig('../data/language-page.json', 'smartblock_language_page_data', isObject),
+        fetchConfig('../data/languages.json', 'smartblock_languages_data', validConfig)
+      ]);
+      if (pageData) pageContent = Object.assign({}, pageContent, pageData);
+      if (languagesData) langConfig = languagesData;
+      renderLanguagesUI();
+      menu.removeAttribute('aria-busy');
+      if (container.classList.contains('open') && keyboardIntent) focusOption(0);
+    }
+
+    function renderLanguagesUI() {
+      const p = isObject(langConfig.page) ? langConfig.page : {};
+      // ONLY ACTIVE LANGUAGES APPEAR (status: "active", not inactive or archived)
+      const rawLanguages = Array.isArray(langConfig.languages) ? langConfig.languages : [];
+      const languages = rawLanguages.filter(l => validLanguage(l) && l.status !== 'inactive' && l.status !== 'archived');
+      languageItems = languages;
+      
+      nextPageUrl = p.nextPage || 'mode.html';
+      prevPageUrl = p.previousPage || 'index.html';
+
+      // Update editable text elements dynamically from language-page.json
+      if (pageContent.welcomeBadge) document.getElementById('eyebrowText').textContent = pageContent.welcomeBadge;
+      if (pageContent.title) document.getElementById('pageHeading').textContent = pageContent.title;
+      if (pageContent.subtitle) document.getElementById('pageSubheading').textContent = pageContent.subtitle;
+      if (pageContent.instruction) document.getElementById('pageHelperText').textContent = pageContent.instruction;
+      if (pageContent.continueButton) document.getElementById('continueBtnText').textContent = pageContent.continueButton;
+      if (p.backButtonText) document.getElementById('backBtnText').textContent = String(p.backButtonText).replace(/^[\s←‹◀⟵]+/, '').trim() || 'Back';
+
+      // Build once off-DOM; delegate input to the menu instead of each row.
+      const fragment = document.createDocumentFragment();
+      optionNodes = languages.map(lang => {
+        const opt = document.createElement('div');
+        opt.className = 'dropdown-option';
+        opt.id = 'lang-opt-' + lang.code;
+        opt.setAttribute('role', 'option');
+        opt.tabIndex = -1;
+        opt.dataset.code = lang.code;
+        opt.setAttribute('aria-selected', 'false');
+        const label = document.createElement('span');
+        label.textContent = lang.label;
+        const check = document.createElement('span');
+        check.className = 'opt-check';
+        check.textContent = '✓';
+        check.setAttribute('aria-hidden', 'true');
+        opt.append(label, check);
+        fragment.appendChild(opt);
+        return opt;
+      });
+      if (!optionNodes.length) {
+        const empty = document.createElement('div');
+        empty.textContent = 'No languages are currently available.';
+        empty.style.padding = '12px 16px';
+        fragment.appendChild(empty);
+      }
+      menu.replaceChildren(fragment);
+
+      // Language is visit/session-scoped only (sessionStorage). Never restore from localStorage
+      // so a new website visit always starts with a fresh "Select Your Language" state.
+      try {
+        localStorage.removeItem('smartblock_language');
+        localStorage.removeItem('smartblock_lang');
+      } catch (eClear) {}
+
+      // Within the SAME visit only: if the user already chose a language and navigated back here, keep it.
+      let savedCode = null;
+      try { savedCode = sessionStorage.getItem('smartblock_language') || sessionStorage.getItem('smartblock_lang'); } catch (eSess) {}
+      if (savedCode) {
+        const savedLang = languages.find(l => l.code === savedCode);
+        if (savedLang) {
+          selectLanguage(savedLang.code, savedLang.label, false);
+          return;
+        }
+      }
+
+      // New visit / no session choice: clean placeholder from language-page.json
+      selectedLangCode = null;
+      selectedText.textContent = pageContent.dropdownPlaceholder || p.dropdownPlaceholder || 'Select Your Language';
+      triggerCheck.style.display = 'none';
+      
+      const allOptions = optionNodes;
+      allOptions.forEach(opt => {
+        opt.classList.remove('selected');
+        opt.setAttribute('aria-selected', 'false');
+      });
+    }
+
+    function toggleDropdown(event) {
+      if (container.classList.contains('open')) closeDropdown();
+      else openDropdown(!event || event.detail === 0);
+    }
+    function focusOption(index) {
+      if (!optionNodes.length || !container.classList.contains('open')) return;
+      const item = optionNodes[Math.max(0, Math.min(index, optionNodes.length - 1))];
+      item.focus({ preventScroll: true });
+      item.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+    }
+    function openDropdown(fromKeyboard = false, last = false) {
+      keyboardIntent = fromKeyboard;
+      menu.inert = false;
+      menu.setAttribute('aria-hidden', 'false');
+      container.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+      // No delayed focus callback that can steal focus after a fast close/click.
+      if (fromKeyboard) {
+        const selected = optionNodes.findIndex(opt => opt.dataset.code === selectedLangCode);
+        focusOption(selected >= 0 ? selected : last ? optionNodes.length - 1 : 0);
+      }
+    }
+    function closeDropdown(restoreFocus = true) {
+      if (!container.classList.contains('open')) return;
+      if (restoreFocus) trigger.focus({ preventScroll: true });
+      else if (menu.contains(document.activeElement)) document.activeElement.blur();
+      container.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+      menu.inert = true;
+      menu.setAttribute('aria-hidden', 'true');
+      keyboardIntent = false;
+      clearTimeout(typeaheadTimer);
+      typeahead = '';
+    }
+    function handleTriggerKey(e) {
+      if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+        e.preventDefault();
+        openDropdown(true, e.key === 'ArrowUp');
+      }
+    }
+    menu.addEventListener('click', e => {
+      const option = e.target.closest('.dropdown-option');
+      if (!option || !menu.contains(option)) return;
+      const lang = languageItems.find(item => item.code === option.dataset.code);
+      if (lang) selectLanguage(lang.code, lang.label);
+    });
+    menu.addEventListener('keydown', e => {
+      const index = optionNodes.indexOf(document.activeElement);
+      if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+        e.preventDefault();
+        const next = e.key === 'Home' ? 0 : e.key === 'End' ? optionNodes.length - 1 :
+          index + (e.key === 'ArrowDown' ? 1 : -1);
+        focusOption(next);
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const lang = languageItems[index];
+        if (lang) selectLanguage(lang.code, lang.label);
+      } else if (e.key === 'Tab') {
+        // Return to the trigger before native Tab advances out of the dropdown.
+        closeDropdown();
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        typeahead += e.key.toLocaleLowerCase();
+        clearTimeout(typeaheadTimer);
+        typeaheadTimer = setTimeout(() => { typeahead = ''; }, 600);
+        const found = languageItems.findIndex(l => l.label.toLocaleLowerCase().startsWith(typeahead));
+        if (found >= 0) focusOption(found);
+      }
+    });
+    document.addEventListener('focusin', e => {
+      if (!container.contains(e.target)) closeDropdown(false);
+    });
+
+    function selectLanguage(code, label, shouldClose = true) {
+      selectedLangCode = code;
+
+      // Update UI Text & Checkmark: 🌐 [Language] ✓
+      selectedText.textContent = label;
+      triggerCheck.style.display = 'inline';
+
+      // Update Selected Classes & ARIA
+      const allOptions = optionNodes;
+      allOptions.forEach(opt => {
+        const isThis = opt.getAttribute('data-code') === code;
+        opt.classList.toggle('selected', isThis);
+        opt.setAttribute('aria-selected', isThis ? 'true' : 'false');
+      });
+
+      // Save for THIS visit/session only (cleared when the tab/window is closed)
+      try {
+        sessionStorage.setItem('smartblock_language', code);
+        sessionStorage.setItem('smartblock_lang', code);
+        localStorage.removeItem('smartblock_language');
+        localStorage.removeItem('smartblock_lang');
+      } catch (err) {
+        console.warn('sessionStorage error:', err);
+      }
+
+      // Preload + cache this language's translation so the next page opens already translated.
+      try { if (window.SB && SB.preloadTrans) SB.preloadTrans(code); } catch (e) {}
+
+      if (shouldClose) {
+        closeDropdown();
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      if (container && !container.contains(e.target)) {
+        closeDropdown(false);
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && container.classList.contains('open')) {
+        closeDropdown();
+      }
+    });
+
+    let navigationPending = false;
+    let navigationTimer;
+    function navigateFromButton(url, button) {
+      if (navigationPending) return;
+      navigationPending = true;
+      button.classList.add('is-leaving');
+      button.setAttribute('aria-busy', 'true');
+      document.getElementById('backBtn').disabled = true;
+      continueBtn.disabled = true;
+      navigationTimer = setTimeout(() => {
+        try { window.location.assign(url); }
+        catch (_) { resetNavigationButtons(); }
+      }, motionPreference.matches ? 0 : 120);
+    }
+    function resetNavigationButtons() {
+      clearTimeout(navigationTimer);
+      navigationPending = false;
+      for (const button of [document.getElementById('backBtn'), continueBtn]) {
+        button.disabled = false;
+        button.classList.remove('is-leaving');
+        button.removeAttribute('aria-busy');
+      }
+    }
+    window.addEventListener('pageshow', resetNavigationButtons);
+    window.addEventListener('pagehide', () => {
+      clearTimeout(navigationTimer);
+      clearTimeout(typeaheadTimer);
+      closeDropdown(false);
+    });
+
+    function handleContinue() {
+      if (navigationPending) return;
+      // Save selected language for THIS visit only (fallback 'en' if Continue without a pick)
+      const finalLang = selectedLangCode || 'en';
+      try {
+        sessionStorage.setItem('smartblock_language', finalLang);
+        sessionStorage.setItem('smartblock_lang', finalLang);
+        localStorage.removeItem('smartblock_language');
+        localStorage.removeItem('smartblock_lang');
+      } catch (err) {
+        console.warn('sessionStorage error:', err);
+      }
+      // Keep translation preload immediate; allow a brief button press response.
+      try { if (window.SB && SB.preloadTrans) SB.preloadTrans(finalLang); } catch (e) {}
+      navigateFromButton(nextPageUrl || 'mode.html', continueBtn);
+    }
+
+    function goBack() {
+      navigateFromButton(prevPageUrl || 'index.html', document.getElementById('backBtn'));
+    }
+
+    window.addEventListener('DOMContentLoaded', loadLanguagesData);
+  </script>
+
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3db60ed08494479',t:'MTc4OTg1MDE0NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
