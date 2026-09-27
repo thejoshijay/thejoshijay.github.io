@@ -1,0 +1,2621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Distance Detective 5.0 · Treasure Hunt · Smart Block</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#83358C;--pink:#F01A8C;--yellow:#FFF212;
+  --purple-deep:#5C2563;--pink-dk:#B01268;--yellow-dk:#D6C900;
+  --ink:#161016;--muted:#4A3A4D;--line:#E7D8EA;
+  --ok:#2FBF6D;--ok-deep:#1D7A45;--no:#E0433A;
+  --font-display:'Fredoka','SB Display',Boulder,sans-serif;
+  --font-text:'Nunito','SB Text',Bariol,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#E6DCEB;overflow:hidden;display:flex;flex-direction:column;font-family:var(--font-text);color:var(--ink)}
+button{font:inherit;cursor:pointer}
+
+/* ===================== SHELL ===================== */
+.topbar{flex:0 0 auto;height:clamp(62px,8vh,76px);display:flex;align-items:center;gap:16px;
+  padding:8px clamp(12px,2vw,24px);border-bottom:3px solid var(--purple);background:var(--yellow)}
+.brand-logo{height:34px;width:auto}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(18px,2.8vh,26px);color:#5C2563}
+h1 b{color:var(--pink)}
+h1 .version{font:700 12px var(--font-display);background:#5C2563;color:var(--yellow);
+  padding:4px 8px;border-radius:8px;vertical-align:middle;margin-left:6px;letter-spacing:.04em}
+.layout{flex:1;min-height:0;display:grid;
+  grid-template-columns:minmax(0,3fr) minmax(340px,1fr);
+  gap:14px;padding:14px clamp(12px,2vw,24px)}
+@media(max-width:940px){.layout{grid-template-columns:1fr;grid-template-rows:1fr auto}}
+.col{display:flex;flex-direction:column;gap:12px;min-height:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;
+  box-shadow:0 12px 25px -20px var(--purple-deep);min-height:0}
+.stage-card{flex:1;display:flex;flex-direction:column;padding:12px;min-height:0}
+.stage{position:relative;flex:1;min-height:200px;border-radius:15px;border:1px solid var(--line);overflow:hidden;background:#CDE7FB}
+.scene{width:100%;height:100%;display:block;overflow:visible}
+
+/* ---- task header + progress dots ---- */
+.task-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 6px 10px;flex-wrap:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.eyebrow{font-family:var(--font-display);font-weight:700;font-size:10px;letter-spacing:.11em;color:var(--pink);text-transform:uppercase}
+.task-title{font-family:var(--font-display);font-weight:700;font-size:clamp(16px,2.2vh,21px);color:var(--purple-deep);margin:3px 0 0}
+.task-title strong{color:var(--pink)}
+.progress{display:flex;gap:6px;flex:0 0 auto}
+.progress .dot{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:#F3ECF5;color:#B396BA;
+  border:1px solid #DDCDE2;font:700 11px var(--font-display);
+  transition:background .25s,color .25s,border-color .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+.progress .dot.current{background:var(--pink);border-color:var(--pink);color:#fff;transform:scale(1.12)}
+.progress .dot.done{background:#E2F7EA;border-color:#79CAA0;color:#188348}
+
+/* ---- banner ---- */
+.banner{margin:0 auto;flex:0 1 auto;min-width:0;background:#fff;border:3px solid var(--purple);
+  border-radius:18px;padding:4px 18px;font:700 clamp(13px,2.4vh,19px) var(--font-display);color:var(--purple-deep);
+  box-shadow:0 5px 0 rgba(92,37,99,.18);width:max-content;max-width:94%;text-align:center;letter-spacing:.4px}
+.banner .target{color:var(--pink)}
+.banner.pop{animation:bp .4s cubic-bezier(.22,1,.36,1)}
+@keyframes bp{0%{opacity:0;transform:translateY(-10px) scale(.92)}
+  60%{opacity:1;transform:translateY(0) scale(1.035)}100%{transform:scale(1)}}
+
+/* ---- verdict bar ---- */
+.verdict{margin-top:10px;padding:10px 16px;border-radius:14px;display:flex;align-items:center;gap:12px;
+  background:#F5F1F7;position:relative;transition:background .3s ease}
+.verdict .ic{font-size:26px;line-height:1;transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.verdict .tx b,.verdict .tx span,.verdict .math,.verdict .math small{transition:color .3s ease}
+.verdict .tx b{display:block;font-family:var(--font-display);font-size:17px;color:var(--purple-deep)}
+.verdict .tx span{font-size:13.5px;color:var(--muted);font-weight:700}
+.verdict .math{margin-left:auto;font-family:var(--font-display);font-weight:700;font-size:33px;color:var(--purple-deep);
+  white-space:nowrap;line-height:1;display:flex;align-items:baseline;gap:5px}
+.verdict .math small{font-size:14px;color:var(--muted)}
+.verdict.v-low{background:#EAF5FD}.verdict.v-low .tx b{color:#12507D}
+.verdict.v-over{background:#FDEAF4}.verdict.v-over .tx b{color:var(--pink-dk)}
+.verdict.v-hold{background:#FFF8DA}.verdict.v-hold .tx b{color:#8A6D00}
+.verdict.v-go{background:#DFF7E8}.verdict.v-go .tx b{color:var(--ok-deep)}
+.verdict.holding::after{content:"";position:absolute;left:12px;right:12px;bottom:3px;height:3.5px;border-radius:2px;
+  background:linear-gradient(90deg,#2FBF6D,#8FE6B4);transform-origin:0 50%;transform:scaleX(0);
+  animation:holdFill 1s linear forwards}
+@keyframes holdFill{0%{transform:scaleX(0);opacity:0}12%{opacity:1}to{transform:scaleX(1);opacity:1}}
+.verdict .ic.pop-ic{animation:iconIn .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes iconIn{0%{transform:scale(.4) rotate(-10deg);opacity:0}60%{transform:scale(1.18) rotate(3deg)}100%{transform:scale(1) rotate(0)}}
+.verdict .tx b.fs,.verdict .tx span.fs{animation:fadeSlide .38s cubic-bezier(.22,1,.36,1) both}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===================== AUTO-FIT SHELL (non-laptop devices) =====================
+   Same idea as distance_explorer2.0: the laptop build keeps the authored sizes,
+   every other device compacts the shell so the whole activity fits one screen. */
+html[data-layout-mode="auto-fit"] .topbar{height:clamp(50px,7vh,62px);gap:12px;padding:6px clamp(10px,1.6vw,18px)}
+html[data-layout-mode="auto-fit"] .brand h1{font-size:clamp(17px,2.4vh,22px)}
+html[data-layout-mode="auto-fit"] .brand-logo{height:clamp(26px,3.6vh,31px)}
+html[data-layout-mode="auto-fit"] .version{font-size:12px;padding:3px 7px}
+html[data-layout-mode="auto-fit"] .layout{padding:12px;gap:12px}
+html[data-layout-mode="auto-fit"] .card{border-radius:18px}
+html[data-layout-mode="auto-fit"] .stage-card{padding:10px}
+html[data-layout-mode="auto-fit"] .task-header{padding-bottom:8px}
+html[data-layout-mode="auto-fit"] .eyebrow{font-size:9.5px}
+html[data-layout-mode="auto-fit"] .task-title{font-size:clamp(17px,2.3vh,21px)}
+html[data-layout-mode="auto-fit"] .dot{width:22px;height:22px;font-size:11px;box-shadow:0 2px 0 #DCC6E4}
+html[data-layout-mode="auto-fit"] .dots{gap:4px}
+html[data-layout-mode="auto-fit"] .banner{font-size:clamp(14px,2vh,17px);padding:5px 14px}
+html[data-layout-mode="auto-fit"] .verdict{padding:8px 12px;gap:10px}
+html[data-layout-mode="auto-fit"] .verdict .ic{width:30px;height:30px;font-size:17px}
+html[data-layout-mode="auto-fit"] .verdict .tx b{font-size:15px}
+html[data-layout-mode="auto-fit"] .verdict .tx span{font-size:12px}
+html[data-layout-mode="auto-fit"] .verdict .math{font-size:20px}
+html[data-layout-mode="auto-fit"] .metercard{padding:12px}
+html[data-layout-mode="auto-fit"] .lcd{padding:18px 14px 14px;border-radius:20px}
+html[data-layout-mode="auto-fit"] .lcd-val{font-size:clamp(34px,6.4vh,52px)}
+html[data-layout-mode="auto-fit"] .lcd-val .dl{font-size:clamp(15px,2.4vh,20px)}
+html[data-layout-mode="auto-fit"] .lcd-val .dl{font-size:clamp(17px,2.6vh,22px)}
+html[data-layout-mode="auto-fit"] .lcd-target{font-size:13px;padding:5px 13px}
+html[data-layout-mode="auto-fit"] .ctrl{padding:11px 13px 13px}
+html[data-layout-mode="auto-fit"] .card-title{font-size:14px;padding-bottom:7px}
+html[data-layout-mode="auto-fit"] .conn{font-size:12.5px;padding:6px 10px}
+html[data-layout-mode="auto-fit"] .btn{padding:8px 10px;font-size:13px}
+html[data-layout-mode="auto-fit"] .btn-yellow.big{min-height:40px;font-size:16px;box-shadow:0 5px 0 var(--yellow-dk)}
+html[data-layout-mode="auto-fit"] .hint{font-size:11px;margin-top:7px}
+html[data-layout-mode="auto-fit"] .ov-box{padding:24px 30px}
+html[data-layout-mode="auto-fit"] .ov-box h2{font-size:clamp(22px,4vh,32px)}
+html[data-layout-mode="auto-fit"] .ov-box p{font-size:19px;margin:14px 0 20px}
+html[data-layout-mode="auto-fit"] .ov-icons svg{width:88px;height:88px}
+html[data-layout-mode="auto-fit"] .ov-start{padding:11px 30px;font-size:19px}
+html[data-layout-mode="auto-fit"] .final-box{padding:22px 26px}
+html[data-layout-mode="auto-fit"] .tally{font-size:44px}
+/* portrait phones: stack the scene over the controls, exactly like explorer 2.0 */
+@media(max-width:760px){
+  /* phones and tablets: the scene takes the space that is left over, and the
+     two cards underneath it always keep their natural height */
+  html[data-layout-mode="auto-fit"] .layout{grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(0,1fr) auto;gap:10px;padding:10px}
+  html[data-layout-mode="auto-fit"] .rightcol{display:grid;grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto;gap:8px;align-content:start}
+  html[data-layout-mode="auto-fit"] .metercard{flex:0 0 auto;min-height:0;justify-content:center}
+  html[data-layout-mode="auto-fit"] .ctrl>*{flex:0 0 auto}
+  html[data-layout-mode="auto-fit"] .stage{min-height:0}
+}
+@media(max-width:480px){
+  /* small phones: everything shrinks one more notch so nothing scrolls */
+  html[data-layout-mode="auto-fit"] .layout{gap:8px;padding:8px 8px 4px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .task-title{font-size:16px}
+  html[data-layout-mode="auto-fit"] .eyebrow{font-size:8.5px}
+  html[data-layout-mode="auto-fit"] .dot{width:19px;height:19px;font-size:10px}
+  html[data-layout-mode="auto-fit"] .banner{font-size:12.5px;padding:4px 11px}
+  .task-header .eyebrow{display:none}
+  html[data-layout-mode="auto-fit"] .metercard{padding:8px}
+  html[data-layout-mode="auto-fit"] .lcd{padding:12px 12px 10px;border-radius:16px}
+  html[data-layout-mode="auto-fit"] .lcd-val{font-size:clamp(28px,5.4vh,38px)}
+  html[data-layout-mode="auto-fit"] .lcd-val .dl{font-size:14px}
+  html[data-layout-mode="auto-fit"] .lcd-target{font-size:11.5px;padding:4px 11px}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:9px 11px 11px}
+  html[data-layout-mode="auto-fit"] .card-title{font-size:12.5px;padding-bottom:5px}
+  html[data-layout-mode="auto-fit"] .conn{font-size:11px;padding:5px 9px}
+  html[data-layout-mode="auto-fit"] .btn{padding:7px 9px;font-size:12px}
+  html[data-layout-mode="auto-fit"] .btn-yellow.big{min-height:36px;font-size:15px;box-shadow:0 4px 0 var(--yellow-dk)}
+  html[data-layout-mode="auto-fit"] .btn-row{margin-top:6px}
+  html[data-layout-mode="auto-fit"] .hint{font-size:10.4px;margin-top:5px}
+  html[data-layout-mode="auto-fit"] .verdict{padding:6px 9px;gap:8px}
+  html[data-layout-mode="auto-fit"] .verdict .math{font-size:17px}
+}
+@media(max-width:760px) and (max-height:720px){
+  /* short phones (640–720 px tall): trim one more notch so the whole scene,
+     the read-out and the buttons still fit on one screen */
+  html[data-layout-mode="auto-fit"] .layout{gap:7px;padding:7px 7px 3px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .task-head{padding:8px 11px 6px}
+  html[data-layout-mode="auto-fit"] .verdict{padding:5px 9px;gap:7px}
+  html[data-layout-mode="auto-fit"] .verdict p{font-size:11.5px}
+  html[data-layout-mode="auto-fit"] .verdict .math{font-size:16px}
+  html[data-layout-mode="auto-fit"] .metercard{padding:6px}
+  html[data-layout-mode="auto-fit"] .lcd{padding:9px 10px 8px;border-radius:14px}
+  html[data-layout-mode="auto-fit"] .lcd-val{font-size:clamp(24px,5vh,32px)}
+  html[data-layout-mode="auto-fit"] .lcd-val small{font-size:15px}
+  html[data-layout-mode="auto-fit"] .lcd-val .dl{font-size:13px}
+  html[data-layout-mode="auto-fit"] .lcd-sub{margin-top:6px}
+  html[data-layout-mode="auto-fit"] .lcd-target{font-size:11px;padding:3px 10px}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:8px 10px 9px}
+  html[data-layout-mode="auto-fit"] .card-title{font-size:12px;padding:0 2px 4px}
+  html[data-layout-mode="auto-fit"] .conn{font-size:10.6px;padding:4px 8px;margin-bottom:6px}
+  html[data-layout-mode="auto-fit"] .conn .dot{width:8px;height:8px}
+  html[data-layout-mode="auto-fit"] .btn{padding:6px 8px;font-size:11.5px;border-radius:10px}
+  html[data-layout-mode="auto-fit"] .btn-yellow.big{min-height:33px;font-size:14px;box-shadow:0 3px 0 var(--yellow-dk)}
+  html[data-layout-mode="auto-fit"] .btn-row{margin-top:5px}
+  html[data-layout-mode="auto-fit"] .hint{font-size:9.6px;margin-top:4px;line-height:1.4}
+}
+/* ===================== RIGHT COLUMN ===================== */
+.rightcol{display:flex;flex-direction:column;gap:12px;min-height:0}
+.card-title{font-family:var(--font-display);font-weight:700;font-size:15.5px;color:var(--purple);padding:2px 4px 10px}
+.metercard{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;min-height:0;padding:16px;
+  background:linear-gradient(170deg,#F7EFF9,#FFFFFF 60%)}
+.ctrl{flex:0 0 auto;display:flex;flex-direction:column;padding:14px 16px 16px}
+
+.lcd{border-radius:24px;padding:26px 20px 20px;text-align:center;position:relative;overflow:hidden;
+  background:linear-gradient(165deg,rgba(242,225,248,.96),rgba(228,198,238,.86) 60%,rgba(238,212,245,.92));
+  -webkit-backdrop-filter:blur(18px) saturate(1.25);backdrop-filter:blur(18px) saturate(1.25);
+  border:1px solid rgba(255,255,255,.9);
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,1),inset 0 -14px 22px -16px rgba(131,53,140,.35),
+    0 0 0 1px rgba(131,53,140,.08),0 14px 26px -12px rgba(92,37,99,.45)}
+.lcd::before{content:'';position:absolute;left:6%;right:6%;top:0;height:46%;border-radius:0 0 60% 60%/0 0 100% 100%;
+  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none}
+.lcd-val{font-family:var(--font-display);font-weight:700;font-size:66px;line-height:1;color:var(--purple-deep);
+  text-shadow:0 1px 0 rgba(255,255,255,.8);display:flex;align-items:baseline;justify-content:center;gap:10px}
+.lcd-val small{font-size:22px;color:var(--muted)}
+.lcd-val .dl{font-size:26px;color:var(--pink)}
+.lcd-val #distVal{display:inline-block}
+.lcd-val #distVal.pop{animation:valPop .26s cubic-bezier(.34,1.56,.64,1)}
+@keyframes valPop{0%{transform:scale(1)}45%{transform:scale(1.16)}100%{transform:scale(1)}}
+.lcd-sub{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.lcd-target{display:inline-block;background:linear-gradient(150deg,#83358C,#5C2563);color:#fff;
+  border-radius:999px;padding:6px 16px;font:700 15px var(--font-display);box-shadow:0 4px 0 #45194E}
+.lcd-target b{color:#FFF212}
+.lcd-target.pop{animation:scorePop .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes scorePop{0%{transform:scale(1)}40%{transform:scale(1.16) rotate(-2deg)}100%{transform:scale(1)}}
+
+.conn{display:flex;align-items:center;gap:8px;background:#F7F2F8;border-radius:10px;padding:6px 12px;
+  font:700 12.5px var(--font-display);color:var(--muted);margin:0 0 8px;border:1px solid #EBE2EE}
+.conn .dot{width:10px;height:10px}
+.dot{width:11px;height:11px;border-radius:50%;background:#C9C2D6;box-shadow:inset 0 -2px 3px rgba(0,0,0,.15);transition:background .25s}
+.dot.on{background:var(--ok);box-shadow:0 0 9px rgba(47,191,109,.85)}
+
+.btn{border:none;border-radius:12px;padding:9px 12px;font:700 14px var(--font-display);width:100%;cursor:pointer;
+  transition:transform .16s cubic-bezier(.22,1,.36,1),filter .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1)}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn:active{transform:translateY(2px)}
+.btn:disabled{filter:grayscale(.5) brightness(.92);cursor:default;transform:none}
+.btn-pink{background:var(--pink);color:#fff;box-shadow:0 4px 0 var(--pink-dk)}
+.btn-pink:active{box-shadow:0 1px 0 var(--pink-dk)}
+.btn-yellow{background:var(--yellow);color:var(--ink);box-shadow:0 4px 0 var(--yellow-dk)}
+.btn-yellow.big{min-height:45px;font-size:17px;box-shadow:0 6px 0 var(--yellow-dk);letter-spacing:.3px}
+.btn-yellow.big:active{box-shadow:0 2px 0 var(--yellow-dk)}
+.btn-ghost{background:#F0E8F2;color:var(--purple-deep);box-shadow:0 3px 0 #DCC6E4}
+.btn-ghost:active{box-shadow:0 1px 0 #DCC6E4}
+.ctrl .btn{position:relative;overflow:hidden;-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+.ctrl .btn::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10) 40%,rgba(255,255,255,0) 60%)}
+.ctrl .btn::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.12)}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.hint{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.55;font-weight:600}
+#connBtn.attn{animation:connPing 2.2s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes connPing{0%{box-shadow:0 4px 0 var(--pink-dk),0 0 0 0 rgba(240,26,140,.42)}
+  70%,100%{box-shadow:0 4px 0 var(--pink-dk),0 0 0 14px rgba(240,26,140,0)}}
+
+/* ===================== OVERLAYS ===================== */
+.ov{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px}
+.ov.hide{opacity:0;pointer-events:none;transition:opacity .35s}
+.ov-box{background:var(--yellow);border:5px solid var(--purple);border-radius:28px;padding:30px 42px;text-align:center;
+  max-width:560px;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.ov.hide .ov-box{transform:scale(.9) translateY(10px)}
+.ov-box h2{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,4.6vh,40px);color:var(--purple-deep)}
+.ov-box h2 b{color:inherit}
+.ov-box p{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--pink);margin:16px 0 24px;
+  line-height:1.45;letter-spacing:.4px}
+.ov-icons{display:flex;gap:20px;justify-content:center;margin:6px 0 16px}
+.ov-icons svg{width:clamp(84px,12vh,112px);height:clamp(84px,12vh,112px);filter:drop-shadow(0 6px 10px rgba(92,37,99,.3));
+  animation:iconIn2 .6s cubic-bezier(.34,1.56,.64,1) both, iconFloat 3.4s ease-in-out infinite}
+.ov-icons svg:nth-child(1){animation-delay:.05s,1.0s}
+.ov-icons svg:nth-child(2){animation-delay:.18s,1.5s}
+@keyframes iconIn2{from{opacity:0;transform:translateY(16px) scale(.45)}to{opacity:1;transform:none}}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.ov-box.task-in h2{animation:ovRise .5s cubic-bezier(.22,1,.36,1) backwards}
+.ov-box.task-in p{animation:ovRise .5s .1s cubic-bezier(.22,1,.36,1) backwards}
+.ov-box.task-in .ov-start{animation:ovRise .5s .2s cubic-bezier(.22,1,.36,1) backwards}
+@keyframes ovRise{from{opacity:0;transform:translateY(14px)}}
+.ov-start{background:var(--pink);color:#fff;border:none;border-radius:18px;padding:13px 36px;
+  font:700 21px var(--font-display);box-shadow:0 7px 0 var(--pink-dk);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.ov-start:hover{transform:translateY(-3px);box-shadow:0 10px 0 var(--pink-dk)}
+.ov-start:active{transform:translateY(4px);box-shadow:0 3px 0 var(--pink-dk)}
+.ov-start{position:relative;overflow:hidden;-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+.ov-start::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10) 40%,rgba(255,255,255,0) 60%)}
+.ov-start::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.12)}
+
+.final{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;
+  background:rgba(22,16,22,.45);backdrop-filter:blur(4px)}
+.final.show{display:flex}
+.final-box{background:#fff;border:5px solid var(--purple);border-radius:28px;padding:32px 42px;text-align:center;max-width:440px;
+  animation:finIn .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes finIn{from{opacity:0;transform:scale(.82) translateY(16px)}to{opacity:1;transform:none}}
+.trophy{font-size:62px;animation:tp .7s cubic-bezier(.3,1.6,.4,1)}
+@keyframes tp{0%{transform:scale(.3) rotate(-20deg)}100%{transform:scale(1)}}
+.final-box h2{font-family:var(--font-display);color:var(--purple);font-size:30px;margin:6px 0}
+.tally{font:800 52px var(--font-display);color:var(--pink);line-height:1}
+.tally small{font-size:22px;color:var(--purple-deep)}
+.final-box p{margin:10px 0 16px;color:var(--muted);font-weight:700}
+.again{background:var(--pink);color:#fff;border:none;border-radius:16px;padding:12px 28px;font:700 18px var(--font-display);
+  box-shadow:0 6px 0 var(--pink-dk);transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.again:hover{transform:translateY(-3px);box-shadow:0 9px 0 var(--pink-dk)}
+.again:active{transform:translateY(4px);box-shadow:0 2px 0 var(--pink-dk)}
+
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden;contain:layout paint}
+.confetti i{position:absolute;top:-14px;width:10px;height:14px;border-radius:2px;
+  will-change:transform,opacity;backface-visibility:hidden}
+
+/* ===================== SCENE ANIMATION ===================== */
+.scene{font-family:var(--font-display)}
+.scene text{user-select:none}
+#kidWorld{cursor:grab;touch-action:none;outline:none;will-change:transform}
+#kidBob{will-change:transform}
+#kidBody .kid-arm,#kidBody .kid-leg,#kidBody .kid-head,#kidBody .kid-move{transform-box:fill-box}
+#kidBody .kid-arm-l{transform-origin:100% 0%}
+#kidBody .kid-arm-r{transform-origin:0% 0%}
+#kidBody .kid-leg{transform-origin:50% 0%}
+#kidBody .kid-head{transform-origin:50% 100%}
+#kidBody .kid-move{transform-origin:50% 100%}
+#kidBody .kid-lid{transform-box:fill-box;transform-origin:50% 50%;transform:scaleY(.06);
+  animation:kidBlink 5.6s ease-in-out infinite}
+#kidBody .kid-lid:nth-child(2){animation-delay:.045s}
+@keyframes kidBlink{
+  0%,54%,100%{transform:scaleY(.06)}
+  56%,59%{transform:scaleY(1)}
+  61%,86%{transform:scaleY(.06)}
+  88%,91%{transform:scaleY(1)}
+}
+#kidBody .kid-skirt{transform-box:fill-box;transform-origin:50% 0%}
+#kidBody .kid-pallu{transform-box:fill-box;transform-origin:80% 0%}
+#kidBody .kid-sash{transform-box:fill-box;transform-origin:50% 0%}
+#kidBody .kid-braid{transform-box:fill-box;transform-origin:50% 0%}
+#kidWorld:active{cursor:grabbing}
+/* the watering can that lies on the plot: lifts off the soil and tips over the pot */
+/* the buried chest: the dust, the mound, the lid and the loot */
+#digMound{transform-box:fill-box;transform-origin:50% 100%}
+#chestWrap{transform-box:fill-box;transform-origin:50% 100%}
+#chestLid{transform-box:fill-box;transform-origin:0% 100%}
+#chestLidCap{transform-box:fill-box;transform-origin:0% 100%}
+#chestLidInner{transform-box:fill-box;transform-origin:50% 100%}
+#chestTilt{transform-box:fill-box;transform-origin:50% 100%}
+#chestLock{transform-box:fill-box;transform-origin:50% 50%}
+#chestLoot{transform-box:fill-box;transform-origin:50% 100%}
+#chestBeam{transform-box:fill-box;transform-origin:50% 100%}
+.dust{transform-box:fill-box;transform-origin:50% 100%;animation:dustFloat 1.1s ease-out infinite}
+.d2{animation-delay:-.22s}.d3{animation-delay:-.44s}.d4{animation-delay:-.66s}.d5{animation-delay:-.88s}
+@keyframes dustFloat{
+  0%{transform:translate(0,7px) scale(.5);opacity:.2}
+  35%{opacity:.95}
+  100%{transform:translate(-7px,-28px) scale(1.2);opacity:0}
+}
+@keyframes chestOpen{
+  0%{transform:rotate(0deg);opacity:1}
+  20%{transform:rotate(-13deg);opacity:1}
+  36%{transform:rotate(-9deg);opacity:1}
+  100%{transform:rotate(-88deg);opacity:0}
+}
+@keyframes lidInnerIn{
+  0%{opacity:0;transform:scaleY(.2) scaleX(.93)}
+  58%{opacity:1;transform:scaleY(1.05) scaleX(1.01)}
+  100%{opacity:1;transform:scaleY(1) scaleX(1)}
+}
+@keyframes lootGlow{0%,100%{opacity:.85}50%{opacity:1}}
+#chestShine{transform-box:fill-box;transform-origin:50% 100%;
+            filter:drop-shadow(0 0 5px rgba(255,242,196,.95)) drop-shadow(0 0 12px rgba(255,225,150,.65))}
+@keyframes chestGlint{
+  0%{opacity:0;transform:scale(.86)}
+  16%{opacity:1;transform:scale(1.08)}
+  40%{opacity:.55;transform:scale(1)}
+  62%{opacity:1;transform:scale(1.05)}
+  100%{opacity:.8;transform:scale(1)}
+}
+#kidWorld:focus-visible .kid-focus{stroke:var(--pink);stroke-width:1.7;stroke-dasharray:3 2.4;stroke-linecap:round}
+/* breathing while standing, a walking cycle the moment the player starts moving */
+#kidBob{transform-box:fill-box;transform-origin:50% 100%}
+/* stepping: one beat for the legs, arms swinging against them, the body riding the step.
+   --step is kept in sync with the walking speed, so a faster drag takes quicker steps  */
+.scene.walking #kidBob{animation:kidWalkBob var(--step,.38s) ease-in-out infinite}
+@keyframes kidWalkBob{
+  0%,100%{transform:translateY(0) rotate(0deg) scaleY(1)}
+  22%{transform:translateY(-4.2px) rotate(-1.1deg) scaleY(1.012)}
+  46%{transform:translateY(-.6px) rotate(-.2deg) scaleY(.996)}
+  72%{transform:translateY(-3.4px) rotate(1.1deg) scaleY(1.008)}
+}
+.scene.walking .kid-leg-l{animation:kidStep var(--step,.38s) cubic-bezier(.42,.05,.58,.95) infinite}
+.scene.walking .kid-leg-r{animation:kidStep var(--step,.38s) cubic-bezier(.42,.05,.58,.95) infinite;animation-delay:calc(var(--step,.38s) / -2)}
+.scene.walking .kid-arm-l{animation:kidSwing var(--step,.38s) cubic-bezier(.42,.05,.58,.95) infinite;animation-delay:calc(var(--step,.38s) / -2)}
+.scene.walking .kid-arm-r{animation:kidSwing var(--step,.38s) cubic-bezier(.42,.05,.58,.95) infinite}
+@keyframes kidStep{
+  0%{transform:rotate(19deg) translateY(-.6px)}
+  32%{transform:rotate(6deg) translateY(-2.4px)}
+  50%{transform:rotate(-17deg) translateY(0)}
+  82%{transform:rotate(-3deg) translateY(-1.4px)}
+  100%{transform:rotate(19deg) translateY(-.6px)}
+}
+@keyframes kidSwing{0%{transform:rotate(-13deg)}50%{transform:rotate(12deg)}100%{transform:rotate(-13deg)}}
+.scene.walking .kid-head{animation:kidHeadStep var(--step,.38s) ease-in-out infinite}
+@keyframes kidHeadStep{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}
+.scene.walking .kid-skirt{animation:kidSkirt .38s ease-in-out infinite}
+@keyframes kidSkirt{0%,100%{transform:rotate(-2.6deg)}50%{transform:rotate(2.6deg)}}
+.scene.walking .kid-pallu{animation:kidPallu .62s ease-in-out infinite}
+@keyframes kidPallu{0%,100%{transform:rotate(0deg) skewY(0deg)}50%{transform:rotate(-3.4deg) skewY(1.6deg)}}
+.scene.walking .kid-braid{animation:kidPallu .54s ease-in-out infinite}
+
+/* standing still: breathing, a slow look around, the cloth settling */
+.scene:not(.walking):not(.holding):not(.parked) #kidBob{animation:kidBreathe 3.6s ease-in-out infinite}
+@keyframes kidBreathe{
+  0%,100%{transform:translateY(0) scaleY(1)}
+  40%{transform:translateY(-1.4px) scaleY(1.014)}
+  70%{transform:translateY(-.5px) scaleY(1.004)}
+}
+.scene:not(.walking):not(.holding):not(.parked) .kid-head{animation:kidLook 9.4s ease-in-out infinite}
+@keyframes kidLook{
+  0%,26%{transform:rotate(0deg)}
+  38%,54%{transform:rotate(-2.6deg)}
+  66%,80%{transform:rotate(2.2deg)}
+  92%,100%{transform:rotate(0deg)}
+}
+.scene:not(.walking) .kid-pallu,.scene:not(.walking) .kid-braid{animation:kidFlutter 4.2s ease-in-out infinite}
+@keyframes kidFlutter{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-1.8deg) skewY(.8deg)}}
+.scene:not(.walking) .kid-skirt{animation:kidSkirtIdle 5.2s ease-in-out infinite}
+@keyframes kidSkirtIdle{0%,100%{transform:rotate(0deg)}50%{transform:rotate(1.1deg)}}
+/* the hoop answers every made shot */
+#net{transform-box:fill-box;transform-origin:50% 0%}
+#net.swish{animation:netSwish .46s cubic-bezier(.22,1,.36,1)}
+@keyframes netSwish{0%{transform:translateY(0) scaleY(1)}35%{transform:translateY(5px) scaleY(1.22)}
+  70%{transform:translateY(2px) scaleY(.94)}100%{transform:translateY(0) scaleY(1)}}
+#rim.rim-hit{animation:rimFlash .5s ease-out}
+@keyframes rimFlash{0%{stroke:#FFF3B0;stroke-width:7}100%{stroke:#F07A1A;stroke-width:5}}
+.m2{animation-delay:-1.4s}
+.m3{animation-delay:-2.6s}
+.m4{animation-delay:-3.4s}
+.m5{animation-delay:-4.2s}
+#ball{will-change:transform}
+/* walking to the line, the ball is dribbled beside the player — gravity down,
+   a squash as it meets the road, a quick rise back to the hand                     */
+.scene.walking #ball{animation:dribble .56s cubic-bezier(.4,0,.7,.2) infinite}
+@keyframes dribble{
+  0%{transform:translateY(0) scale(1,1)}
+  8%{transform:translateY(6px) scale(1.02,.96)}
+  46%{transform:translateY(50px) scale(1.06,.9)}
+  50%{transform:translateY(50px) scale(1.12,.86)}
+  58%{transform:translateY(44px) scale(1.02,.97)}
+  100%{transform:translateY(0) scale(1,1)}
+}
+.scene.parked #ball{animation:none}
+
+
+.indicator-halo,.indicator-light{opacity:0}
+.indicator-halo{animation:indicatorHalo 1.05s linear infinite}
+.indicator-light{animation:indicatorBlink 1.05s linear infinite}
+.indicator-halo.rear,.indicator-light.rear{animation-delay:.52s}
+@keyframes indicatorBlink{0%,42%,100%{opacity:0}50%,88%{opacity:1}}
+@keyframes indicatorHalo{0%,42%,100%{opacity:0}50%,88%{opacity:.6}}
+
+
+
+.dc1{animation:cldA 118s linear infinite;animation-delay:-26s}
+.dc2{animation:cldB 142s linear infinite;animation-delay:-72s}
+.dc3{animation:cldC 104s linear infinite;animation-delay:-48s}
+@keyframes cldA{from{transform:translateX(-40px)}to{transform:translateX(410px)}}
+@keyframes cldB{from{transform:translateX(30px)}to{transform:translateX(-330px)}}
+@keyframes cldC{from{transform:translateX(-60px)}to{transform:translateX(370px)}}
+
+.db1{animation:birdL1 62s linear infinite;animation-delay:-16s}
+.db2{animation:birdL2 78s linear infinite;animation-delay:-52s}
+.db3{animation:birdL3 96s linear infinite;animation-delay:-14s}
+@keyframes birdL1{from{transform:translateX(20px)}to{transform:translateX(-560px)}}
+@keyframes birdL2{from{transform:translateX(40px)}to{transform:translateX(-620px)}}
+@keyframes birdL3{from{transform:translateX(60px)}to{transform:translateX(-520px)}}
+.birdB{animation:birdBob 3.4s ease-in-out infinite alternate}
+.db2 .birdB{animation-duration:4.2s}
+.db3 .birdB{animation-duration:3.1s}
+@keyframes birdBob{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+.wingB{transform-box:fill-box;transform-origin:0% 60%;animation:flap .5s ease-in-out infinite alternate}
+.db2 .wingB{animation-delay:-.22s}
+@keyframes flap{from{transform:rotate(-15deg)}to{transform:rotate(17deg)}}
+
+@media (prefers-reduced-motion:reduce){
+  .dc1,.dc2,.dc3,.db1,.db2,.db3,.birdB,.wingB,.sensor-led,
+  #connBtn.attn{animation:none}
+  .sonar-wave{animation:none;opacity:0}
+  .indicator-halo,.indicator-light{animation:none;opacity:0}
+  .verdict.holding::after{animation:none;transform:scaleX(1)}
+  .confetti{display:none}
+}
+@media(max-width:940px){
+  .metercard{padding:12px}
+  .lcd-val{font-size:52px}
+  .lcd{padding:18px 14px 14px}
+}
+</style>
+<script>
+/* The layout mode is decided before the first paint — exactly the same query
+   distance_explorer2.0 uses — so a phone or tablet never flashes the laptop
+   layout on the way in, and the laptop page never flickers into auto-fit. */
+try{
+  const layoutQuery=matchMedia('(any-hover:hover) and (any-pointer:fine)');
+  document.documentElement.dataset.layoutMode=layoutQuery.matches?'original-laptop':'auto-fit';
+}catch(e){document.documentElement.dataset.layoutMode='auto-fit';}
+</script>
+</head>
+<body>
+
+<header class="topbar">
+  <img class="brand-logo" src="data:image/png;base64,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" alt="Smart Block">
+  <div><h1>Distance <b>Detective</b> <span class="version">5.0</span></h1></div>
+</header>
+
+<main class="layout">
+  <section class="col">
+    <div class="card stage-card">
+      <div class="task-header">
+        <h2 class="task-title sr-only" id="taskTitle">Find the treasure <strong>6 cm</strong> from the fort</h2>
+        <div class="eyebrow" id="taskCount">TASK 01</div>
+        <div class="banner" id="banner">Treasure <span class="target">6 cm</span> from the fort</div>
+        <div class="progress" id="progress" aria-label="Three parking challenges"></div>
+      </div>
+      <div class="stage">
+        <svg class="scene" id="scene" viewBox="0 0 1000 570" preserveAspectRatio="xMidYMid meet"
+             role="img" aria-labelledby="sceneTitle sceneDesc">
+          <title id="sceneTitle">Hidden treasure and the fort</title>
+          <desc id="sceneDesc">Walk until you stand the target distance from the fort. The buried chest is right there - hold still and dig it up.</desc>
+
+          <defs>
+            <linearGradient id="skyG" gradientUnits="userSpaceOnUse" x1="0" y1="-200" x2="0" y2="360">
+              <stop offset="0%" stop-color="#7FB8E0"/><stop offset="55%" stop-color="#C7E4F5"/>
+              <stop offset="100%" stop-color="#E9F3FB"/>
+            </linearGradient>
+            <linearGradient id="hillA" gradientUnits="userSpaceOnUse" x1="0" y1="250" x2="0" y2="330">
+              <stop offset="0%" stop-color="#A6D3BC"/><stop offset="100%" stop-color="#7FB79D"/>
+            </linearGradient>
+            <linearGradient id="hillB" gradientUnits="userSpaceOnUse" x1="0" y1="268" x2="0" y2="336">
+              <stop offset="0%" stop-color="#8FC7AC"/><stop offset="100%" stop-color="#63A186"/>
+            </linearGradient>
+            <linearGradient id="hillFar" gradientUnits="userSpaceOnUse" x1="0" y1="205" x2="0" y2="300">
+              <stop offset="0%" stop-color="#B7D8CE"/><stop offset="100%" stop-color="#9AC6BA"/>
+            </linearGradient>
+            <linearGradient id="hazeG" gradientUnits="userSpaceOnUse" x1="0" y1="180" x2="0" y2="322">
+              <stop offset="0%" stop-color="#EAF3FA" stop-opacity="0"/>
+              <stop offset="62%" stop-color="#EAF3FA" stop-opacity=".34"/>
+              <stop offset="100%" stop-color="#F2F7FC" stop-opacity=".72"/>
+            </linearGradient>
+            <linearGradient id="grassG" gradientUnits="userSpaceOnUse" x1="0" y1="322" x2="0" y2="362">
+              <stop offset="0%" stop-color="#8FCB6A"/><stop offset="100%" stop-color="#5E9E3D"/>
+            </linearGradient>
+            <radialGradient id="digGlow" cx="50%" cy="50%" r="55%">
+              <stop offset="0%" stop-color="#FFE9A0" stop-opacity=".85"/>
+              <stop offset="65%" stop-color="#FFD34D" stop-opacity=".32"/>
+              <stop offset="100%" stop-color="#FFD34D" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="chestWoodA" gradientUnits="userSpaceOnUse" x1="0" y1="-56" x2="0" y2="10">
+              <stop offset="0%" stop-color="#C98A46"/><stop offset="55%" stop-color="#A05F22"/>
+              <stop offset="100%" stop-color="#7A4315"/>
+            </linearGradient>
+            <linearGradient id="chestWoodB" gradientUnits="userSpaceOnUse" x1="0" y1="-56" x2="0" y2="10">
+              <stop offset="0%" stop-color="#D2453C"/><stop offset="55%" stop-color="#A82A26"/>
+              <stop offset="100%" stop-color="#7B1A19"/>
+            </linearGradient>
+            <linearGradient id="chestWoodC" gradientUnits="userSpaceOnUse" x1="0" y1="-56" x2="0" y2="10">
+              <stop offset="0%" stop-color="#3E8A80"/><stop offset="55%" stop-color="#276460"/>
+              <stop offset="100%" stop-color="#143835"/>
+            </linearGradient>
+            <linearGradient id="lootBeam" gradientUnits="userSpaceOnUse" x1="0" y1="-190" x2="0" y2="-30">
+              <stop offset="0%" stop-color="#FFF6C8" stop-opacity="0"/>
+              <stop offset="60%" stop-color="#FFE9A0" stop-opacity=".55"/>
+              <stop offset="100%" stop-color="#FFF3B4" stop-opacity=".85"/>
+            </linearGradient>
+            <linearGradient id="kidShirt" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFFFFF" stop-opacity=".35"/>
+              <stop offset="100%" stop-color="#000000" stop-opacity=".14"/>
+            </linearGradient>
+            <linearGradient id="fortBody" gradientUnits="userSpaceOnUse" x1="880" y1="150" x2="1014" y2="360">
+              <stop offset="0%" stop-color="#FBF7EE"/><stop offset="55%" stop-color="#F1EADA"/>
+              <stop offset="100%" stop-color="#E2D9C5"/>
+            </linearGradient>
+            <linearGradient id="fortTop" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="200">
+              <stop offset="0%" stop-color="#FFFDF7"/><stop offset="100%" stop-color="#EFE7D6"/>
+            </linearGradient>
+            <linearGradient id="fortDome" gradientUnits="userSpaceOnUse" x1="900" y1="110" x2="1000" y2="190">
+              <stop offset="0%" stop-color="#FFFEFA"/><stop offset="45%" stop-color="#F7F1E3"/>
+              <stop offset="100%" stop-color="#E4DBC6"/>
+            </linearGradient>
+            <pattern id="inlayBorder" width="14" height="10" patternUnits="userSpaceOnUse">
+              <rect width="14" height="10" fill="#F7F2E6"/>
+              <path d="M7 1.5l4 3.5l-4 3.5l-4 -3.5Z" fill="#C9A22E" opacity=".85"/>
+              <path d="M0 5h3M11 5h3" stroke="#C9A22E" stroke-width="1.2" opacity=".6"/>
+            </pattern>
+            <linearGradient id="marbleG" gradientUnits="userSpaceOnUse" x1="0" y1="336" x2="0" y2="640">
+              <stop offset="0%" stop-color="#F3EEE2"/><stop offset="45%" stop-color="#E9E1D0"/>
+              <stop offset="100%" stop-color="#DFD5C0"/>
+            </linearGradient>
+            <pattern id="marbleTex" width="70" height="54" patternUnits="userSpaceOnUse">
+              <path d="M6 14q16 -8 30 2q12 8 26 -2" fill="none" stroke="#CFC5B0" stroke-width="1.2" opacity=".5"/>
+              <path d="M20 40q14 -7 26 1" fill="none" stroke="#D6CCB8" stroke-width="1" opacity=".45"/>
+              <circle cx="58" cy="30" r="1.6" fill="#CFC5B0" opacity=".4"/>
+            </pattern>
+            <linearGradient id="carpetG" gradientUnits="userSpaceOnUse" x1="0" y1="360" x2="0" y2="470">
+              <stop offset="0%" stop-color="#A81F27"/><stop offset="55%" stop-color="#94171F"/>
+              <stop offset="100%" stop-color="#7E121A"/>
+            </linearGradient>
+            <pattern id="carpetTex" width="26" height="22" patternUnits="userSpaceOnUse">
+              <path d="M0 11h26" stroke="#FFFFFF" stroke-width=".8" opacity=".07"/>
+              <path d="M13 0v22" stroke="#000000" stroke-width=".8" opacity=".08"/>
+              <circle cx="13" cy="11" r="2.4" fill="#E8B23C" opacity=".22"/>
+            </pattern>
+            <linearGradient id="lawnG" gradientUnits="userSpaceOnUse" x1="0" y1="352" x2="0" y2="620">
+              <stop offset="0%" stop-color="#83C25C"/><stop offset="55%" stop-color="#6FB04C"/>
+              <stop offset="100%" stop-color="#5E9C3F"/>
+            </linearGradient>
+            <linearGradient id="soilG" gradientUnits="userSpaceOnUse" x1="0" y1="358" x2="0" y2="472">
+              <stop offset="0%" stop-color="#7E5231"/><stop offset="40%" stop-color="#6E4527"/>
+              <stop offset="100%" stop-color="#5B371E"/>
+            </linearGradient>
+            <pattern id="soilTex" width="34" height="26" patternUnits="userSpaceOnUse">
+              <circle cx="5" cy="6" r="1.5" fill="#FFFFFF" opacity=".07"/>
+              <circle cx="19" cy="15" r="1.9" fill="#000000" opacity=".10"/>
+              <circle cx="29" cy="4" r="1.1" fill="#FFFFFF" opacity=".06"/>
+              <ellipse cx="11" cy="21" rx="2.6" ry="1.3" fill="#000000" opacity=".08"/>
+              <circle cx="25" cy="22" r="1.2" fill="#FFFFFF" opacity=".05"/>
+            </pattern>
+            <pattern id="fenceP" width="30" height="36" patternUnits="userSpaceOnUse">
+              <path d="M6 34V12l9-11l9 11v22Z" fill="#F3E0BE" stroke="#C79A66" stroke-width="1.6"/>
+              <path d="M15 44V30" stroke="#C79A66" stroke-width="1.4" opacity=".5"/>
+            </pattern>
+            <pattern id="tuftP" width="62" height="40" patternUnits="userSpaceOnUse">
+              <g fill="#3F7F2C" opacity=".55">
+                <path d="M8 36q-3-11 1-18q4 9 2 18Z"/>
+                <path d="M16 36q-1-9 3-14q2 7 1 14Z"/>
+                <path d="M24 36q-2-7 1-12q3 6 1 12Z"/>
+              </g>
+              <g fill="#FFFFFF" opacity=".85">
+                <circle cx="44" cy="26" r="2.6"/><circle cx="44" cy="26" r="1.1" fill="#FFD54A"/>
+              </g>
+              <g fill="#FFE1F0" opacity=".9">
+                <circle cx="55" cy="33" r="2.2"/><circle cx="55" cy="33" r=".9" fill="#FFC93C"/>
+              </g>
+            </pattern>
+            <linearGradient id="roadG" gradientUnits="userSpaceOnUse" x1="0" y1="358" x2="0" y2="470">
+              <stop offset="0%" stop-color="#EDE7F1"/><stop offset="100%" stop-color="#F7F3F9"/>
+            </linearGradient>
+            <linearGradient id="asphaltG" gradientUnits="userSpaceOnUse" x1="0" y1="362" x2="0" y2="456">
+              <stop offset="0%" stop-color="#615B6D"/><stop offset="55%" stop-color="#4C4757"/>
+              <stop offset="100%" stop-color="#3B3743"/>
+            </linearGradient>
+            <radialGradient id="cloudG" cx="36%" cy="32%" r="75%">
+              <stop offset="0%" stop-color="#FFFFFF"/><stop offset="75%" stop-color="#F0F6FC"/>
+              <stop offset="100%" stop-color="#D6E4F0"/>
+            </radialGradient>
+            <linearGradient id="brickFace" x1="0" y1="0" x2="1" y2="1">
+              <stop stop-color="#C4786A"/><stop offset="1" stop-color="#9C5A50"/>
+            </linearGradient>
+            <linearGradient id="boardG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFFFFF"/><stop offset="70%" stop-color="#FBF7FD"/>
+              <stop offset="100%" stop-color="#EADFF1"/>
+            </linearGradient>
+            <radialGradient id="ballG" cx="34%" cy="28%" r="78%">
+              <stop offset="0%" stop-color="#FFC071"/><stop offset="45%" stop-color="#F58A22"/>
+              <stop offset="100%" stop-color="#C25E0C"/>
+            </radialGradient>
+            <pattern id="asphaltTex" width="26" height="22" patternUnits="userSpaceOnUse">
+              <circle cx="4" cy="5" r="1" fill="#FFFFFF" opacity=".07"/>
+              <circle cx="15" cy="13" r="1.2" fill="#FFFFFF" opacity=".05"/>
+              <circle cx="22" cy="3" r=".9" fill="#000000" opacity=".09"/>
+              <circle cx="9" cy="18" r="1" fill="#000000" opacity=".07"/>
+            </pattern>
+            <pattern id="bricks" width="64" height="44" patternUnits="userSpaceOnUse">
+              <rect width="64" height="44" fill="url(#brickFace)"/>
+              <path d="M0 0H64M0 22H64M0 44H64M32 0V22M0 22V44M64 22V44" stroke="#E3B7A4" stroke-width="3"/>
+              <path d="M3 5H28M37 5H61M4 27H57" stroke="#FFE7D2" stroke-width="1.4" opacity=".22"/>
+            </pattern>
+            <pattern id="stoneFoot" width="30" height="20" patternUnits="userSpaceOnUse">
+              <path d="M1 18.5Q0 6 14 5Q28 4 29 15Q29 19 16 19.5Q3 20 1 18.5Z" fill="#B9B2A6" stroke="#8E8579" stroke-width="1.6"/>
+              <path d="M6 12q6 -4 14 -1" fill="none" stroke="#FFFFFF" stroke-width="1.4" opacity=".5"/>
+              <path d="M-14 38.5Q-15 26 -1 25Q13 24 14 35Q14 39 1 39.5Q-12 40 -14 38.5Z" fill="#ABA396" stroke="#8E8579" stroke-width="1.6"/>
+            </pattern>
+            <pattern id="wallStripes" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+              <rect width="16" height="16" fill="#EFC63C"/><rect width="8" height="16" fill="#4C3E55"/>
+            </pattern>
+            <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#5BA4F5"/><stop offset="60%" stop-color="#2D6FC9"/>
+              <stop offset="100%" stop-color="#1A4A96"/>
+            </linearGradient>
+            <radialGradient id="carGlass" cx="38%" cy="30%" r="80%">
+              <stop offset="0%" stop-color="#D3ECFF"/><stop offset="60%" stop-color="#8BC0EE"/>
+              <stop offset="100%" stop-color="#4E86BD"/>
+            </radialGradient>
+            <radialGradient id="hubG" cx="36%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#FFFFFF"/><stop offset="75%" stop-color="#F0F6FC"/>
+              <stop offset="100%" stop-color="#D6E4F0"/>
+            </radialGradient>
+            <linearGradient id="sensorMetal" x1="0" y1="0" x2="0" y2="1">
+              <stop stop-color="#FCFEFF"/><stop offset=".4" stop-color="#A9CED9"/><stop offset="1" stop-color="#658EA0"/>
+            </linearGradient>
+            <linearGradient id="sensorBlue" x1="0" y1="0" x2="1" y2="1">
+              <stop stop-color="#307DA6"/><stop offset="1" stop-color="#14526E"/>
+            </linearGradient>
+            <filter id="softSh" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="1.4"/>
+              <feOffset dx="0" dy="1.5" result="off"/>
+              <feComponentTransfer><feFuncA type="linear" slope="0.32"/></feComponentTransfer>
+              <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <clipPath id="scanClip"><rect id="scanClipRect" x="340" y="258" width="540" height="88"/></clipPath>
+          </defs>
+
+          <g id="world">
+            <!-- ================= LANDSCAPE ================= -->
+            <g id="landscape">
+              <rect id="skyRect" x="-320" y="-260" width="1640" height="622" fill="url(#skyG)"/>
+              <!-- the far range, paling into the distance -->
+              <path d="M-320 330V248Q-170 212 -30 244Q110 208 270 240Q420 206 580 238Q730 210 890 238Q1060 206 1320 242V330Z" fill="url(#hillFar)"/>
+              <!-- a walled town on the far ridge: domes, minarets and battlements -->
+              <g id="farTown">
+                <g fill="#E6DCC4">
+                  <rect x="58" y="278" width="306" height="44"/>
+                  <g>
+                    <rect x="62" y="270" width="11" height="9"/><rect x="86" y="270" width="11" height="9"/><rect x="110" y="270" width="11" height="9"/>
+                    <rect x="134" y="270" width="11" height="9"/><rect x="158" y="270" width="11" height="9"/><rect x="182" y="270" width="11" height="9"/>
+                    <rect x="206" y="270" width="11" height="9"/><rect x="230" y="270" width="11" height="9"/><rect x="254" y="270" width="11" height="9"/>
+                    <rect x="278" y="270" width="11" height="9"/><rect x="302" y="270" width="11" height="9"/><rect x="326" y="270" width="11" height="9"/>
+                  </g>
+                </g>
+                <g fill="#EFE6D0" stroke="#D3C7AB" stroke-width="1.3">
+                  <path d="M132 278q0 -26 24 -26t24 26Z"/>
+                  <path d="M198 278q0 -36 32 -36t32 36Z"/>
+                  <path d="M276 278q0 -21 20 -21t20 21Z"/>
+                </g>
+                <g stroke="#C9A44C" stroke-width="2" stroke-linecap="round">
+                  <path d="M156 252v-9"/><path d="M230 242v-10"/><path d="M296 257v-7"/>
+                </g>
+                <g fill="#E8B23C">
+                  <circle cx="156" cy="240" r="3"/><circle cx="230" cy="229" r="3.6"/><circle cx="296" cy="247" r="2.6"/>
+                </g>
+                <g fill="#EFE6D0" stroke="#D3C7AB" stroke-width="1.2">
+                  <rect x="96" y="228" width="12" height="94" rx="3"/>
+                  <path d="M94 228q0 -11 8 -11t8 11Z"/>
+                  <rect x="342" y="246" width="10" height="76" rx="3"/>
+                  <path d="M340 246q0 -9 7 -9t7 9Z"/>
+                </g>
+                <g stroke="#C9A44C" stroke-width="1.6" stroke-linecap="round">
+                  <path d="M102 217v-8"/><path d="M347 237v-7"/>
+                </g>
+                <!-- a few roofs among the domes -->
+                <g fill="#DCD1B6">
+                  <path d="M168 278q22 -12 44 0Z"/><path d="M258 278q18 -10 36 0Z"/>
+                </g>
+              </g>
+              <rect x="-320" y="180" width="1640" height="150" fill="url(#hazeG)" pointer-events="none"/>
+              <!-- hills -->
+              <path d="M-320 330V286Q90 238 210 282Q330 236 452 280Q560 244 690 284Q820 246 1320 288V330Z" fill="url(#hillA)"/>
+              <path d="M-320 336V306Q120 268 268 304Q420 272 570 306Q740 274 1320 308V336Z" fill="url(#hillB)"/>
+              <!-- birds -->
+              <g transform="translate(770,150)"><g class="db1"><g class="birdB">
+                <path d="M0 0q6-5 11 0" fill="none" stroke="#5B6B7C" stroke-width="2.4" stroke-linecap="round"/>
+                <path class="wingB" d="M0 0q7-9 14-2" fill="none" stroke="#5B6B7C" stroke-width="2.4" stroke-linecap="round"/>
+              </g></g></g>
+              <g transform="translate(268,178)"><g class="db3"><g class="birdB">
+                <path d="M0 0q5-4 9 0" fill="none" stroke="#72808F" stroke-width="2" stroke-linecap="round"/>
+                <path class="wingB" d="M0 0q6-7 11-2" fill="none" stroke="#72808F" stroke-width="2" stroke-linecap="round"/>
+              </g></g></g>
+              <g transform="translate(880,112)"><g class="db2"><g class="birdB">
+                <path d="M0 0q5-4 9 0" fill="none" stroke="#66768A" stroke-width="2" stroke-linecap="round"/>
+                <path class="wingB" d="M0 0q6-8 12-2" fill="none" stroke="#66768A" stroke-width="2" stroke-linecap="round"/>
+              </g></g></g>
+              <!-- clouds -->
+              <g transform="translate(392,116)"><g class="dc1" opacity=".92">
+                <ellipse cx="34" cy="58" rx="22" ry="18" fill="#C8D6E4" opacity=".5"/>
+                <ellipse cx="58" cy="48" rx="28" ry="24" fill="url(#cloudG)"/>
+                <ellipse cx="78" cy="56" rx="20" ry="16" fill="url(#cloudG)"/>
+                <ellipse cx="48" cy="66" rx="18" ry="10" fill="#C8D6E4" opacity=".45"/>
+                <ellipse cx="42" cy="38" rx="10" ry="7" fill="#fff" opacity=".75"/>
+                <ellipse cx="62" cy="36" rx="12" ry="8" fill="#fff" opacity=".65"/>
+              </g></g>
+              <g transform="translate(560,58)"><g class="dc2" opacity=".8">
+                <ellipse cx="30" cy="52" rx="20" ry="15" fill="#C8D6E4" opacity=".45"/>
+                <ellipse cx="52" cy="44" rx="24" ry="20" fill="url(#cloudG)"/>
+                <ellipse cx="70" cy="50" rx="17" ry="13" fill="url(#cloudG)"/>
+                <ellipse cx="38" cy="36" rx="9" ry="6" fill="#fff" opacity=".7"/>
+              </g></g>
+              <g transform="translate(760,168)"><g class="dc3" opacity=".72">
+                <ellipse cx="24" cy="42" rx="16" ry="13" fill="#C8D6E4" opacity=".45"/>
+                <ellipse cx="42" cy="36" rx="20" ry="17" fill="url(#cloudG)"/>
+                <ellipse cx="57" cy="41" rx="14" ry="11" fill="url(#cloudG)"/>
+              </g></g>
+              <g transform="translate(196,74)"><g class="dc2" opacity=".7">
+                <ellipse cx="26" cy="40" rx="17" ry="13" fill="#C8D6E4" opacity=".4"/>
+                <ellipse cx="44" cy="34" rx="21" ry="17" fill="url(#cloudG)"/>
+                <ellipse cx="60" cy="39" rx="14" ry="11" fill="url(#cloudG)"/>
+              </g></g>
+              <!-- grass band -->
+              <path d="M-320 336Q120 316 260 332Q420 314 580 332Q740 316 1320 334V372H-320Z" fill="url(#grassG)"/>
+              <path d="M-320 346Q140 330 300 344Q470 330 640 344Q810 332 1320 346V374H-320Z" fill="#4F8732" opacity=".45"/>
+              <!-- trees standing on the near ridge -->
+              <g id="farTrees">
+                <g transform="translate(372,330) scale(.62)" opacity=".95">
+                  <path d="M0 0q-2 -14 1 -26" fill="none" stroke="#6B5236" stroke-width="3.4" stroke-linecap="round"/>
+                  <g stroke="#3F8A66" stroke-width="4.2" stroke-linecap="round" fill="none">
+                    <path d="M1 -26q-15 -9 -22 -21"/><path d="M1 -26q15 -9 22 -21"/><path d="M1 -26q-5 -14 -3 -25"/><path d="M1 -26q7 -13 5 -24"/>
+                  </g>
+                  <g fill="#4E9E76">
+                    <path d="M-21 -47q-8 4 -5 11q8 -1 9 -9Z"/><path d="M23 -47q8 4 5 11q-8 -1 -9 -9Z"/>
+                    <path d="M-3 -51q-6 6 -1 11q6 -2 5 -10Z"/>
+                  </g>
+                </g>
+                <g transform="translate(452,332) scale(.5)" opacity=".92">
+                  <path d="M0 0q-2 -12 1 -22" fill="none" stroke="#6B5236" stroke-width="3.6" stroke-linecap="round"/>
+                  <g stroke="#3F8A66" stroke-width="4.6" stroke-linecap="round" fill="none">
+                    <path d="M1 -22q-13 -8 -19 -18"/><path d="M1 -22q13 -8 19 -18"/><path d="M1 -22q-4 -12 -2 -21"/>
+                  </g>
+                  <g fill="#4E9E76">
+                    <path d="M-18 -40q-7 3 -4 10q7 -1 8 -8Z"/><path d="M20 -40q7 3 4 10q-7 -1 -8 -8Z"/>
+                  </g>
+                </g>
+                <g transform="translate(556,334) scale(.72)" opacity=".9">
+                  <path d="M-6 0q0 -18 6 -26q6 8 6 26Z" fill="#35785A"/>
+                  <path d="M-9 0q0 -20 9 -30q9 10 9 30Z" fill="#3F8A66" opacity=".8"/>
+                  <path d="M0 -26v-14" stroke="#35785A" stroke-width="2.6" stroke-linecap="round"/>
+                </g>
+                <g transform="translate(628,336) scale(.55)" opacity=".9">
+                  <path d="M-6 0q0 -16 6 -23q6 7 6 23Z" fill="#35785A"/>
+                  <path d="M-9 0q0 -18 9 -27q9 9 9 27Z" fill="#3F8A66" opacity=".8"/>
+                  <path d="M0 -23v-12" stroke="#35785A" stroke-width="2.6" stroke-linecap="round"/>
+                </g>
+                <g transform="translate(700,340) scale(.5)" opacity=".85">
+                  <path d="M-6 0q0 -14 6 -20q6 6 6 20Z" fill="#35785A"/>
+                  <path d="M0 -20v-10" stroke="#35785A" stroke-width="2.4" stroke-linecap="round"/>
+                </g>
+              </g>
+              <!-- ground -->
+              <path d="M-320 358H1320V820H-320Z" fill="url(#lawnG)"/>
+            </g>
+
+            <!-- ================= PALACE COURTYARD ================= -->
+            <g id="courtyard">
+              <!-- marble floor -->
+              <path d="M-320 336H1320V820H-320Z" fill="url(#marbleG)"/>
+              <rect x="-320" y="344" width="1640" height="476" fill="url(#marbleTex)" opacity=".55"/>
+              <!-- perspective joint lines -->
+              <g stroke="#C9BFAE" stroke-width="1.6" opacity=".5">
+                <path d="M-320 380H1320"/><path d="M-320 418H1320"/><path d="M-320 468H1320"/>
+                <path d="M-320 530H1320"/><path d="M-320 606H1320"/><path d="M-320 700H1320"/>
+              </g>
+              <g stroke="#D6CCBC" stroke-width="1.2" opacity=".38">
+                <path d="M40 344V820"/><path d="M220 344V820"/><path d="M400 344V820"/>
+                <path d="M580 344V820"/><path d="M760 344V820"/><path d="M940 344V820"/>
+                <path d="M1120 344V820"/>
+              </g>
+              <!-- inlay medallions on the marble -->
+              <g opacity=".5">
+                <g transform="translate(150,470)">
+                  <circle r="26" fill="none" stroke="#BFAF98" stroke-width="2"/>
+                  <circle r="17" fill="none" stroke="#CDBFA6" stroke-width="1.6"/>
+                  <path d="M0 -17L6 0L0 17L-6 0Z" fill="#C7B69C"/>
+                </g>
+                <g transform="translate(1130,486)">
+                  <circle r="22" fill="none" stroke="#BFAF98" stroke-width="2"/>
+                  <path d="M0 -22L5.6 0L0 22L-5.6 0Z" fill="#C7B69C"/>
+                </g>
+              </g>
+              <!-- the red carpet: gold trim, deep red field, woven medallions -->
+              <path d="M96 360L1000 360L1040 470L64 470Z" fill="url(#carpetG)"/>
+              <path d="M96 360L1000 360L1040 470L64 470Z" fill="url(#carpetTex)" opacity=".5"/>
+              <path d="M96 360L1000 360L1040 470L64 470Z" fill="none" stroke="#E8B23C" stroke-width="6"/>
+              <path d="M106 366L992 366L1028 464L76 464Z" fill="none" stroke="#8E1B22" stroke-width="3" opacity=".8"/>
+              <path d="M116 372L984 372L1016 458L88 458Z" fill="none" stroke="#E8B23C" stroke-width="2" opacity=".55"/>
+              <g fill="#E8B23C" opacity=".5">
+                <path d="M300 392L316 416L300 440L284 416Z"/>
+                <path d="M440 391L456 415L440 439L424 415Z"/>
+                <path d="M580 390L596 414L580 438L564 414Z"/>
+                <path d="M720 389L736 413L720 437L704 413Z"/>
+                <path d="M860 388L876 412L860 436L844 412Z"/>
+              </g>
+              <g fill="#E8B23C" opacity=".28">
+                <path d="M370 400L380 414L370 428L360 414Z"/>
+                <path d="M510 399L520 413L510 427L500 413Z"/>
+                <path d="M650 398L660 412L650 426L640 412Z"/>
+                <path d="M790 397L800 411L790 425L780 411Z"/>
+              </g>
+              <!-- fringe at the near end, and the fort steps beyond the far end -->
+              <g stroke="#E8B23C" stroke-width="3" stroke-linecap="round">
+                <path d="M70 470v14"/><path d="M96 470v14"/><path d="M122 470v14"/><path d="M148 470v14"/>
+                <path d="M174 470v14"/><path d="M200 470v14"/><path d="M226 470v14"/><path d="M252 470v14"/>
+              </g>
+              <g fill="#EFE7D8" stroke="#CBBFA8" stroke-width="1.8" opacity=".9">
+                <rect x="900" y="360" width="120" height="9" rx="3"/>
+                <rect x="908" y="369" width="112" height="9" rx="3"/>
+              </g>
+              <!-- low marble balustrade along the back of the courtyard -->
+              <g opacity=".95">
+                <rect x="-320" y="330" width="1640" height="12" fill="#EFE7D8" stroke="#CBBFA8" stroke-width="1.6"/>
+                <g fill="#E4DAC6" stroke="#CBBFA8" stroke-width="1.4">
+                  <rect x="-308" y="342" width="12" height="16" rx="4"/><rect x="-276" y="342" width="12" height="16" rx="4"/>
+                  <rect x="-244" y="342" width="12" height="16" rx="4"/><rect x="-212" y="342" width="12" height="16" rx="4"/>
+                  <rect x="-180" y="342" width="12" height="16" rx="4"/><rect x="-148" y="342" width="12" height="16" rx="4"/>
+                  <rect x="-116" y="342" width="12" height="16" rx="4"/><rect x="-84" y="342" width="12" height="16" rx="4"/>
+                  <rect x="-52" y="342" width="12" height="16" rx="4"/><rect x="-20" y="342" width="12" height="16" rx="4"/>
+                  <rect x="12" y="342" width="12" height="16" rx="4"/><rect x="44" y="342" width="12" height="16" rx="4"/>
+                  <rect x="76" y="342" width="12" height="16" rx="4"/><rect x="108" y="342" width="12" height="16" rx="4"/>
+                  <rect x="140" y="342" width="12" height="16" rx="4"/><rect x="172" y="342" width="12" height="16" rx="4"/>
+                  <rect x="204" y="342" width="12" height="16" rx="4"/><rect x="236" y="342" width="12" height="16" rx="4"/>
+                  <rect x="268" y="342" width="12" height="16" rx="4"/><rect x="300" y="342" width="12" height="16" rx="4"/>
+                  <rect x="332" y="342" width="12" height="16" rx="4"/><rect x="364" y="342" width="12" height="16" rx="4"/>
+                  <rect x="396" y="342" width="12" height="16" rx="4"/><rect x="428" y="342" width="12" height="16" rx="4"/>
+                  <rect x="460" y="342" width="12" height="16" rx="4"/><rect x="492" y="342" width="12" height="16" rx="4"/>
+                  <rect x="524" y="342" width="12" height="16" rx="4"/><rect x="556" y="342" width="12" height="16" rx="4"/>
+                  <rect x="588" y="342" width="12" height="16" rx="4"/><rect x="620" y="342" width="12" height="16" rx="4"/>
+                  <rect x="652" y="342" width="12" height="16" rx="4"/><rect x="684" y="342" width="12" height="16" rx="4"/>
+                  <rect x="716" y="342" width="12" height="16" rx="4"/><rect x="748" y="342" width="12" height="16" rx="4"/>
+                  <rect x="780" y="342" width="12" height="16" rx="4"/>
+                </g>
+              </g>
+              <!-- potted palms flanking the carpet's near end -->
+              <g transform="translate(24,412)">
+                <ellipse cx="0" cy="26" rx="30" ry="7" fill="#3A2418" opacity=".18"/>
+                <path d="M-22 20h44l-4 -26h-36Z" fill="#D8CDB6" stroke="#B6A98E" stroke-width="2"/>
+                <rect x="-24" y="-10" width="48" height="9" rx="3.4" fill="#E7DFC9" stroke="#B6A98E" stroke-width="1.8"/>
+                <g stroke="#3F8A4A" stroke-width="6" stroke-linecap="round" fill="none">
+                  <path d="M0 -12q-24 -18 -34 -40"/><path d="M0 -12q24 -18 34 -40"/>
+                  <path d="M0 -12q-8 -26 -4 -50"/><path d="M0 -12q10 -24 6 -46"/>
+                </g>
+                <g fill="#4E9E58">
+                  <path d="M-34 -52q-10 6 -6 16q10 -2 12 -12Z"/><path d="M34 -52q10 6 6 16q-10 -2 -12 -12Z"/>
+                  <path d="M-4 -62q-8 8 -2 16q9 -3 8 -14Z"/><path d="M6 -58q8 8 2 16q-9 -3 -8 -14Z"/>
+                </g>
+              </g>
+              <g transform="translate(978,486) scale(1.16)">
+                <ellipse cx="0" cy="24" rx="28" ry="6" fill="#3A2418" opacity=".16"/>
+                <path d="M-20 18h40l-4 -24h-32Z" fill="#D8CDB6" stroke="#B6A98E" stroke-width="2"/>
+                <rect x="-22" y="-9" width="44" height="8" rx="3" fill="#E7DFC9" stroke="#B6A98E" stroke-width="1.8"/>
+                <g stroke="#3F8A4A" stroke-width="5.6" stroke-linecap="round" fill="none">
+                  <path d="M0 -10q-20 -16 -28 -34"/><path d="M0 -10q20 -16 28 -34"/><path d="M0 -10q-6 -22 -2 -42"/>
+                </g>
+                <g fill="#4E9E58">
+                  <path d="M-28 -44q-9 5 -5 14q9 -2 11 -11Z"/><path d="M28 -44q9 5 5 14q-9 -2 -11 -11Z"/>
+                  <path d="M-2 -52q-7 7 -2 14q8 -3 7 -12Z"/>
+                </g>
+              </g>
+            </g>
+
+            <g id="ambientFX"></g>
+
+            <!-- ================= THE FORT ================= -->
+            <g id="fort" aria-label="Fort">
+              <!-- the monument's shadow on the marble -->
+              <ellipse cx="946" cy="357" rx="128" ry="9" fill="#8C7F6A" opacity=".26"/>
+              <!-- the two-level plinth: its left face is the face the distance is measured to -->
+              <rect x="880" y="336" width="132" height="24" rx="3" fill="url(#fortTop)" stroke="#CBBFA8" stroke-width="1.8"/>
+              <rect x="880" y="330" width="132" height="7" rx="2" fill="#FFFFFF" opacity=".55"/>
+              <rect x="886" y="326" width="120" height="11" rx="3" fill="url(#fortTop)" stroke="#CBBFA8" stroke-width="1.5"/>
+              <!-- left minaret -->
+              <g>
+                <rect x="880" y="168" width="13" height="162" rx="4" fill="url(#fortBody)" stroke="#CBBFA8" stroke-width="1.6"/>
+                <rect x="876" y="206" width="21" height="6" rx="2.6" fill="#F3EEE2" stroke="#CBBFA8" stroke-width="1.2"/>
+                <rect x="876" y="262" width="21" height="6" rx="2.6" fill="#F3EEE2" stroke="#CBBFA8" stroke-width="1.2"/>
+                <path d="M880 168q6.5 -13 13 0Z" fill="url(#fortTop)" stroke="#CBBFA8" stroke-width="1.3"/>
+                <path d="M886.5 156v12" stroke="#E8B23C" stroke-width="2"/>
+                <circle cx="886.5" cy="152.5" r="4" fill="#E8B23C"/>
+              </g>
+              <!-- the minaret that continues past the frame -->
+              <g>
+                <rect x="1000" y="168" width="13" height="162" rx="4" fill="url(#fortBody)" stroke="#CBBFA8" stroke-width="1.6"/>
+                <rect x="996" y="206" width="21" height="6" rx="2.6" fill="#F3EEE2" stroke="#CBBFA8" stroke-width="1.2"/>
+                <rect x="996" y="262" width="21" height="6" rx="2.6" fill="#F3EEE2" stroke="#CBBFA8" stroke-width="1.2"/>
+                <path d="M1000 168q6.5 -13 13 0Z" fill="url(#fortTop)" stroke="#CBBFA8" stroke-width="1.3"/>
+                <path d="M1006.5 156v12" stroke="#E8B23C" stroke-width="2"/>
+                <circle cx="1006.5" cy="152.5" r="4" fill="#E8B23C"/>
+              </g>
+              <!-- the main block -->
+              <rect x="892" y="186" width="118" height="140" rx="3" fill="url(#fortBody)" stroke="#CBBFA8" stroke-width="1.8"/>
+              <rect x="886" y="176" width="130" height="11" rx="3" fill="url(#fortTop)" stroke="#CBBFA8" stroke-width="1.4"/>
+              <rect x="892" y="182" width="118" height="5" fill="#FFFFFF" opacity=".45"/>
+              <!-- marble inlay band and its row of lotus buds -->
+              <rect x="896" y="196" width="110" height="9" fill="url(#inlayBorder)"/>
+              <g fill="#E8B23C" opacity=".5">
+                <path d="M902 201l3.4 -6l3.4 6Z"/><path d="M920 201l3.4 -6l3.4 6Z"/><path d="M938 201l3.4 -6l3.4 6Z"/>
+                <path d="M956 201l3.4 -6l3.4 6Z"/><path d="M974 201l3.4 -6l3.4 6Z"/><path d="M992 201l3.4 -6l3.4 6Z"/>
+              </g>
+              <!-- the great arch and its recessed iwan -->
+              <path d="M916 326V284q0 -18 30 -18t30 18v42Z" fill="#EFE9DC" stroke="#CBBFA8" stroke-width="1.8"/>
+              <path d="M925 326V286q0 -12 21 -12t21 12v40Z" fill="#D9CFB8"/>
+              <path d="M933 326V290q0 -7 13 -7t13 7v36Z" fill="#B9AB90"/>
+              <path d="M946 326V283" stroke="#8E8270" stroke-width="1.2" opacity=".45"/>
+              <rect x="922" y="322" width="48" height="4" fill="#CBBFA8" opacity=".55"/>
+              <!-- the drum, the great onion dome and its finial -->
+              <rect x="918" y="166" width="56" height="12" rx="3" fill="url(#fortTop)" stroke="#CBBFA8" stroke-width="1.3"/>
+              <path d="M946 112q-40 4 -46 40q-2 12 0 18q26 10 46 10t46 -10q2 -6 0 -18q-6 -36 -46 -40Z"
+                    fill="url(#fortDome)" stroke="#CBBFA8" stroke-width="1.8"/>
+              <path d="M946 112q-40 4 -46 40q-2 12 0 18q20 7 36 9Z" fill="#FFFFFF" opacity=".2"/>
+              <path d="M946 112q-6 -9 0 -16q6 7 0 16Z" fill="#E8B23C"/>
+              <path d="M946 96v-12" stroke="#E8B23C" stroke-width="2.6"/>
+              <circle cx="946" cy="80" r="4.4" fill="#E8B23C" stroke="#C08F1E" stroke-width="1.2"/>
+              <path d="M944.6 75v-6" stroke="#E8B23C" stroke-width="1.8"/>
+              <!-- two chhatris beside the great dome -->
+              <g>
+                <rect x="900" y="162" width="16" height="15" rx="3" fill="url(#fortBody)" stroke="#CBBFA8" stroke-width="1.2"/>
+                <path d="M898 162q10 -16 20 0Z" fill="url(#fortTop)" stroke="#CBBFA8" stroke-width="1.2"/>
+                <path d="M908 148v14" stroke="#E8B23C" stroke-width="1.4"/>
+                <circle cx="908" cy="146" r="2.2" fill="#E8B23C"/>
+              </g>
+              <g>
+                <rect x="976" y="162" width="16" height="15" rx="3" fill="url(#fortBody)" stroke="#CBBFA8" stroke-width="1.2"/>
+                <path d="M974 162q10 -16 20 0Z" fill="url(#fortTop)" stroke="#CBBFA8" stroke-width="1.2"/>
+                <path d="M984 148v14" stroke="#E8B23C" stroke-width="1.4"/>
+                <circle cx="984" cy="146" r="2.2" fill="#E8B23C"/>
+              </g>
+              <text id="wallLabel" x="946" y="62" text-anchor="middle" font-size="13" letter-spacing="2" font-weight="600" fill="#8A7A62">FORT</text>
+            </g>
+
+            <!-- the standing mark: where the person must stand, right on the treasure -->
+
+            <!-- ================= THE HIDDEN TREASURE ================= -->
+            <g id="treasure" aria-hidden="true">
+              <!-- the spot: a golden X with a ring of light, exactly where the chest is -->
+              <g id="digSpot" pointer-events="none">
+                <ellipse id="digPool" cy="404" rx="86" ry="22" fill="url(#digGlow)"/>
+                <path id="digRing" fill="none" stroke="#E8B23C" stroke-width="4" stroke-linejoin="round" opacity=".95"
+                      d="M-58 404A58 21 0 1 0 58 404A58 21 0 1 0 -58 404Z"/>
+                <path id="digRingIn" fill="none" stroke="#FFF0BC" stroke-width="2" stroke-linejoin="round" opacity=".8"
+                      d="M-44 404A44 16 0 1 0 44 404A44 16 0 1 0 -44 404Z"/>
+                <g id="digCross" stroke="#E8B23C" stroke-width="7" stroke-linecap="round" opacity=".95">
+                  <path d="M-24 380l48 34"/><path d="M24 380l-48 34"/>
+                </g>
+              </g>
+              <g id="digDust" opacity="0" pointer-events="none">
+                <circle class="dust d1" cx="-52" cy="392" r="6" fill="#D8C39A"/>
+                <circle class="dust d2" cx="48" cy="388" r="5" fill="#CBB48A"/>
+                <circle class="dust d3" cx="-18" cy="380" r="4.4" fill="#E2CFA8"/>
+                <circle class="dust d4" cx="24" cy="378" r="4" fill="#D8C39A"/>
+                <circle class="dust d5" cx="4" cy="386" r="5.4" fill="#CBB48A"/>
+              </g>
+              <path id="digMound" d="M-58 404q29 -21 58 -21t58 21Z" fill="#B99A6A" opacity=".85"
+                    transform="scale(.3,.2)" pointer-events="none"/>
+              <!-- the treasure chest, buried until the person digs it up.
+                   The box itself is drawn by chestArt(), so every hunt digs up
+                   a different chest                                            -->
+              <g id="chestWrap" transform="translate(620,0) scale(1,0.06)" opacity="0">
+                <g id="chestBase" transform="translate(-26,418) scale(1.12)"></g>
+              </g>
+            </g>
+
+            <ellipse id="kidShadow" cx="400" cy="362" rx="44" ry="8" fill="#1E1A24" opacity=".32"/>
+
+            <!-- ================= THE PLAYER ================= -->
+            <g id="kidWorld" role="slider" tabindex="0" aria-label="Distance from the fort"
+               aria-orientation="horizontal" aria-valuemin="2" aria-valuemax="10" aria-valuenow="8">
+              <g id="kidBob">
+                <g id="kidBody"></g>
+              </g>
+              <rect class="kid-hit" x="-42" y="-154" width="84" height="160" rx="10" fill="transparent"/>
+              <rect class="kid-focus" x="-43" y="-155" width="86" height="162" rx="11" fill="none" stroke="none"/>
+            </g>
+
+            <!-- ================= DIMENSION LINE ================= -->
+            <path id="frontGuide" fill="none" stroke="#C5ACD2" stroke-dasharray="3 5" stroke-width="1.5" d="M400 360V442"/>
+            <path id="netGuide" d="M880 300V442" stroke="#C5ACD2" stroke-width="1.5" stroke-dasharray="3 5"/>
+            <line id="distanceLine" x1="400" y1="434" x2="880" y2="434" stroke="#E8A6F5" stroke-width="2.4"/>
+            <path id="frontArrow" fill="none" stroke="#E8A6F5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+                  d="M400 429L409 434L400 439"/>
+            <path id="netArrow" fill="none" stroke="#E8A6F5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+                  d="M889 429L880 434L889 439"/>
+            <g id="measureLabel" transform="translate(578,0)">
+              <rect id="measurePill" x="-58" y="386" width="116" height="32" rx="16" fill="#FFFFFFEA" stroke="#DEC8E8"/>
+              <text id="measureText" x="0" y="408" text-anchor="middle" fill="#83358C" font-size="18" font-weight="600">36 cm</text>
+            </g>
+
+            <g id="celebrationFX"></g>
+          </g>
+        </svg>
+      </div>
+      <div class="verdict v-wait" id="status">
+        <div class="ic" id="vIcon">📡</div>
+        <div class="tx"><b id="vTitle">Ready to hunt?</b><span id="vText">Walk until you stand on the target, then hold still.</span></div>
+        <div class="math"><span id="vNums">8 / 6</span><small>cm</small></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="col rightcol">
+    <div class="card metercard">
+      <div class="lcd">
+        <div class="lcd-val"><span class="dl">Distance&nbsp;:</span><span id="distVal">8</span><small>cm</small></div>
+        <div class="lcd-sub"><span class="lcd-target" id="targetChip">🎯 Target: <b>6 cm</b></span></div>
+      </div>
+    </div>
+    <div class="card ctrl">
+      <h2 class="card-title">Controls</h2>
+      <div class="conn"><span class="dot" id="dot"></span><span id="connLabel">Simulation mode</span></div>
+      <button class="btn btn-pink attn" id="connBtn">🔌 Connect Arduino</button>
+      <div class="btn-row">
+        <button class="btn btn-yellow big pad" id="padFar">◀ Farther</button>
+        <button class="btn btn-yellow big pad" id="padNear">Closer ▶</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="again">🔄 New Target</button>
+        <button class="btn btn-ghost" id="hear">🔊 Hear the task</button>
+      </div>
+      <p class="hint">Hold ◀ ▶ to walk, or drag the person along the carpet.</p>
+    </div>
+  </aside>
+</main>
+
+<div class="final" id="final">
+  <div class="final-box">
+    <div class="trophy" id="fi">🏆</div>
+    <h2 id="fh">Well done!</h2>
+    <div class="tally"><span id="fs">0</span><small id="ftotal"> / 3</small></div>
+    <p id="fmsg"></p>
+    <button class="again" id="restart">Play again ↻</button>
+  </div>
+</div>
+
+<div class="ov" id="ov">
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+    <pattern id="inlayBorderX" width="7" height="4" patternUnits="userSpaceOnUse">
+      <rect width="7" height="4" fill="#F7F2E6"/><path d="M3.5 .6l2 1.4l-2 1.4l-2 -1.4Z" fill="#C9A22E" opacity=".85"/>
+    </pattern>
+  </defs></svg>
+  <div class="ov-box task-in">
+    <div class="ov-icons">
+      <!-- an open treasure chest with gold spilling out -->
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="ovWood" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#B0703A"/><stop offset="100%" stop-color="#7A4517"/>
+          </linearGradient>
+          <linearGradient id="ovGold" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#FFF3B4"/><stop offset="100%" stop-color="#E8B23C"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="50" cy="90" rx="32" ry="5.4" fill="#161016" opacity=".16"/>
+        <g stroke="#E8B23C" stroke-width="2.2" stroke-linecap="round">
+          <path d="M50 48v-16"/><path d="M50 40l-9 -9"/><path d="M50 40l9 -9"/>
+          <path d="M22 52l-7 -12"/><path d="M78 52l7 -12"/>
+        </g>
+        <circle cx="50" cy="30" r="3" fill="#FFE9A0"/>
+        <circle cx="40" cy="30" r="2.4" fill="#FFD34D"/><circle cx="61" cy="29" r="2.6" fill="#FFD34D"/>
+        <circle cx="22" cy="39" r="2.4" fill="#FFF3B4"/><circle cx="79" cy="39" r="2.4" fill="#FFF3B4"/>
+        <path d="M24 60h52v22a5 5 0 0 1-5 5H29a5 5 0 0 1-5 -5Z" fill="url(#ovWood)" stroke="#5A3416" stroke-width="2.4"/>
+        <path d="M24 60h52v7H24Z" fill="#000" opacity=".16"/>
+        <g stroke="#E8B23C" stroke-width="3"><path d="M36 60v27"/><path d="M64 60v27"/></g>
+        <g fill="url(#ovGold)" stroke="#D9A312" stroke-width="1.4">
+          <circle cx="36" cy="50" r="8"/><circle cx="52" cy="44" r="10"/><circle cx="66" cy="52" r="7.4"/>
+          <circle cx="46" cy="58" r="7"/><circle cx="60" cy="59" r="6.4"/>
+        </g>
+        <path d="M24 60q0 -22 26 -22t26 22Z" fill="url(#ovWood)" stroke="#5A3416" stroke-width="2.4"
+              transform="rotate(-96 26 60)"/>
+        <path d="M24 60q0 -22 26 -22t26 22Z" fill="#FFF" opacity=".08" transform="rotate(-96 26 60)"/>
+      </svg>
+
+      <!-- the fort the distance is measured from -->
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="ovMarble" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#FFFDF7"/><stop offset="100%" stop-color="#E4DBC6"/>
+          </linearGradient>
+          <linearGradient id="ovInlay" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F7F2E6"/><stop offset="100%" stop-color="#DCD0B4"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="50" cy="89" rx="34" ry="5.4" fill="#161016" opacity=".14"/>
+        <rect x="22" y="34" width="8" height="48" rx="3" fill="url(#ovMarble)" stroke="#CBBFA8" stroke-width="1.6"/>
+        <rect x="70" y="34" width="8" height="48" rx="3" fill="url(#ovMarble)" stroke="#CBBFA8" stroke-width="1.6"/>
+        <path d="M22 34q4 -9 8 0Z" fill="url(#ovInlay)" stroke="#CBBFA8" stroke-width="1.4"/>
+        <path d="M70 34q4 -9 8 0Z" fill="url(#ovInlay)" stroke="#CBBFA8" stroke-width="1.4"/>
+        <path d="M26 24v10M74 24v10" stroke="#E8B23C" stroke-width="1.8"/>
+        <rect x="36" y="46" width="28" height="36" rx="2" fill="url(#ovMarble)" stroke="#CBBFA8" stroke-width="1.8"/>
+        <rect x="32" y="41" width="36" height="6" rx="2" fill="url(#ovInlay)" stroke="#CBBFA8" stroke-width="1.4"/>
+        <path d="M42 82V64q0 -9 8 -9t8 9v18Z" fill="#EFE9DC" stroke="#CBBFA8" stroke-width="1.6"/>
+        <path d="M45 82V66q0 -5.4 5 -5.4t5 5.4v16Z" fill="#B9AB90"/>
+        <rect x="36" y="46" width="28" height="4" fill="url(#inlayBorderX)"/>
+        <path d="M50 20q-13 1 -15.4 13.6q-.6 4.4 0 7.4q9.4 3.8 15.4 3.8t15.4 -3.8q.6 -3 0 -7.4Q63 21 50 20Z"
+              fill="url(#ovInlay)" stroke="#CBBFA8" stroke-width="1.8"/>
+        <path d="M50 20q-2 -3 0 -5.6q2 2.6 0 5.6Z" fill="#E8B23C"/>
+        <path d="M50 14.4V9" stroke="#E8B23C" stroke-width="2"/>
+        <circle cx="50" cy="7.4" r="2.6" fill="#E8B23C"/>
+        <rect x="20" y="82" width="60" height="6" rx="2" fill="url(#ovInlay)" stroke="#CBBFA8" stroke-width="1.4"/>
+        <rect x="16" y="87" width="68" height="5" rx="2" fill="url(#ovMarble)" stroke="#CBBFA8" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <h2>Distance <b>Detective</b> 5.0</h2>
+    <p id="ovSub">Treasure Hunt</p>
+    <button class="ov-start" id="start">▶ Let's Go</button>
+  </div>
+</div>
+
+<script>
+/* ===================== SMART BLOCK · DISTANCE DETECTIVE 2.0 — PARK THE CAR =====================
+   Three targets, one car, one wall. Roll the car until its ultrasonic sensor
+   reads the target distance and hold it still for 1.5 s to park.
+   Controls: hold Farther / Closer, drag the person, or use the arrow keys.
+   Sensor: HC-SR04 on the car's nose - simulated, or read live over Web Serial. */
+'use strict';
+
+/* ---------- configuration ---------- */
+const TOTAL=3, MIN=2, MAX=10, WALL_X=880, GROUND=360, HOLD_MS=1000;
+const WALL_FACE=880;                         /* the wall — the distance is measured to this face */
+const KID_HALF=44;                           /* half the shooting spot, art units          */
+const KID_H=178;                             /* how tall the player is drawn               */
+const KID_SCALE=1;                           /* the player's designed size                 */
+const RIM_X=756, RIM_Y=210;                  /* the middle of the rim                      */
+const TARGET_POOL=[4,5,6,7,8,9,10];          /* reachable shooting spots in cm (laptops)   */
+const TARGET_POOL_SMALL=[2,3,4,5,6,7,8,9,10];/* …and on screens that fit less than 10 cm   */
+const PX_PER_CM=96/2.54;                     /* CSS px in one real centimetre @100%        */
+const KID_SCALE_MIN=1, KID_MARGIN=22;
+const FAR_MAX=60;                            /* a live reading above this is out of range  */
+const SIM_FAR_MAX=30;                        /* how far the player can be walked by hand   */
+const FAR_SPAN=30;                           /* the reading at which the far view is out   */
+const KID_CROP_MARGIN=48, KID_LINE_MARGIN=22, KID_ROAD_MARGIN=26;
+const FAR_ZOOM_MAX=.45;                      /* how far the whole scene pulls back, max    */
+const KID_SCALE_FAR_MIN=.5;                  /* how small the player looks at that point   */
+/* ppc (viewBox units per cm) and kidScale are recalculated by fitScene() so that the
+   distance drawn on screen is the distance the meter reads — 5 cm really is 5 cm.   */
+let MAXD=MAX;                                /* longest distance this screen can show */
+let walking=false;                                /* the person is on the move        */
+let ppc=12, kidScale=KID_SCALE;
+let sceneK=1;                                 /* css px per viewBox unit, zoom included */
+let sceneKBase=1, viewX0=0, zoom=1;           /* the unzoomed scale + far-view camera   */
+const STIFF=165, DAMP=2*Math.sqrt(165)*.92;  /* spring the car settles on        */
+const TOL=.5;                                /* half a step: the task completes exactly when
+                                                the whole-centimetre reading equals the target
+                                                (a 4.8 cm reading shows 5 and counts as 5)  */
+const MEMO_KEY='smartblock-dd2-parking-targets';
+const SHADOW_DX=153;                         /* car-centre offset used by the shadow */
+
+const $=id=>document.getElementById(id);
+const motion=matchMedia('(prefers-reduced-motion: reduce)');
+
+let targets=[],round=0,score=0,target=25,dist=36,visualDist=36,phase='intro',started=false;
+let dragging=false,dragPointer=null,dragOffset=0,dragClientX=0,dragClientY=0;
+let heldButton=null,repeatTimer=0,keyHeld=false;
+let holdSince=null,holdProgress=0,raf=0,lastFrame=0,epoch=0,celebrationAnimations=[];
+let vDist=0,lastPaintedDist=NaN,pillHalf=58,lastPing=0,gameOffset=0;
+let dragRect={left:0,top:0};
+let hardware=false,connecting=false,disconnecting=false,port=null,serialReader=null,serialToken=0;
+let serBuf='',readings=[],gotData=false,stableSince=0,lastSample=0,sensorValid=false;
+let audio=null,speech=null,lastPaintValue='',resizeFrame=null,lastValuePop=0;
+
+const n={
+  scene:$('scene'),kid:$('kidWorld'),bob:$('kidBob'),body:$('kidBody'),shadow:$('kidShadow'),
+  digPool:$('digPool'),digRing:$('digRing'),digCross:$('digCross'),digDust:$('digDust'),
+  digMound:$('digMound'),chestWrap:$('chestWrap'),chestBase:$('chestBase'),chest:$('chest'),chestLid:$('chestLid'),
+  chestLoot:$('chestLoot'),chestBeam:$('chestBeam'),chestShine:$('chestShine'),treasure:$('treasure'),digSpot:$('digSpot'),
+  chestLidCap:$('chestLidCap'),chestLidInner:$('chestLidInner'),
+  line:$('distanceLine'),guide:$('frontGuide'),
+  arrow:$('frontArrow'),measure:$('measureLabel'),pill:$('measurePill'),measureText:$('measureText'),
+value:$('distVal'),status:$('status'),title:$('vTitle'),text:$('vText'),
+  icon:$('vIcon'),nums:$('vNums'),chip:$('targetChip'),banner:$('banner'),
+  wallLabel:$('wallLabel'),hit:document.querySelector('.kid-hit')
+};
+
+/* ===================== THREE YOUNG TREASURE HUNTERS — a new player every task =============
+   Each one wears traditional dress: an indigo kurta with a turban, a rose lehnga with a
+   dupatta, an emerald sherwani with a topi. The rig is shared, so the walk cycle, the dig
+   and the celebration all work on every model.                                              */
+const KID_STYLES=[
+  {name:'Aarav · indigo kurta', wear:'kurta',
+   skin:'#F4C79B',skinSh:'#E0AF7F',hair:'#3A2A22',hairLo:'#2A1D18',
+   top:'#3B4C9A',top2:'#2A3775',top3:'#E8B23C',pant:'#F6EEDC',pant2:'#DCCFB4',
+   shoe:'#8A5E12',shoeSole:'#5F3F0B',band:'#E8B23C',gear:'turban'},
+  {name:'Meera · rose lehnga', wear:'lehnga',
+   skin:'#C98A5E',skinSh:'#AD7248',hair:'#241B16',hairLo:'#181209',
+   top:'#D6267B',top2:'#F5A8CE',top3:'#FFD34D',pant:'#FBE9F3',pant2:'#E7CCDC',
+   shoe:'#B5641E',shoeSole:'#7E4310',band:'#FFD34D',gear:'headband'},
+  {name:'Kabir · emerald sherwani', wear:'sherwani',
+   skin:'#8A5A38',skinSh:'#6E452A',hair:'#1E1712',hairLo:'#120D09',
+   top:'#1F7A52',top2:'#155C3D',top3:'#F0C34A',pant:'#F7F1E2',pant2:'#DED3BA',
+   shoe:'#7A4A20',shoeSole:'#54300F',band:'#F0C34A',gear:'topi'}
+];
+
+function kidArt(st){
+  const {skin,skinSh,hair,hairLo,top,top2,top3,pant,pant2,shoe,shoeSole,band,gear,wear}=st;
+  /* the sleeve follows the garment: wrist-long for a sherwani, elbow-long for a kurta */
+  const sleeveY=wear==='lehnga'?-69:wear==='kurta'?-58:-53;
+  const sleeveX=+(16.6+5.8*((80.5+sleeveY)/16.5)).toFixed(1);
+  const leg=(mirror)=>{
+    const m=mirror?-1:1, x0=mirror?3.2:-15.2, x1=mirror?-1:-19;
+    return `<g class="kid-leg kid-leg-${mirror?'r':'l'}">
+        <rect x="${x0}" y="-46" width="12.6" height="24" rx="5.6" fill="${mirror?pant2:pant}"/>
+        <path d="M${x0} -22.4h12.6" stroke="#000" stroke-width="1" opacity=".14"/>
+        <rect x="${x0+0.8}" y="-24" width="11" height="17" rx="5.2" fill="${skin}"/>
+        <path d="M${x0+2} -21.6h8.6" stroke="${skinSh}" stroke-width="1" opacity=".45"/>
+        <rect x="${x0+0.3}" y="-9" width="12" height="7" rx="3.4" fill="#F3F6FB"/>
+        <path d="M${x0+0.3} -5.4h12" stroke="#C9D2E2" stroke-width="1"/>
+        <path d="M${x1} -4.4h17.6c2.4 0 3.6 1.5 3.4 3.3c-.2 1.9-1.7 3.1-4 3.1h-14.4c-2 0-3.2-1.2-3.3-3.1Z"
+              fill="${shoe}" stroke="${shoeSole}" stroke-width="1.1"/>
+        <path d="M${x1+0.4} -1.1h17.4" stroke="${shoeSole}" stroke-width="1.6"/>
+        <path d="M${x1+4} -3.6h2.6M${x1+8} -3.6h2.6" stroke="${shoeSole}" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M${x1+13.6} -3.6q3.6 .4 4.6 2.4" fill="none" stroke="${shoeSole}" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M${x1+4.4} -6.2h9.4" stroke="${shoeSole}" stroke-width="1" opacity=".55" stroke-linecap="round"/>
+        ${wear==='lehnga'?`<g fill="${top3}" opacity=".95">
+          <circle cx="${x0+2.6}" cy="-10" r="1"/><circle cx="${x0+6.2}" cy="-9.4" r="1"/><circle cx="${x0+9.6}" cy="-10" r="1"/>
+        </g>
+        <path d="M${x0+0.6} -11.2h11.4" stroke="${top3}" stroke-width="1.1" opacity=".9"/>`:''}
+        <ellipse cx="${mirror?7.8:-10.2}" cy="2" rx="10.4" ry="3.6" fill="${shoe}" stroke="${shoeSole}" stroke-width="1"/>
+        <path d="M${mirror?-1.2:-18.2} 1.3h4M${mirror?5.6:-11.4} 1.3h4" stroke="${shoeSole}" stroke-width="1.1" stroke-linecap="round"/>
+      </g>`;
+  };
+  const gearArt = gear==='turban' ? `
+        <ellipse cx="0" cy="-112.5" rx="17.4" ry="10.4" fill="${band}"/>
+        <path d="M-17.4 -112.5q17.4 -13.4 34.8 0q-2.6 -9.6 -17.4 -9.6t-17.4 9.6Z" fill="#FFFFFF" opacity=".22"/>
+        <path d="M-16.6 -114.2q16.6 6 33.2 0" fill="none" stroke="#000" stroke-width="1" opacity=".16"/>
+        <path d="M-13.4 -119.4q13.4 -8 26.8 0" fill="none" stroke="#FFFFFF" stroke-width="1.2" opacity=".28"/>
+        <circle cx="0" cy="-122" r="2.7" fill="${top3}" stroke="#B98A1E" stroke-width="1"/>
+        <path d="M0 -124.4q2.8 -4.6 0 -7.2q-2.8 2.6 0 7.2Z" fill="${top3}"/>
+        <!-- the tilak and the ear studs -->
+        <path d="M0 -106.2v3.6" stroke="${top3}" stroke-width="1.7" stroke-linecap="round"/>
+        <circle cx="0" cy="-101.2" r="1.3" fill="${top3}"/>
+        <circle cx="-17.8" cy="-100.4" r="1.8" fill="${top3}"/>
+        <circle cx="17.8" cy="-100.4" r="1.8" fill="${top3}"/>` :
+    gear==='topi' ? `
+        <path d="M-15.4 -105.2q0 -18.4 15.4 -18.4t15.4 18.4Z" fill="${band}"/>
+        <path d="M-15.4 -105.2q15.4 -5.4 30.8 0q-15.4 -6.4 -30.8 0Z" fill="#FFFFFF" opacity=".2"/>
+        <rect x="-16.8" y="-106.8" width="33.6" height="6.2" rx="3.1" fill="${top2}"/>
+        <path d="M-16.8 -104.4q16.8 4 33.6 0" fill="none" stroke="${top3}" stroke-width="1.5" opacity=".85"/>
+        <circle cx="0" cy="-124.6" r="3" fill="${top3}" stroke="#B98A1E" stroke-width="1"/>
+        <path d="M0 -121.4v-2.6" stroke="#B98A1E" stroke-width="1.5"/>
+        <!-- the tilak and the ear studs -->
+        <path d="M0 -106.2v3.6" stroke="${top3}" stroke-width="1.7" stroke-linecap="round"/>
+        <circle cx="0" cy="-101.2" r="1.3" fill="${top3}"/>
+        <circle cx="-17.8" cy="-100.4" r="1.8" fill="${top3}"/>
+        <circle cx="17.8" cy="-100.4" r="1.8" fill="${top3}"/>` : `
+        <path d="M-16.2 -103.4a16.3 16.3 0 0 1 32.4 0" fill="none" stroke="${band}" stroke-width="4.4" stroke-linecap="round"/>
+        <path d="M-14 -105.6a14.4 14.4 0 0 1 28 0" fill="none" stroke="#FFF" stroke-width="1.1" opacity=".35"/>
+        <path d="M0 -109.6v3.4" stroke="${band}" stroke-width="1.6"/>
+        <circle cx="0" cy="-104.6" r="2.6" fill="${top3}" stroke="#B98A1E" stroke-width=".9"/>
+        <!-- the maang tikka, the bindi, the jhumkas and the nose pin -->
+        <path d="M-9.4 -105.4q9.4 -6 18.8 0" fill="none" stroke="${top3}" stroke-width="1.3" opacity=".95"/>
+        <circle cx="0" cy="-110.6" r="2.9" fill="${top3}" stroke="#B98A1E" stroke-width=".9"/>
+        <circle cx="0" cy="-110.6" r="1.2" fill="#E02A5A"/>
+        <circle cx="0" cy="-103.2" r="1.9" fill="#C4245E"/>
+        <g>
+          <circle cx="-17.6" cy="-99.6" r="2.1" fill="${top3}"/>
+          <path d="M-20.2 -97.8q2.6 4.8 5.2 0Z" fill="${top3}" opacity=".92"/>
+          <circle cx="-17.6" cy="-92.6" r="1.4" fill="${top3}"/>
+          <circle cx="17.6" cy="-99.6" r="2.1" fill="${top3}"/>
+          <path d="M14.6 -97.8q2.6 4.8 5.2 0Z" fill="${top3}" opacity=".92"/>
+          <circle cx="17.6" cy="-92.6" r="1.4" fill="${top3}"/>
+        </g>
+        <path d="M15.8 -95.6l1.6 -1.4" stroke="${top3}" stroke-width="1.1" stroke-linecap="round"/>
+        <circle cx="17.8" cy="-97.2" r="1.1" fill="${top3}"/>`;
+  return `<g class="kid-move">
+    <g class="kid" transform="scale(1.22)">
+      ${leg(false)}
+      ${leg(true)}
+
+      <!-- the garment: a kurta, a lehnga with its dupatta, or a sherwani -->
+      ${wear==='kurta' ? `
+      <rect x="-18" y="-85" width="36" height="47" rx="11" fill="${top}"/>
+      <path d="M-3.8 -86h7.6v40q-3.8 4.4 -7.6 0Z" fill="${top2}"/>
+      <rect x="-8.4" y="-88.4" width="16.8" height="6" rx="3" fill="${top2}"/>
+      <circle cx="0" cy="-70" r="1.9" fill="${top3}"/><circle cx="0" cy="-56" r="1.9" fill="${top3}"/>
+      <path d="M-18 -48h36v10q-18 5 -36 0Z" fill="${top2}"/>
+      <path d="M-18 -42q18 4.6 36 0" fill="none" stroke="${top3}" stroke-width="2.6"/>
+      <g fill="${top3}" opacity=".95">
+        <circle cx="-11" cy="-66" r="3.6"/><circle cx="11" cy="-66" r="3.6"/>
+      </g>
+      <path d="M-11 -69.4l1.8 3.4l3.6 1.4l-3.6 1.4l-1.8 3.4l-1.8 -3.4l-3.6 -1.4l3.6 -1.4Z" fill="${top2}"/>
+      <path d="M11 -69.4l1.8 3.4l3.6 1.4l-3.6 1.4l-1.8 3.4l-1.8 -3.4l-3.6 -1.4l3.6 -1.4Z" fill="${top2}"/>
+      <path d="M-18 -85q18 5.4 36 0v-3.4q-18 5.4 -36 0Z" fill="#000" opacity=".1"/>
+      <rect x="-18" y="-85" width="36" height="47" rx="11" fill="url(#kidShirt)"/>` :
+      wear==='lehnga' ? `
+      <rect x="-16.6" y="-84" width="33.2" height="27" rx="12" fill="${top}"/>
+      <path d="M-16.6 -62q16.6 4.4 33.2 0v-3q-16.6 4.4 -33.2 0Z" fill="${top3}"/>
+      <path d="M-16.6 -79.6q16.6 5 33.2 0v-3.8q-16.6 5 -33.2 0Z" fill="${top2}" opacity=".6"/>
+      <path d="M-16.4 -80.4q10.4 -8.6 19 -3.2l2 17.6q-11.4 5 -22.4 -1Z" fill="${top2}"/>
+      <path d="M-13.8 -79.6q8.2 -5.2 14.4 -1.6" fill="none" stroke="${top3}" stroke-width="1.6" opacity=".85"/>
+      <circle cx="0" cy="-54.4" r="1.9" fill="${top3}"/>
+      <path d="M-16.6 -37q-8.4 11.6 -11.4 25q12.2 6.8 28 6.8t28 -6.8q-3 -13.4 -11.4 -25Z" fill="${top}"/>
+      <path d="M-16.6 -35.4h33.2v4.6q-16.6 4.2 -33.2 0Z" fill="${top3}" opacity=".9"/>
+      <g stroke="${top2}" stroke-width="1.3" opacity=".5" fill="none">
+        <path d="M-13 -30q-4.4 12 -6.6 23"/><path d="M0 -30q0 12 0 23"/><path d="M13 -30q4.4 12 6.6 23"/>
+      </g>
+      <path d="M-27.6 -12.6q12.4 6.8 27.6 6.8t27.6 -6.8" fill="none" stroke="${top3}" stroke-width="2.8"/>
+      <g fill="${top3}"><circle cx="-22" cy="-9.6" r="1.9"/><circle cx="0" cy="-6.4" r="1.9"/><circle cx="22" cy="-9.6" r="1.9"/></g>
+      <path d="M-16.6 -84q16.6 5 33.2 0v-3.4q-16.6 5 -33.2 0Z" fill="#000" opacity=".1"/>
+      <rect x="-16.6" y="-84" width="33.2" height="27" rx="12" fill="url(#kidShirt)"/>` : `
+      <rect x="-18.6" y="-85" width="37.2" height="53" rx="9" fill="${top}"/>
+      <rect x="-8.6" y="-88.6" width="17.2" height="6.2" rx="3.1" fill="${top2}"/>
+      <path d="M-2.6 -86h5.2v49q-2.6 3 -5.2 0Z" fill="${top2}"/>
+      <circle cx="0" cy="-72" r="1.9" fill="${top3}"/><circle cx="0" cy="-59" r="1.9" fill="${top3}"/><circle cx="0" cy="-46" r="1.9" fill="${top3}"/>
+      <rect x="-18.6" y="-86" width="10.4" height="5" rx="2.5" fill="${top3}" opacity=".95"/>
+      <rect x="8.2" y="-86" width="10.4" height="5" rx="2.5" fill="${top3}" opacity=".95"/>
+      <path d="M-18.6 -46h37.2v7q-18.6 5 -37.2 0Z" fill="${top2}"/>
+      <path d="M-18.6 -38.6q18.6 4.6 37.2 0" fill="none" stroke="${top3}" stroke-width="2.6"/>
+      <g stroke="${top3}" stroke-width="1.5" fill="none" opacity=".85">
+        <path d="M-14 -34.6q4 -2.6 8 0"/><path d="M6 -34.6q4 -2.6 8 0"/>
+      </g>
+      <path d="M-18.6 -85q18.6 5.4 37.2 0v-3.4q-18.6 5.4 -37.2 0Z" fill="#000" opacity=".1"/>
+      <rect x="-18.6" y="-85" width="37.2" height="53" rx="9" fill="url(#kidShirt)"/>`}
+      <!-- the finishing touches of the dress: a sash, a stole, jewellery -->
+      ${wear==='kurta' ? `
+      <g class="kid-pallu">
+        <path d="M-15.4 -86L15.4 -44.6l9.2 3.4L-9.4 -84.4Z" fill="${top3}" opacity=".4"/>
+        <path d="M-10.2 -84.6L19 -45.2" stroke="${top3}" stroke-width="1.4" opacity=".8"/>
+        <path d="M-12.8 -86l3.4 2 -3.2 3.4 -3.4 -2Z" fill="${top2}"/>
+      </g>
+      <g class="kid-sash">
+        <path d="M-18 -58.4h36v6h-36Z" fill="${top3}" opacity=".92"/>
+        <path d="M-18 -58.4h36" stroke="#B98A1E" stroke-width="1" opacity=".55"/>
+        <path d="M13.2 -52.4q4.4 6 2.6 12.6" stroke="${top3}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <circle cx="15.4" cy="-38.6" r="2.4" fill="${top3}"/>
+      </g>
+      <path d="M-7 -47.2h14v6.4h-14Z" fill="${top2}" opacity=".65"/>
+      <path d="M-7 -47.2h14" stroke="${top3}" stroke-width="1.2" opacity=".75"/>` :
+      wear==='lehnga' ? `
+      <g class="kid-jewel">
+        <path d="M-9.6 -84.6q9.6 5 19.2 0" fill="none" stroke="${top3}" stroke-width="2.2"/>
+        <circle cx="0" cy="-79.8" r="3" fill="${top3}" stroke="#B98A1E" stroke-width=".9"/>
+        <circle cx="0" cy="-79.8" r="1.2" fill="#E02A5A"/>
+        <path d="M-15.4 -83.6q3 2 6 .6" stroke="${top3}" stroke-width="1.1" fill="none" opacity=".85"/>
+        <path d="M15.4 -83.6q-3 2 -6 .6" stroke="${top3}" stroke-width="1.1" fill="none" opacity=".85"/>
+        <path d="M-13 -62q6.4 3.4 13 0" fill="none" stroke="${top3}" stroke-width="1.4" opacity=".7"/>
+      </g>
+      <g class="kid-braid" fill="none" stroke="${hair}" stroke-width="4.4" stroke-linecap="round" opacity=".95">
+        <path d="M-13.4 -87.6q-6.4 5.4 -5.6 13.4q.8 7.6 -.4 13.2"/>
+      </g>
+      <g fill="${top3}">
+        <circle cx="-13.8" cy="-84.6" r="1.6"/><circle cx="-16.8" cy="-78.4" r="1.6"/><circle cx="-18.6" cy="-71.6" r="1.6"/>
+      </g>
+      <g class="kid-jewel" fill="${top3}">
+        <circle cx="-26.6" cy="-53.4" r="1.5"/><circle cx="-26.2" cy="-50.4" r="1.5"/><circle cx="-25.6" cy="-47.6" r="1.5"/>
+        <circle cx="26.6" cy="-53.4" r="1.5"/><circle cx="26.2" cy="-50.4" r="1.5"/><circle cx="25.6" cy="-47.6" r="1.5"/>
+      </g>` : `
+      <g class="kid-pallu">
+        <path d="M13.4 -86L-13.4 -46l-9 3.4L7.8 -84.6Z" fill="${top3}" opacity=".36"/>
+        <path d="M9.2 -84.6L-15.4 -46.8" stroke="${top3}" stroke-width="1.4" opacity=".75"/>
+        <path d="M12.6 -86l-3.6 2 3.4 3.4 3.6 -2Z" fill="${top2}"/>
+      </g>
+      <g class="kid-sash">
+        <path d="M-18.6 -51.4h37.2v7h-37.2Z" fill="${top3}" opacity=".9"/>
+        <path d="M-18.6 -51.4h37.2" stroke="#B98A1E" stroke-width="1" opacity=".55"/>
+        <path d="M-14.6 -44.4q-3.4 8 -1.4 14.6" stroke="${top3}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <circle cx="-16.6" cy="-29.4" r="2.4" fill="${top3}"/>
+      </g>
+      <g stroke="${top3}" stroke-width="1.3" fill="none" opacity=".8">
+        <path d="M-15 -30.6q4 -2.4 8 0"/><path d="M7 -30.6q4 -2.4 8 0"/>
+      </g>
+      <path d="M-7.6 -86h15.2" stroke="${top3}" stroke-width="1.8" opacity=".9"/>
+      <path d="M-7.6 -86h15.2" stroke="#FFF3D0" stroke-width=".8" opacity=".6"/>`}
+      <!-- arms: bare, with a wristband on each -->
+      <g class="kid-arm kid-arm-l">
+        <line x1="-16" y1="-79" x2="-26" y2="-50" stroke="${skin}" stroke-width="9" stroke-linecap="round"/>
+        <line x1="-16.6" y1="-80.5" x2="${-sleeveX}" y2="${sleeveY}" stroke="${top}" stroke-width="10.6" stroke-linecap="round"/>
+        <path d="M${-sleeveX} ${sleeveY+1.4}h6" stroke="${top3}" stroke-width="1.8" stroke-linecap="round" opacity=".9"/>
+        <line x1="-24.4" y1="-57.6" x2="-26.4" y2="-51" stroke="${skinSh}" stroke-width="1" opacity=".5"/>
+        <rect x="-27.8" y="-53.6" width="6.6" height="3.8" rx="1.7" fill="${band}" transform="rotate(-24 -24 -51)"/>
+        <circle cx="-27.4" cy="-46.6" r="5.9" fill="${skin}"/>
+        <circle cx="-29.4" cy="-48.6" r="2.4" fill="#FFFFFF" opacity=".16"/>
+        <path d="M-30.6 -48.6q2 -2.2 5.4 -1.6" stroke="${skinSh}" stroke-width="1" fill="none" opacity=".7"/>
+      </g>
+      <g class="kid-arm kid-arm-r">
+        <line x1="16" y1="-79" x2="26" y2="-50" stroke="${skin}" stroke-width="9" stroke-linecap="round"/>
+        <line x1="16.6" y1="-80.5" x2="${sleeveX}" y2="${sleeveY}" stroke="${top}" stroke-width="10.6" stroke-linecap="round"/>
+        <path d="M${sleeveX-6} ${sleeveY+1.4}h6" stroke="${top3}" stroke-width="1.8" stroke-linecap="round" opacity=".9"/>
+        <line x1="24.4" y1="-57.6" x2="26.4" y2="-51" stroke="${skinSh}" stroke-width="1" opacity=".5"/>
+        <rect x="21.2" y="-53.6" width="6.6" height="3.8" rx="1.7" fill="${band}" transform="rotate(24 24 -51)"/>
+        <circle cx="27.4" cy="-46.6" r="5.9" fill="${skin}"/>
+        <circle cx="25.4" cy="-48.6" r="2.4" fill="#FFFFFF" opacity=".16"/>
+        <path d="M24.4 -48.6q3.4 -0.6 5.4 1.6" stroke="${skinSh}" stroke-width="1" fill="none" opacity=".7"/>
+      </g>
+
+      <!-- head: ears, hair, brows, eyes, nose, smile, blush, blink -->
+      <g class="kid-head">
+        <circle cx="-15.4" cy="-99" r="4.2" fill="${skin}"/>
+        <circle cx="15.4" cy="-99" r="4.2" fill="${skin}"/>
+        <circle cx="-15.4" cy="-99" r="2" fill="${skinSh}" opacity=".55"/>
+        <circle cx="15.4" cy="-99" r="2" fill="${skinSh}" opacity=".55"/>
+        <circle cx="0" cy="-99" r="16" fill="${skin}"/>
+        <path d="M-16 -101a16 16 0 0 1 32 0q-5.5 -12 -16 -12t-16 12Z" fill="${hair}"/>
+        <path d="M-13.5 -106q7 -6.5 15 -2.5q-6.5 -1.4 -12 3.6Z" fill="${hairLo}" opacity=".55"/>
+        <path d="M-11 -109.5q8 -3.4 14.5 1.2" stroke="#7A5A44" stroke-width="1.3" fill="none" opacity=".55" stroke-linecap="round"/>
+        <path d="M-2 -112.6q5.5 .6 8.5 4.2" stroke="#7A5A44" stroke-width="1.2" fill="none" opacity=".45" stroke-linecap="round"/>
+        <path d="M-8.6 -102.6q2.6 -1.4 5 0" stroke="#2B1E18" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".85"/>
+        <path d="M3.6 -102.6q2.6 -1.4 5 0" stroke="#2B1E18" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".85"/>
+        <circle cx="-6" cy="-98.6" r="2.5" fill="#2B2330"/>
+        <circle cx="6" cy="-98.6" r="2.5" fill="#2B2330"/>
+        <circle cx="-5.2" cy="-99.4" r=".95" fill="#fff"/>
+        <circle cx="6.8" cy="-99.4" r=".95" fill="#fff"/>
+        <path d="M0 -96.8q1.4 .3 1.4 1.5t-1.6 1.2" stroke="${skinSh}" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+        <path d="M-5 -91.2q5 4.6 10 0" fill="none" stroke="#C0643C" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M-3.6 -91.4q3.6 1.5 7.2 0" fill="#FFF" opacity=".9"/>
+        <ellipse cx="-10.6" cy="-92.6" rx="3.4" ry="2.4" fill="#F79A9A" opacity=".4"/>
+        <ellipse cx="10.6" cy="-92.6" rx="3.4" ry="2.4" fill="#F79A9A" opacity=".4"/>
+        <g opacity=".5">
+          <circle cx="-11.6" cy="-89.6" r=".95" fill="#B2643F"/><circle cx="-9.4" cy="-88.6" r=".8" fill="#B2643F"/>
+          <circle cx="11.6" cy="-89.6" r=".95" fill="#B2643F"/><circle cx="9.4" cy="-88.6" r=".8" fill="#B2643F"/>
+        </g>
+        ${gearArt}
+        <g class="kid-lids">
+          <ellipse class="kid-lid" cx="-6" cy="-98.6" rx="3" ry="3.1" fill="${skin}"/>
+          <ellipse class="kid-lid" cx="6" cy="-98.6" rx="3" ry="3.1" fill="${skin}"/>
+        </g>
+      </g>
+    </g>
+  </g>`;
+}
+
+/* ===================== THREE TREASURE CHESTS — a different box every task ==================
+   Each chest shares the same footprint, rim and hinge, so the dig, the rise, the lid swing
+   and the shine all work on any of them: an iron-bound vault, a gold-trimmed royal chest
+   and an old brass-bound coffer.                                                            */
+const CHEST_STYLES=[
+  {name:'iron-bound vault', grad:'chestWoodA', rim:'#5A3416', mouth:'#2C1608',
+   wood:'#8A4E1C', grain:'#6B3A11', band:'#7C8794', bandHi:'#B3BCC6', metal:'#9AA5B1',
+   metalHi:'#DCE3EA', jewel:'#8A93A0', trim:'#8A93A0', inner:'#6E3F14',inner2:'#9C5C24',style:'iron'},
+  {name:'royal gold chest', grad:'chestWoodB', rim:'#6E1A17', mouth:'#3A0F0D',
+   wood:'#93211E', grain:'#6E1815', band:'#E8B23C', bandHi:'#FFF0BC', metal:'#D9A312',
+   metalHi:'#FFF3B4', jewel:'#E02A5A', trim:'#E8B23C', inner:'#6E1714',inner2:'#A32824',style:'royal'},
+  {name:'brass-bound coffer', grad:'chestWoodC', rim:'#12302E', mouth:'#0C2220',
+   wood:'#1E524D', grain:'#153D39', band:'#C08F2E', bandHi:'#F0D98A', metal:'#C08F2E',
+   metalHi:'#F5E3A8', jewel:'#7FE3D4', trim:'#C08F2E', inner:'#123330',inner2:'#22605A',style:'ancient'}
+];
+function chestArt(st){
+  const {grad,rim,mouth,wood,grain,band,bandHi,metal,metalHi,jewel,inner,inner2,style}=st;
+  /* the lid: a shallow barrel that hinges on the box's left rim (origin 0% 100%) */
+  const lid = `
+                  <g id="chestLid">
+                    <!-- the cap that covers the box: it swings back and fades as the box opens -->
+                    <g id="chestLidCap">
+                      <path d="M-50 -30q0 -26 50 -26t50 26Z" fill="url(#${grad})" stroke="${rim}" stroke-width="2.6"/>
+                      <path d="M-46 -30q2 -22 46 -22t46 22" fill="none" stroke="${bandHi}" stroke-width="3.4"
+                            stroke-linecap="round" opacity=".55"/>
+                      <path d="M-50 -30h100" stroke="${rim}" stroke-width="2.2" opacity=".5"/>
+                      <path d="M-33 -30q0 -19 33 -19t33 19" fill="none" stroke="${band}" stroke-width="${style==='royal'?4.4:3.6}"
+                            stroke-linecap="round" opacity="${style==='iron'?'.95':'.9'}"/>
+                      ${style==='royal'
+                        ? `<path d="M-22 -46q22 -12 44 0" fill="none" stroke="${metalHi}" stroke-width="1.8" opacity=".8"/>
+                           <path d="M0 -56l4.6 -8l4.6 8Z" fill="${metal}" stroke="${metalHi}" stroke-width="1"/>`
+                        : style==='ancient'
+                        ? `<g stroke="${metal}" stroke-width="1.6" opacity=".9" fill="none">
+                             <path d="M-44 -34q44 -16 88 0"/>
+                           </g>
+                           <circle cx="-14" cy="-44" r="2.4" fill="${metalHi}"/><circle cx="14" cy="-44" r="2.4" fill="${metalHi}"/>`
+                        : `<g fill="${bandHi}" opacity=".85">
+                             <circle cx="-20" cy="-43" r="2.1"/><circle cx="20" cy="-43" r="2.1"/>
+                           </g>`}
+                      <!-- the clasp: it pops open a moment before the lid swings -->
+                      <g id="chestLock">
+                        <rect x="-8" y="-35" width="16" height="17" rx="3.4" fill="${metal}" stroke="${metalHi}" stroke-width="1.5"/>
+                        <circle cx="0" cy="-28" r="3.4" fill="${jewel}" stroke="${metalHi}" stroke-width=".9"/>
+                        <path d="M0 -25v5" stroke="${metalHi}" stroke-width="1.8" stroke-linecap="round"/>
+                      </g>
+                    </g>
+                    <!-- the inside of the lid, standing up behind the box the moment it opens -->
+                    <g id="chestLidInner" opacity="0">
+                      <path d="M-50 -30q0 -58 50 -58t50 58Z" fill="url(#lidInner_${style})" stroke="${rim}" stroke-width="2.6"/>
+                      <path d="M-46 -30q0 -53 46 -53t46 53" fill="none" stroke="${band}" stroke-width="2.6" opacity=".85"/>
+                      <path d="M-50 -30q0 -58 50 -58t50 58" fill="none" stroke="${bandHi}" stroke-width="1.5" opacity=".3"/>
+                      <g stroke="${band}" stroke-width="2" opacity=".55">
+                        <path d="M-40 -64h80"/><path d="M-47 -46h94"/>
+                      </g>
+                      <g fill="none" stroke="${grain}" stroke-width="1.2" opacity=".45">
+                        <path d="M-30 -32q4 -26 30 -26"/><path d="M30 -32q-4 -26 -30 -26"/>
+                      </g>
+                      <rect x="-7.5" y="-44" width="15" height="16" rx="3.4" fill="${metal}" stroke="${metalHi}" stroke-width="1.4"/>
+                      <circle cx="0" cy="-37" r="3" fill="${jewel}" opacity=".9"/>
+                    </g>
+                  </g>`;
+
+  /* the body: solid planking, a dark mouth, and the fitting that names this chest */
+  const fitting = style==='iron'
+    ? `<g stroke="${band}" stroke-width="4" stroke-linecap="round">
+                    <path d="M-30 -30v40"/><path d="M30 -30v40"/>
+                  </g>
+                  <g fill="${bandHi}" opacity=".9">
+                    <circle cx="-30" cy="-26" r="1.7"/><circle cx="-30" cy="-20" r="1.7"/><circle cx="-30" cy="-8" r="1.7"/><circle cx="-30" cy="-2" r="1.7"/>
+                    <circle cx="30" cy="-26" r="1.7"/><circle cx="30" cy="-20" r="1.7"/><circle cx="30" cy="-8" r="1.7"/><circle cx="30" cy="-2" r="1.7"/>
+                  </g>
+                  <g fill="none" stroke="${rim}" stroke-width="2.4" opacity=".8">
+                    <path d="M-48 -30v6h6"/><path d="M48 -30v6h-6"/>
+                    <path d="M-48 10v-6h6"/><path d="M48 10v-6h-6"/>
+                  </g>`
+    : style==='royal'
+    ? `<g stroke="${band}" stroke-width="3.4">
+                    <path d="M-30 -30v40"/><path d="M30 -30v40"/>
+                  </g>
+                  <g stroke="${metalHi}" stroke-width="1" opacity=".85">
+                    <path d="M-30 -30v40"/><path d="M30 -30v40"/>
+                  </g>
+                  <g fill="${metal}">
+                    <path d="M-48 -30h10l-10 10Z"/><path d="M48 -30h-10l10 10Z"/>
+                    <path d="M-48 10h10l-10 -10Z"/><path d="M48 10h-10l10 -10Z"/>
+                  </g>
+                  <path d="M-40 -6q14 -8 28 0t28 0" fill="none" stroke="${band}" stroke-width="2.2" opacity=".85"/>`
+    : `<g stroke="${metal}" stroke-width="5" stroke-linecap="round">
+                    <path d="M0 -30v40"/>
+                  </g>
+                  <g fill="none" stroke="${metal}" stroke-width="2" opacity=".9">
+                    <path d="M-46 -24h92"/><path d="M-46 2h92"/>
+                  </g>
+                  <g fill="none" stroke="${metalHi}" stroke-width="1" opacity=".7">
+                    <path d="M-46 -24h92"/><path d="M-46 2h92"/>
+                  </g>
+                  <path d="M-56 -22q6 6 0 12" fill="none" stroke="${metal}" stroke-width="2.6" stroke-linecap="round" opacity=".9"/>
+                  <path d="M56 -22q-6 6 0 12" fill="none" stroke="${metal}" stroke-width="2.6" stroke-linecap="round" opacity=".9"/>`;
+  return `<defs>
+                  <linearGradient id="lidInner_${style}" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="${inner}"/><stop offset="100%" stop-color="${inner2}"/>
+                  </linearGradient>
+                </defs>
+                <g id="chestTilt">
+                <g id="chest">
+                  <!-- the dug-out pit the chest comes out of -->
+                  <ellipse id="chestPit" cy="2" rx="54" ry="11" fill="#7A5A32" opacity=".55"/>
+                  <ellipse cy="6" rx="52" ry="8" fill="#3A2418" opacity=".3"/>
+                  ${lid}
+                  <!-- the body, with its dark open mouth -->
+                  <path d="M-48 -30h96v34a6 6 0 0 1-6 6h-84a6 6 0 0 1-6 -6Z" fill="url(#${grad})" stroke="${rim}" stroke-width="2.6"/>
+                  <path d="M-44 -30h88v9h-88Z" fill="${mouth}"/>
+                  <g stroke="${grain}" stroke-width="1.1" opacity=".5" fill="none">
+                    <path d="M-44 -14h88"/><path d="M-44 -6h88"/>
+                  </g>
+                  <path d="M-48 -14h96v4h-96Z" fill="#FFFFFF" opacity=".07"/>
+                  <path d="M-48 -2h96v6a6 6 0 0 1-6 6h-84a6 6 0 0 1-6 -6Z" fill="#000" opacity=".22"/>
+                  ${fitting}
+                  <!-- the light waking up inside the box as the lid lifts -->
+                  <ellipse id="chestInner" cy="-24" rx="40" ry="9" fill="${bandHi}" opacity="0"/>
+                  <g id="chestLoot" opacity="0">
+                    <ellipse cy="-28" rx="40" ry="9" fill="#FFDF7A"/>
+                    <circle cx="-24" cy="-40" r="9.4" fill="#FFD34D" stroke="#D9A312" stroke-width="1.6"/>
+                    <circle cx="2" cy="-47" r="11.6" fill="#FFE27A" stroke="#D9A312" stroke-width="1.6"/>
+                    <circle cx="26" cy="-39" r="8.4" fill="#FFC93C" stroke="#D9A312" stroke-width="1.6"/>
+                    <path d="M-33 -45l4.4 8.6l9.6 1.4l-7 6.8l1.7 9.6l-8.7 -4.6l-8.7 4.6l1.7 -9.6l-7 -6.8l9.6 -1.4Z" fill="#FFF3B4" stroke="#D9A312" stroke-width="1"/>
+                    <path d="M35 -45l3.4 6.6l7.4 1.1l-5.4 5.2l1.3 7.4l-6.7 -3.6l-6.7 3.6l1.3 -7.4l-5.4 -5.2l7.4 -1.1Z" fill="#FFF3B4" stroke="#D9A312" stroke-width="1"/>
+                  </g>
+                </g>
+                <!-- the polish that wakes up the moment the box is opened -->
+                <g id="chestShine" opacity="0" pointer-events="none">
+                  <path d="M-50 -30q0 -26 50 -26t50 26" fill="none" stroke="#FFF6C8" stroke-width="3.6" stroke-linecap="round"/>
+                  <path d="M-48.6 -29v33" stroke="#FFF6C8" stroke-width="3.4" stroke-linecap="round" opacity=".95"/>
+                  <path d="M48.6 -29v33" stroke="#FFF6C8" stroke-width="3.4" stroke-linecap="round" opacity=".95"/>
+                  <path d="M-46 -8h92" stroke="#FFF6C8" stroke-width="2.6" stroke-linecap="round" opacity=".75"/>
+                  <path d="M-34 -45l2.6 5.4l5.4 2.6l-5.4 2.6l-2.6 5.4l-2.6 -5.4l-5.4 -2.6l5.4 -2.6Z" fill="#FFFFFF"/>
+                  <path d="M33 -37l1.8 3.8l3.8 1.8l-3.8 1.8l-1.8 3.8l-1.8 -3.8l-3.8 -1.8l3.8 -1.8Z" fill="#FFFFFF" opacity=".9"/>
+                  <circle cx="14" cy="-50" r="2.2" fill="#FFFFFF" opacity=".95"/>
+                </g>
+                <path id="chestBeam" d="M-24 -42L24 -42L46 -186L-46 -186Z" fill="url(#lootBeam)" opacity="0" pointer-events="none"/>
+              </g>`;
+}
+let chestModel=-1;
+/* a fresh box for each task: swap the art, then re-point the rig at the new nodes */
+function applyChestModel(i,animate=true){
+  const idx=((i%CHEST_STYLES.length)+CHEST_STYLES.length)%CHEST_STYLES.length;
+  if(idx===chestModel&&n.chestBase.firstElementChild)return idx;
+  chestModel=idx;
+  n.chestBase.innerHTML=chestArt(CHEST_STYLES[idx]);
+  n.chestTilt=$('chestTilt');n.chest=$('chest');n.chestLid=$('chestLid');n.chestLock=$('chestLock');
+  n.chestLidCap=$('chestLidCap');n.chestLidInner=$('chestLidInner');
+  n.chestInner=$('chestInner');n.chestLoot=$('chestLoot');n.chestShine=$('chestShine');
+  n.chestBeam=$('chestBeam');n.chestPit=$('chestPit');
+  if(animate&&!motion.matches)
+    pop(n.chestTilt,[{opacity:0,transform:'translateY(4px) scale(.94)'},
+                     {opacity:1,transform:'translateY(0) scale(1)'}],320,'cubic-bezier(.22,1,.36,1)');
+  return idx;
+}
+
+const KID_VARIANTS=KID_STYLES.map(st=>({name:st.name,art:kidArt(st)}));
+let kidModel=-1;
+/* swap the player for this task's model — the rig, the hit area and the ball stay put */
+function applyKidModel(i,animate=true){
+  const idx=((i%KID_VARIANTS.length)+KID_VARIANTS.length)%KID_VARIANTS.length;
+  const v=KID_VARIANTS[idx];
+  n.kid.setAttribute('aria-label',`${v.name} — distance from the fort`);
+  if(idx===kidModel&&n.body.firstElementChild)return idx;
+  kidModel=idx;
+  n.body.innerHTML=v.art;
+  if(animate&&!motion.matches)
+    pop(n.body,[{opacity:0,transform:'translateY(3px) scale(.93)'},
+                {opacity:1,transform:'translateY(0) scale(1)'}],300,'cubic-bezier(.22,1,.36,1)');
+  return idx;
+}
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+/* every "pop" runs on the compositor — no forced layout, so nothing stutters */
+function pop(el,keyframes,duration,easing='cubic-bezier(.34,1.56,.64,1)'){
+  if(el&&typeof el.animate==='function')el.animate(keyframes,{duration,easing});
+}
+const shuffled=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- the targets, remembered between sessions ---------- */
+function makeTargets(){
+  MAXD=measureRange();                 /* targets must fit the screen they are drawn on */
+  let previous=[];
+  try{const stored=localStorage.getItem(MEMO_KEY);if(stored){const parsed=JSON.parse(stored);if(Array.isArray(parsed))previous=parsed;}}catch(e){}
+  /* on a narrow phone a 10 cm gap cannot be drawn at true scale beside the wall, so
+     the reachable range shrinks to whatever still fits — the car never leaves view  */
+  const pool=(MAXD>=MAX?TARGET_POOL:TARGET_POOL_SMALL).filter(v=>v>=MIN&&v<=MAXD);
+  const chosen=[],available=pool.slice();
+  for(let i=0;i<TOTAL;i++){
+    const choices=available.filter(v=>v!==previous[i]);
+    const pick=choices[Math.floor(Math.random()*choices.length)];
+    chosen.push(pick);available.splice(available.indexOf(pick),1);
+  }
+  try{localStorage.setItem(MEMO_KEY,JSON.stringify(chosen));}catch(e){}
+  return chosen;
+}
+/* the car never spawns next to the answer */
+function spawnDistance(){
+  /* the car starts well away from the answer — on a small screen where the range
+     is short, the best available gap is used instead of an impossible one */
+  const all=Array.from({length:MAXD-MIN+1},(_,i)=>MIN+i);
+  const pool=[3,2,1].map(g=>all.filter(v=>Math.abs(v-target)>=g)).find(p=>p.length)||all;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+/* ---------- sound ---------- */
+function tone(freq,duration=.12,delay=0,type='sine',vol=.06){
+  try{
+    audio=audio||new(window.AudioContext||window.webkitAudioContext)();
+    const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime+delay;
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol,t+.015);
+    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+duration+.03);
+  }catch(e){}
+}
+const rightSnd=()=>{tone(523,.16,0,'triangle',.1);tone(659,.16,.12,'triangle',.1);tone(784,.3,.24,'triangle',.12);};
+const wrongSnd=()=>{tone(250,.2,0,'sawtooth',.06);tone(220,.3,.2,'sawtooth',.06);};
+/* the net: a short filtered noise sweep, the way a made shot sounds */
+/* the three kids behind: a drum beat, shaking maracas and a little fanfare */
+function cheerSnd(){
+  /* a warm rising chime — the treasure answering the find */
+  tone(523,.3,0,'triangle',.075);
+  tone(659,.3,.14,'triangle',.075);
+  tone(784,.34,.28,'triangle',.08);
+  tone(1047,.5,.44,'triangle',.085);
+  tone(1319,.44,.6,'sine',.05);
+}
+const pingSnd=f=>{                       /* throttled: a fast drag must not stack tones */
+  const now=performance.now();
+  if(now-lastPing<70)return;
+  lastPing=now;tone(clamp(1250-f*12,320,1600),.07,0,'sine',.05);
+};
+const blipSnd=()=>{tone(660,.08,0,'sine',.06);tone(990,.1,.09,'sine',.05);};
+
+/* ---------- speech ---------- */
+function stopSpeech(){
+  if(speech){speech.onend=speech.onerror=null;speech=null;}
+  if('speechSynthesis' in window)try{speechSynthesis.cancel();}catch(e){}
+  const h=$('hear');if(h)h.textContent='🔊 Hear the task';
+}
+function sentence(){return `Stand ${target} centimetres from the fort.`;}
+function speak(text){
+  if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window))return;
+  stopSpeech();
+  const u=new SpeechSynthesisUtterance(text);
+  speech=u;u.lang='en';u.rate=.9;u.pitch=1.08;
+  const done=()=>{if(speech===u){speech=null;$('hear').textContent='🔊 Hear the task';}};
+  u.onend=u.onerror=done;
+  $('hear').textContent='🔊 Playing…';
+  try{speechSynthesis.resume();speechSynthesis.speak(u);}catch(e){done();}
+}
+
+/* ---------- Web Animations celebration layer ---------- */
+function perform(el,frames,duration=1000,delay=0,easing='cubic-bezier(.22,.61,.36,1)'){
+  if(!el)return null;
+  const a=el.animate(frames,{duration,delay,easing,fill:'both'});
+  celebrationAnimations.push(a);return a;
+}
+function cancelCelebration(){
+  celebrationAnimations.forEach(a=>{try{a.cancel();}catch(e){}});
+  celebrationAnimations=[];
+  $('celebrationFX').replaceChildren();
+  $('ambientFX').replaceChildren();
+}
+function fx(x,y,markup,behind=false){
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('transform',`translate(${x},${y})`);
+  g.innerHTML=markup;
+  $(behind?'ambientFX':'celebrationFX').append(g);
+  return g.firstElementChild;
+}
+function sparkle(x,y,color,delay=0,scale=1){
+  const star=fx(x,y,`<path d="M0-9L2.8-2.8L9 0L2.8 2.8L0 9L-2.8 2.8L-9 0L-2.8-2.8Z" fill="${color}"/>`);
+  perform(star,[
+    {opacity:0,transform:'translateY(12px) scale(.1) rotate(-20deg)'},
+    {opacity:1,transform:`translateY(-4px) scale(${scale}) rotate(10deg)`,offset:.35},
+    {opacity:0,transform:`translateY(-30px) scale(${scale*.4}) rotate(45deg)`}
+  ],720,delay);
+}
+function glowAt(x,y,color,rx=150,ry=26,delay=0,dur=2400){
+  const id=`glow-${epoch}-${celebrationAnimations.length}`;
+  const halo=fx(x,y,
+    `<g><defs><radialGradient id="${id}">`+
+    `<stop stop-color="${color}" stop-opacity=".55"/>`+
+    `<stop offset=".5" stop-color="${color}" stop-opacity=".3"/>`+
+    `<stop offset="1" stop-color="${color}" stop-opacity="0"/>`+
+    `</radialGradient></defs><ellipse rx="${rx}" ry="${ry}" fill="url(#${id})"/></g>`,true);
+  perform(halo,[
+    {opacity:0,transform:'scale(.72)'},
+    {opacity:.9,transform:'scale(1.05)',offset:.3},
+    {opacity:.55,transform:'scale(.95)',offset:.6},
+    {opacity:0,transform:'scale(1.15)'}
+  ],dur,delay);
+}
+const waitForCelebration=()=>Promise.allSettled(celebrationAnimations.map(a=>a.finished));
+
+function confetti(count){
+  if(motion.matches)return;
+  const shell=document.createElement('div');shell.className='confetti';
+  const colors=['#83358C','#F01A8C','#FFF212','#2FBF6D','#70CDF0'];
+  for(let i=0;i<count;i++){
+    const s=document.createElement('i');
+    s.style.left=Math.random()*100+'vw';
+    s.style.background=colors[i%colors.length];
+    s.style.animation=`cf${i%3} ${1.5+Math.random()*0.7}s linear ${Math.random()*.3}s forwards`;
+    shell.appendChild(s);
+  }
+  const st=document.createElement('style');
+  st.textContent='@keyframes cf0{to{transform:translate3d(0,105vh,0) rotate(720deg);opacity:.9}}'+
+    '@keyframes cf1{to{transform:translate3d(0,105vh,0) rotate(-540deg);opacity:.9}}'+
+    '@keyframes cf2{to{transform:translate3d(0,105vh,0) rotate(360deg);opacity:.9}}';
+  shell.appendChild(st);document.body.appendChild(shell);
+  setTimeout(()=>shell.remove(),2400);
+}
+
+/* ---------- the buried treasure ----------
+   The chest lies under the carpet at the target spot. While the player keeps the
+   person still on the mark, he kneels down and digs: dust puffs, the lid of the
+   chest breaks the surface, and when the hold completes the chest is pulled out,
+   the lid swings open and light and gold come pouring out.                        */
+const DIG_KNEEL=-26;
+let lastDig=-1, chestScale=.06, chestOpen=false, stepDur=.38;
+function digFx(p){
+  const t=clamp(p,0,1);
+  if(Math.abs(t-lastDig)<.004)return;
+  lastDig=t;
+  const e=t*t*(3-2*t);
+  /* the person settles over the spot, then scoops twice — the hands alternate, the
+     head bows into the work and the body rises a little with every scoop           */
+  const beat=Math.sin(t*Math.PI*4), swing=.5-.5*Math.cos(t*Math.PI*4);
+  const dig=Math.sin(t*Math.PI);                        /* how deep into the crouch he is */
+  const dip=DIG_KNEEL*e+3.2*swing*(t>.18?1:0);
+  n.bob.style.transform=`translateY(${dip.toFixed(1)}px) scale(${(1+.07*e-0.022*swing).toFixed(3)},${(1-.135*e+.035*swing).toFixed(3)})`;
+  const head=document.querySelector('#kidBody .kid-head');
+  if(head)head.style.transform=`rotate(${(10.5*dig-2.6*swing).toFixed(1)}deg)`;
+  const armL=document.querySelector('#kidBody .kid-arm-l'), armR=document.querySelector('#kidBody .kid-arm-r');
+  if(armL)armL.style.transform=`rotate(${(-54*e-11*beat*(t>.16?1:0)).toFixed(1)}deg)`;
+  if(armR)armR.style.transform=`rotate(${(54*e+11*beat*(t>.16?1:0)).toFixed(1)}deg)`;
+  /* dust puffs and a little mound grow as the sand flies */
+  n.digDust.setAttribute('opacity',t>.08?String((.5+.5*e).toFixed(2)):'0');
+  n.digMound.setAttribute('transform',`scale(${(.3+.7*e).toFixed(3)},${(.2+.8*e).toFixed(3)})`);
+  /* the chest's lid tips into view */
+  chestScale=.06+.34*e;
+  n.chestWrap.setAttribute('opacity',t>.06?'1':'0');   /* solid from the first frame it shows */
+  /* the spot follows the target line every frame, so the chest never drifts */
+  const tx=WALL_FACE-target*ppc;
+  n.chestWrap.setAttribute('transform',`translate(${tx.toFixed(1)},0) scale(1,${chestScale.toFixed(3)})`);
+  n.digSpot.setAttribute('transform',`translate(${tx.toFixed(1)},0)`);
+  /* the mark brightens as the treasure answers */
+  n.digRing.setAttribute('opacity',(.9+.1*e).toFixed(2));
+}
+function digReset(){
+  lastDig=-1;
+  n.bob.style.transform='';
+  const armL=document.querySelector('#kidBody .kid-arm-l'), armR=document.querySelector('#kidBody .kid-arm-r');
+  if(armL)armL.style.transform='';if(armR)armR.style.transform='';
+  const head=document.querySelector('#kidBody .kid-head');
+  if(head)head.style.transform='';
+  if(n.digDust)n.digDust.setAttribute('opacity','0');
+  if(n.digMound)n.digMound.setAttribute('transform','scale(.3,.2)');
+  chestScale=.06;chestOpen=false;
+  if(n.chestWrap){n.chestWrap.setAttribute('transform',`translate(${(WALL_FACE-target*ppc).toFixed(1)},0) scale(1,0.06)`);n.chestWrap.setAttribute('opacity','0');}
+  if(n.chestLidCap)n.chestLidCap.style.animation='';
+  if(n.chestLidInner)n.chestLidInner.style.animation='';
+  if(n.chestLidInner)n.chestLidInner.setAttribute('opacity','0');
+  if(n.chestLoot)n.chestLoot.setAttribute('opacity','0');
+  if(n.chestBeam)n.chestBeam.setAttribute('opacity','0');
+  if(n.chestShine)n.chestShine.style.animation='';
+  if(n.chestTilt)n.chestTilt.style.transform='';
+}
+
+/* ---------- painting the scene ---------- */
+function paint(){
+  /* the live gap may be far bigger than the parking range — viewFor() keeps the
+     drawing true to scale inside the range and zooms out for anything beyond it */
+  /* camera first — everything below is drawn in the same user units as before */
+  const tCam=clamp((visualDist-MAX)/(FAR_SPAN-MAX),0,1);
+  if(applyZoom(1+FAR_ZOOM_MAX*tCam)&&adapted)fitSceneLabels();
+
+  const view=viewFor(visualDist), u=view.u, s=view.s;
+  const gapDraw=Math.min(visualDist,u>0?(WALL_FACE-KID_LINE_MARGIN)/u:visualDist);
+  const face=WALL_FACE-gapDraw*u;                  /* the line the player stands on         */
+  const cx=face;                               /* the player stands right on that line */
+
+  n.kid.setAttribute('transform',`translate(${cx.toFixed(1)},${GROUND}) scale(${s.toFixed(3)})`);
+  n.shadow.setAttribute('cx',cx.toFixed(1));
+  n.shadow.setAttribute('rx',(44*s).toFixed(1));
+  n.shadow.setAttribute('ry',(8*s).toFixed(1));
+  /* the treasure spot is pinned to the target line, wherever the player puts it */
+  const tx=WALL_FACE-target*ppc;
+  n.digSpot.setAttribute('transform',`translate(${tx.toFixed(1)},0)`);
+  if(n.chestWrap&&!chestOpen)n.chestWrap.setAttribute('transform',`translate(${tx.toFixed(1)},0) scale(1,${chestScale})`);
+
+  n.line.setAttribute('x1',cx.toFixed(1));
+  n.guide.setAttribute('d',`M${cx.toFixed(1)} 360V442`);
+  n.arrow.setAttribute('d',`M${cx.toFixed(1)} 429L${(cx+9).toFixed(1)} 434L${(cx).toFixed(1)} 439`);
+  const targetX=WALL_FACE-target*ppc;
+  let mid=clamp((cx+WALL_FACE)/2,pillHalf+8,992-pillHalf);
+  if(Math.abs(mid-targetX)<pillHalf+52){                 /* slide clear of the target tag */
+    const alt=targetX+(mid<targetX?-(pillHalf+52):(pillHalf+52));
+    if(alt>pillHalf+8&&alt<992-pillHalf)mid=alt;
+  }
+  n.measure.setAttribute('transform',`translate(${mid},0)`);
+
+  /* live readout */
+  const valid=!hardware||(sensorValid&&performance.now()-lastSample<650);
+  /* the drawing keeps the true reading while the car rolls — only the very far
+     view compresses how much of the road the gap is allowed to cover          */
+  /* read off the animated position while the car is still settling, so the digits
+     roll with the drawing and land exactly on the real value at rest */
+  const shown=(Math.abs(visualDist-dist)<.004)?dist:visualDist;
+  /* the meter only ever shows whole centimetres */
+  const reading=valid?String(Math.round(shown)):'—';
+  if(lastPaintValue!==reading){
+    lastPaintValue=reading;
+    if(n.value.textContent!==reading){
+      n.value.textContent=reading;
+      /* the reading changes ten times a second while the car rolls — popping on
+         every one of those looked twitchy, so it pops at rest or every 130 ms */
+      const now=performance.now();
+      const settled=!dragging&&!heldButton&&!keyHeld;
+      if(!motion.matches&&(settled||now-lastValuePop>130)){
+        lastValuePop=now;
+        pop(n.value,[{transform:'scale(1)'},{transform:'scale(1.13)'},{transform:'scale(1)'}],260);
+      }
+    }
+    n.measureText.textContent=valid?reading+' cm':'No reading';
+  }
+  n.nums.textContent=`${valid?reading:'—'} / ${target}`;
+  n.kid.setAttribute('aria-valuenow',valid?reading:dist);
+  n.kid.setAttribute('aria-valuetext',
+    valid?`${reading} centimetres from the fort. Target ${target} centimetres.`:'Waiting for a valid sensor reading.');
+}
+
+/* ---------- verdict bar ---------- */
+let statusKey='';
+function setVerdict(kind,icon,title,text){
+  if(statusKey!==kind){n.status.className='verdict '+kind+(n.status.classList.contains('holding')?' holding':'');statusKey=kind;}
+  if(n.icon.textContent!==icon){
+    n.icon.textContent=icon;
+    n.icon.classList.remove('pop-ic');void n.icon.offsetWidth;n.icon.classList.add('pop-ic');
+  }
+  if(n.title.textContent!==title||n.text.textContent!==text){
+    /* the message fades in when it really changes; the body line is swapped quietly
+       while the car is rolling, so nothing twitches under the scene */
+    const titleChanged=n.title.textContent!==title;
+    n.title.textContent=title;n.text.textContent=text;
+    if(titleChanged){
+      for(const el of [n.title,n.text]){el.classList.remove('fs');void el.offsetWidth;el.classList.add('fs');}
+    }
+  }
+}
+function updateStatus(){
+  if(phase!=='active')return;
+  const now=performance.now();
+  if(hardware&&(!gotData||!sensorValid||now-lastSample>650)){
+    setVerdict('v-wait','📡',gotData?'Sensor paused':'Waiting for the sensor',
+      gotData?'Check the USB cable and the sensor.':'Move the sensor and watch the meter.');
+    return;
+  }
+  if(holdProgress>0){
+    setVerdict('v-hold','✋','Hold it still…',
+      hardware?'Keep the sensor steady.':'Stand still for 1 second to dig.');
+    return;
+  }
+  const delta=dist-target;
+  if(aligned()){
+    setVerdict('v-go','🎯','On target!',
+      (dragging||heldButton||keyHeld)?'Release the control, then hold still.':'Let the person settle, then hold still.');
+    return;
+  }
+  const gap=Math.max(1,Math.round(Math.abs(delta)));        /* whole centimetres only */
+  if(dist<target)setVerdict('v-low','⬅️','Too close!',`Move ${gap} cm farther from the fort.`);
+  else setVerdict('v-over','➡️','Too far!',`Move ${gap} cm closer to the fort.`);
+}
+
+/* ---------- hold to confirm ---------- */
+/* parking assist — stopping close to the target snaps the last millimetres,
+   so a stray .2 cm can never leave the car unparkable */
+function parkAssist(){
+  /* a reading that rounds to the target counts as the target itself, so 4.8 cm
+     completes a 5 cm task — in simulation and on the live sensor alike */
+  if(!hardware&&phase==='active'&&aligned())dist=target;
+  resetHold();
+}
+function resetHold(){
+  holdSince=null;holdProgress=0;
+  digReset();                                 /* the digging stops, the chest sinks back */
+  n.status.classList.remove('holding');n.scene.classList.remove('holding');
+}
+/* the reading the meter shows, rounded to whole centimetres, is the reading the
+   activity judges — so nothing can ever "show the target" without counting      */
+function shownReading(){return Math.round(clamp(dist,MIN,FAR_MAX));}
+function aligned(){return shownReading()===target&&Math.abs(dist-target)<=TOL+.01;}
+function canHold(now){
+  if(phase!=='active'||connecting||disconnecting||document.hidden)return false;
+  if(dragging||heldButton||keyHeld)return false;
+  if(hardware){
+    const spread=Math.max(...readings)-Math.min(...readings);
+    return sensorValid&&now-lastSample<450&&readings.length>=3&&spread<=.6&&
+      aligned()&&Math.abs(visualDist-dist)<.08;
+  }
+  return aligned()&&Math.abs(visualDist-dist)<.02;
+}
+
+/* ---------- the animation loop ---------- */
+function loop(now){
+  raf=0;
+  const dt=lastFrame?Math.min(.05,(now-lastFrame)/1000):.016;
+  lastFrame=now;
+
+  if(motion.matches||dragging){visualDist=dist;vDist=0;}
+  else{
+    /* a spring instead of a straight ease: the car eases off and settles, it never snaps */
+    vDist+=((dist-visualDist)*STIFF-vDist*DAMP)*dt;
+    visualDist+=vDist*dt;
+    if(Math.abs(visualDist-dist)<.004&&Math.abs(vDist)<.05){visualDist=dist;vDist=0;}
+  }
+  /* the walk cycle starts the moment the player moves and stops when they settle */
+  const moving=!motion.matches&&(Math.abs(visualDist-dist)>.03||Math.abs(vDist)>.3);
+  if(moving!==walking){walking=moving;n.scene.classList.toggle('walking',walking);}
+  if(walking){
+    /* quicker steps the faster he is dragged — the cycle always reads as a real walk */
+    const want=clamp(.26,.46,170/Math.max(90,Math.abs(vDist)));
+    if(Math.abs(want-stepDur)>.02){stepDur=want;n.scene.style.setProperty('--step',want.toFixed(3)+'s');}
+  }
+  /* repaint only while something actually moves — idle frames stay free for the CSS art */
+  if(hardware||visualDist!==lastPaintedDist){paint();lastPaintedDist=visualDist;}
+
+  if(phase==='active'){
+    if(canHold(now)){
+      if(holdSince===null)holdSince=now;
+      holdProgress=clamp((now-holdSince)/HOLD_MS,0,1);
+      digFx(holdProgress);                      /* the person digs as the hold counts */
+      if(!n.status.classList.contains('holding'))n.status.classList.add('holding');
+      n.scene.classList.add('holding');
+      if(holdProgress>=1){celebrate();return;}
+    }else if(holdSince!==null)resetHold();
+    updateStatus();
+  }
+  if(started&&phase!=='complete')raf=requestAnimationFrame(loop);
+}
+function startLoop(){if(!raf){lastFrame=0;raf=requestAnimationFrame(loop);}}
+
+/* ---------- round flow ---------- */
+function updateProgress(){
+  $('taskCount').textContent=`TASK ${String(round+1).padStart(2,'0')}`;
+  $('taskTitle').innerHTML=`Find the treasure: stand <strong>${target} cm</strong> from the fort`;
+  n.chip.innerHTML=`🎯 Target: <b>${target} cm</b>`;
+  pop(n.chip,[{transform:'scale(.95)'},{transform:'scale(1.03)'},{transform:'scale(1)'}],320);
+  $('progress').innerHTML=targets.map((t,i)=>
+    `<span class="dot ${i<score?'done':i===round?'current':''}" title="Task ${i+1} — ${t} cm">${i<score?'✓':i+1}</span>`).join('');
+  n.banner.innerHTML=`Treasure <span class="target">${target} cm</span> from the fort`;
+  /* the banner now sits in the card's white space, so the pop is a plain scale */
+  pop(n.banner,[{transform:'scale(.97)',opacity:.55},{transform:'scale(1)',opacity:1}],340);
+}
+function roundReset(){
+  /* a fresh task: the mark clears, the chest goes back under the carpet */
+  digReset();
+}
+
+function beginRound(){
+  epoch++;cancelCelebration();stopMovement();resetHold();roundReset();
+  target=targets[round];phase='active';statusKey='';
+  connectionUI();
+  n.scene.classList.remove('parked');n.scene.classList.add('is-parking');
+  lastPaintValue='';
+  if(hardware){readings=[];gotData=false;sensorValid=false;}
+  else{dist=spawnDistance();visualDist=dist;}
+  applyKidModel(round+gameOffset);
+  applyChestModel(round+gameOffset);
+  updateProgress();updateStatus();paint();startLoop();
+  if(started)setTimeout(()=>speak(sentence()),420);
+}
+function startGame(){
+  if(started)return;
+  started=true;$('start').disabled=true;
+  $('ov').classList.add('hide');
+  setTimeout(()=>{$('ov').style.display='none';},380);
+  try{audio=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  beginRound();$('padNear').focus({preventScroll:true});
+}
+function newGame(){
+  stopSpeech();epoch++;cancelCelebration();
+  gameOffset=(gameOffset+1)%KID_VARIANTS.length;   /* the next game starts with a new player */
+  targets=makeTargets();round=0;score=0;
+  $('final').classList.remove('show');
+  document.querySelectorAll('.confetti').forEach(e=>e.remove());
+  beginRound();
+}
+function finishGame(){
+  phase='complete';
+  connectionUI();stopMovement();resetHold();stopSpeech();
+  n.scene.classList.remove('is-parking');n.scene.classList.add('parked');
+  $('fs').textContent=score;
+  $('ftotal').textContent=' / '+TOTAL;
+  const perfect=score===TOTAL, great=score>=TOTAL-1;
+  $('fi').textContent=perfect?'🏆':great?'🌟':'💪';
+  $('fh').textContent=perfect?'Perfect!':great?'Brilliant!':'Keep practising!';
+  $('fmsg').textContent=perfect?'Every treasure dug up — the fort has given up all its gold!':
+    great?'Great measuring! The distance never fooled you.':
+    'Remember: read the meter, step closer or further, then hold still for 1 second.';
+  $('final').classList.add('show');
+  if(score>=TOTAL-1)confetti(perfect?130:70);
+  $('restart').focus({preventScroll:true});
+}
+
+/* ---------- moving the car ---------- */
+/* how far the car can be rolled by hand. viewFor() keeps the car on the road at
+   every reading, so the whole far span is reachable — past the parking range the
+   car shrinks and the gap stops growing one-for-one, and it all snaps back to the
+   original scene the moment the car comes under the range again.                */
+function simFarLimit(){return Math.max(MAXD,SIM_FAR_MAX);}
+function farLimit(){return hardware?FAR_MAX:simFarLimit();}
+function setDistance(v){
+  if(phase!=='active'||hardware)return;
+  const next=Math.round(clamp(v,MIN,farLimit())*10)/10;
+  if(next===dist)return;
+  dist=next;resetHold();startLoop();vDist=0;pingSnd(dist);
+}
+function moveBy(delta){
+  if(phase!=='active'||hardware)return;
+  setDistance(delta===1?Math.floor(dist+.001)+1:delta===-1?Math.ceil(dist-.001)-1:dist+delta);
+}
+function stopMovement(){
+  dragging=false;dragPointer=null;heldButton=null;keyHeld=false;
+  clearTimeout(repeatTimer);repeatTimer=0;
+}
+
+/* push pads — hold to repeat, accelerating */
+function bindHold(id,delta){
+  const b=$(id);
+  b.addEventListener('pointerdown',e=>{
+    if(b.disabled||e.button!==0)return;
+    e.preventDefault();heldButton=b;
+    try{b.setPointerCapture(e.pointerId);}catch(err){}
+    moveBy(delta);
+    let count=0;
+    const repeat=()=>{
+      if(heldButton!==b||b.disabled)return;
+      moveBy(delta);
+      repeatTimer=setTimeout(repeat,Math.max(65,135-count++*8));
+    };
+    repeatTimer=setTimeout(repeat,330);
+  });
+  const end=()=>{if(heldButton===b){heldButton=null;clearTimeout(repeatTimer);parkAssist();}};
+  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,end));
+}
+bindHold('padFar',1);
+bindHold('padNear',-1);
+
+/* drag the car */
+n.kid.addEventListener('pointerdown',e=>{
+  if(phase!=='active'||hardware||e.button!==0||!e.isPrimary)return;
+  e.preventDefault();
+  dragging=true;dragPointer=e.pointerId;dragClientX=e.clientX;
+  dragRect=n.scene.getBoundingClientRect();      /* read once, never per move */
+  visualDist=dist;vDist=0;resetHold();
+  /* the scene's screen scale is already known — no per-move matrix work at all */
+  dragOffset=viewX0+(e.clientX-dragRect.left)/sceneK-(WALL_FACE-dist*ppc);
+  try{n.kid.setPointerCapture(e.pointerId);}catch(err){}
+  startLoop();
+});
+n.kid.addEventListener('pointermove',e=>{
+  if(!dragging||e.pointerId!==dragPointer)return;
+  setDistance((WALL_FACE-(viewX0+(e.clientX-dragRect.left)/sceneK-dragOffset))/ppc);
+});
+const releaseCar=e=>{
+  if(!dragging||e.pointerId!==dragPointer)return;
+  dragging=false;dragPointer=null;
+  parkAssist();startLoop();
+};
+n.kid.addEventListener('pointerup',releaseCar);
+n.kid.addEventListener('pointercancel',()=>{dragging=false;dragPointer=null;resetHold();});
+n.kid.addEventListener('lostpointercapture',()=>{dragging=false;dragPointer=null;});
+
+/* keyboard */
+n.kid.addEventListener('keydown',e=>{
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)||hardware||phase!=='active')return;
+  e.preventDefault();keyHeld=true;
+  if(e.key==='Home')setDistance(farLimit());
+  else if(e.key==='End')setDistance(MIN);
+  else moveBy((e.key==='ArrowLeft'?1:-1)*(e.shiftKey?.1:1));
+});
+n.kid.addEventListener('keyup',e=>{
+  if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){keyHeld=false;if(started&&phase==='active')parkAssist();}
+});
+document.addEventListener('keydown',e=>{
+  if($('ov').style.display!=='none')return;
+  if(phase!=='active'||hardware)return;
+  if(n.kid.contains(e.target))return;   /* the car's own handler already moved it */
+  if(e.key==='ArrowLeft'){e.preventDefault();moveBy(1);}
+  if(e.key==='ArrowRight'){e.preventDefault();moveBy(-1);}
+});
+window.addEventListener('blur',()=>{stopMovement();resetHold();});
+document.addEventListener('visibilitychange',()=>{
+  stopMovement();resetHold();
+});
+
+$('again').onclick=()=>{
+  if(phase!=='active'||hardware)return;
+  stopMovement();resetHold();
+  /* a real new target for this task: drawn from the range that still fits the screen
+    , and never the same number twice running */
+  const lim=measureRange();
+  const pool=(lim>=MAX?TARGET_POOL:TARGET_POOL_SMALL).filter(v=>v>=MIN&&v<=lim&&v!==target);
+  if(pool.length)target=pool[Math.floor(Math.random()*pool.length)];
+  targets[round]=target;
+  dist=spawnDistance();visualDist=dist;
+  lastPaintValue='';
+  updateProgress();updateStatus();paint();startLoop();
+  if(started)speak(sentence());
+};
+$('hear').onclick=()=>speak(sentence());
+$('start').onclick=startGame;
+$('restart').onclick=newGame;
+
+/* ---------- the celebration ---------- */
+const TITLES=['Treasure found!','Golden chest!','Jackpot!','Riches!','What a find!'];
+
+/* ===================== THE PLAYER =====================
+   One shared rig — shorts, jersey with a number, bare arms with wristbands, trainers,
+   a face that blinks — recoloured and re-geared for every task.                        */
+async function celebrate(){
+  if(phase!=='active')return;
+  phase='celebrating';
+  connectionUI();
+  const token=epoch;
+  score++;                                     /* the find is already earned */
+  stopMovement();stopSpeech();resetHold();
+  visualDist=dist;paint();
+  n.scene.classList.remove('is-parking','holding');
+  n.scene.classList.add('parked');
+  updateProgress();
+  rightSnd();
+  setVerdict('v-go','\u{1F48E}',TITLES[round],
+    hardware?`Standing ${Math.round(dist)} cm from the fort \u00b7 target ${target} cm.`
+             :`Found the treasure at ${target} cm!`);
+
+  if(motion.matches){
+    await wait(600);
+  }else{
+    const standX=WALL_FACE-dist*ppc;                  /* where the person stands    */
+    const chestX=WALL_FACE-target*ppc;                /* where the chest is buried  */
+    const cx=chestX.toFixed(1);
+    const lid=n.chestLid;
+    chestOpen=true;
+    /* ---------- the find ----------
+       0.00-0.24  the chest is pulled out of the carpet in one clean lift
+       0.24-0.46  it settles on the marble, a puff of dust falling off the lid
+       0.46-0.64  the lid swings open and warm light comes pouring out
+       0.64-1.00  gold fountains out, the person springs up and throws his arms wide
+       ~1.05      the ribbon lands over the chest, the chime rings out
+    */
+    perform(n.chestWrap,[
+      {transform:`translate(${cx}px,0px) scale(1,.40) rotate(-2.4deg)`,opacity:1,offset:0},
+      {transform:`translate(${cx}px,-24px) scale(1,1.05) rotate(1.6deg)`,opacity:1,offset:.6},
+      {transform:`translate(${cx}px,-15px) scale(1,1) rotate(-.7deg)`,opacity:1,offset:.84},
+      {transform:`translate(${cx}px,-16px) scale(1,1) rotate(0deg)`,opacity:1,offset:1}
+    ],720,0,'cubic-bezier(.2,1.32,.36,1)');
+    chestScale=1;
+    /* the sand shaking off the chest as it clears the ground */
+    const puff=fx(chestX,GROUND-4,'<ellipse rx="52" ry="13" fill="#D8C39A" opacity=".75"/>');
+    perform(puff,[{opacity:0,transform:'scale(.35,.5)'},
+                  {opacity:.75,transform:'scale(1.05,1)',offset:.34},
+                  {opacity:0,transform:'scale(1.8,1.3)'}],820,40);
+    for(let i=0;i<7;i++)
+      sparkle(chestX-52+i*17,GROUND-16,i%2?'#EADFBE':'#FFF3B4',480+i*40,.55);
+
+    /* the lid swings open and the loot rises into the light */
+    if(n.chestLidCap)n.chestLidCap.style.animation='chestOpen .62s cubic-bezier(.32,1.2,.42,1) .42s forwards';
+    if(n.chestLidInner)n.chestLidInner.style.animation='lidInnerIn .6s cubic-bezier(.2,1.28,.4,1) .58s forwards';
+    /* the box leans under the lifting lid, the clasp pops, and warm light spills inside */
+    perform(n.chestTilt,[
+      {transform:'rotate(0deg)',offset:0},
+      {transform:'rotate(1.3deg)',offset:.34},
+      {transform:'rotate(-.9deg)',offset:.68},
+      {transform:'rotate(0deg)',offset:1}
+    ],960,420,'ease-in-out');
+    perform(n.chestLock,[
+      {transform:'rotate(0deg)',opacity:1,offset:0},
+      {transform:'rotate(-13deg) translate(1px,3px)',opacity:1,offset:.45},
+      {transform:'rotate(-26deg) translate(2px,12px)',opacity:.35,offset:1}
+    ],560,150,'cubic-bezier(.3,1.1,.5,1)');
+    perform(n.chestInner,[
+      {opacity:0,transform:'scale(.7)',transformOrigin:'50% 50%',offset:0},
+      {opacity:.85,transform:'scale(1.05)',offset:.45},
+      {opacity:.5,transform:'scale(1)',offset:1}
+    ],900,430,'ease-out');
+    /* a few crumbs of sand let go of the lid as it comes up */
+    for(let i=0;i<5;i++)
+      perform(fx(chestX-42+i*21,GROUND-98,
+        `<circle r="${(1.6+((i*3)%3)*.5).toFixed(1)}" fill="#CBB48A"/>`),
+        [{opacity:0,transform:'translateY(-6px)'},
+         {opacity:.9,transform:`translate(${(i%2?4:-4)}px,18px)`,offset:.4},
+         {opacity:0,transform:`translate(${(i%2?9:-9)}px,54px)`}],760,520+i*70);
+    perform(n.chestLoot,[
+      {opacity:0,transform:'translateY(12px) scale(.55)',offset:0,transformOrigin:'50% 100%'},
+      {opacity:1,transform:'translateY(-3px) scale(1.07)',offset:.5},
+      {opacity:1,transform:'translateY(0) scale(1)',offset:1}
+    ],720,470,'cubic-bezier(.24,1.4,.5,1)');
+    perform(n.chestBeam,[
+      {opacity:0,transform:'scaleY(.18)',transformOrigin:'50% 100%'},
+      {opacity:.9,transform:'scaleY(1)',offset:.55},
+      {opacity:.55,transform:'scaleY(1.05)',offset:1}
+    ],760,470,'cubic-bezier(.2,1.1,.4,1)');
+    /* the box itself catches the light as it opens */
+    if(n.chestShine)n.chestShine.style.animation='chestGlint 2.4s ease-in-out .42s both';
+    glowAt(chestX,GROUND-26,'#FFE9A0',200,58,470,1600);
+
+    /* coins and gems fountaining out of the chest */
+    const loot=[['#FFD34D','#D9A312'],['#FFF3B4','#D9A312'],['#FFC93C','#C08F1E'],
+                ['#8FE0FF','#3FA8D8'],['#FFB3E1','#D86BA8'],['#C8F7B0','#4FA53F']];
+    for(let i=0;i<18;i++){
+      const t=i/17, col=loot[i%loot.length];
+      const g=fx(chestX-44+t*88,GROUND-50, i%2
+        ? `<circle r="${(4.4+2.6*((i*7)%5)/5).toFixed(1)}" fill="${col[0]}" stroke="${col[1]}" stroke-width="1.2"/>`
+        : `<path d="M0 -6.6L5.4 0L0 6.6L-5.4 0Z" fill="${col[0]}" stroke="${col[1]}" stroke-width="1.2"/>`);
+      perform(g,[
+        {opacity:0,transform:'translateY(8px) scale(.4)'},
+        {opacity:1,transform:`translate(${(Math.sin(t*Math.PI)*46).toFixed(1)}px,${(-104-46*t).toFixed(1)}px) scale(1)`,offset:.52},
+        {opacity:0,transform:`translate(${(Math.sin(t*Math.PI)*78).toFixed(1)}px,${(-30+52*t).toFixed(1)}px) scale(.86)`}
+      ],1040,540+i*36,'cubic-bezier(.3,.92,.5,1)');
+    }
+    for(let i=0;i<10;i++)
+      sparkle(chestX-66+i*15,GROUND-74-Math.sin(i*1.1)*20,i%2?'#FFF3B4':'#FFD34D',660+i*46,.9);
+
+    /* the person throws his arms up and jumps for joy */
+    const armL=n.body.querySelector('.kid-arm-l'), armR=n.body.querySelector('.kid-arm-r');
+    perform(n.bob,[
+      {transform:'translateY(0) scale(1,1)',offset:0},
+      {transform:'translateY(-30px) scale(.97,1.05)',offset:.26},
+      {transform:'translateY(0) scale(1,1)',offset:.5},
+      {transform:'translateY(-16px) scale(.99,1.02)',offset:.72},
+      {transform:'translateY(0) scale(1,1)',offset:1}
+    ],1120,200,'cubic-bezier(.3,1.42,.5,1)');
+    const armUp=[{transform:'rotate(0deg)'},{transform:'rotate(128deg)',offset:.24},
+                 {transform:'rotate(118deg)',offset:.5},{transform:'rotate(134deg)',offset:.72},
+                 {transform:'rotate(0deg)'}];
+    perform(armL,armUp,1240,240,'ease-in-out');
+    perform(armR,armUp.map((f,i)=>i===0?f:{...f,transform:f.transform.replace(/(-?\d+)deg/,m=>(-parseInt(m)).toString()+'deg')}),1240,240,'ease-in-out');
+
+    /* the chime rings over the find */
+    setTimeout(()=>{if(token!==epoch)return;cheerSnd();},380);   /* the chime rings out */
+
+    /* the ribbon over the chest */
+    const rx=clamp(chestX-40,300,660);
+    const ribbon=fx(rx,124,
+      `<g><rect x="-186" y="-29" width="372" height="58" rx="29" fill="#FFF" stroke="#E8B23C" stroke-width="2.6"/>`+
+      `<circle cx="-150" r="17" fill="#FFF4D2"/>`+
+      `<path d="M-150 -8l4.6 9.4l10.4 1.5l-7.5 7.3l1.8 10.4l-9.3 -4.9l-9.3 4.9l1.8 -10.4l-7.5 -7.3l10.4 -1.5Z" fill="#E8B23C"/>`+
+      `<text x="16" y="10" text-anchor="middle" font-size="28" font-weight="700" fill="#8A5E12">${TITLES[round]}</text></g>`);
+    perform(ribbon,[
+      {opacity:0,transform:'translateY(20px) scale(.86)'},
+      {opacity:1,transform:'translateY(3px) scale(1.05)',offset:.09},
+      {opacity:1,transform:'translateY(0) scale(1)',offset:.18},
+      {opacity:1,transform:'translateY(-12px) scale(1)',offset:.74},
+      {opacity:0,transform:'translateY(-26px) scale(1.02)'}
+    ],980,1040,'linear');
+
+    confetti(round===TOTAL-1?80:34);
+    /* stay on the find until every piece has played out - the caption included */
+    await Promise.race([waitForCelebration(),wait(2700)]);
+    await wait(60);
+  }
+
+  if(token!==epoch)return;
+  if(score===TOTAL)finishGame();
+  else{round++;beginRound();}
+}
+
+function median(a){const s=[...a].sort((x,y)=>x-y);return s[s.length>>1];}
+function onReading(raw){
+  if(!hardware||phase!=='active')return;
+  gotData=true;
+  readings.push(raw);if(readings.length>5)readings.shift();
+  sensorValid=true;lastSample=performance.now();
+  const med=median(readings);
+  const clamped=Math.round(clamp(med,MIN,FAR_MAX)*10)/10;
+  if(clamped!==dist){dist=clamped;}
+  startLoop();
+}
+async function readLoop(p,token){
+  let reader=null;
+  const dec=new TextDecoder();
+  try{
+    if(!p.readable)throw new Error('No readable stream');
+    reader=p.readable.getReader();serialReader=reader;
+    while(hardware&&token===serialToken){
+      const {value,done}=await reader.read();
+      if(done)break;
+      serBuf+=dec.decode(value,{stream:true});
+      if(serBuf.length>2048){serBuf='';continue;}
+      let nl;
+      while((nl=serBuf.indexOf('\n'))>=0){
+        const line=serBuf.slice(0,nl).trim();serBuf=serBuf.slice(nl+1);
+        if(/^(ERR|ERROR|NO_ECHO|OUT_OF_RANGE)$/i.test(line)){sensorValid=false;continue;}
+        const m=line.match(/(-?\d+(?:\.\d+)?)/);
+        if(m){const v=Number(m[1]);if(Number.isFinite(v)&&v>0&&v<=200)onReading(v);}
+      }
+    }
+  }catch(e){}
+  finally{
+    try{reader&&reader.releaseLock();}catch(e){}
+    if(serialReader===reader)serialReader=null;
+    try{await p.close();}catch(e){}
+    if(token===serialToken){
+      hardware=false;port=null;sensorValid=false;readings=[];
+      resetHold();connectionUI();
+    }
+  }
+}
+async function connectArduino(){
+  if(connecting||disconnecting)return;
+  if(!('serial' in navigator)){
+    alert('Web Serial needs desktop Chrome or Edge. Connect the Arduino and reopen this page there.');
+    return;
+  }
+  connecting=true;const token=++serialToken;connectionUI();
+  stopMovement();resetHold();
+  let selected=null;
+  try{
+    selected=await navigator.serial.requestPort();
+    await selected.open({baudRate:9600});
+    if(token!==serialToken){await selected.close();return;}
+    port=selected;hardware=true;readings=[];gotData=false;sensorValid=false;
+    $('connBtn').classList.remove('attn');
+    connectionUI();
+    readLoop(selected,token);
+  }catch(e){
+    hardware=false;port=null;
+    if(selected)try{await selected.close();}catch(err){}
+    connectionUI();
+  }finally{connecting=false;connectionUI();startLoop();}
+}
+async function disconnectArduino(){
+  if(disconnecting)return;
+  disconnecting=true;
+  serialToken++;const p=port,r=serialReader;
+  hardware=false;port=null;serialReader=null;sensorValid=false;readings=[];gotData=false;
+  stopMovement();resetHold();connectionUI();
+  try{if(r)await r.cancel();else if(p)await p.close();}catch(e){}
+  disconnecting=false;connectionUI();startLoop();
+}
+function connectionUI(){
+  $('dot').classList.toggle('on',hardware&&sensorValid);
+  $('connLabel').textContent=connecting?'Connecting…':hardware?(sensorValid?'Arduino live':'Arduino connected'):'Simulation mode';
+  $('connBtn').textContent=disconnecting?'Disconnecting…':connecting?'Connecting…':hardware?'🔌 Disconnect':'🔌 Connect Arduino';
+  $('connBtn').disabled=connecting||disconnecting;
+  const off=phase!=='active'||hardware||connecting||disconnecting;
+  $('padFar').disabled=off;$('padNear').disabled=off;$('again').disabled=off;
+  n.kid.setAttribute('aria-disabled',String(off));
+  n.kid.setAttribute('tabindex',off?'-1':'0');
+}
+$('connBtn').onclick=()=>hardware?disconnectArduino():connectArduino();
+if('serial' in navigator)navigator.serial.addEventListener?.('disconnect',()=>{if(hardware)disconnectArduino();});
+
+/* ---------- responsive aspect handling ---------- */
+/* the longest gap a screen can draw at true scale beside the wall without
+   pushing the car off the road — 10 cm on a laptop, a little less on a phone  */
+function rangeFor(ppcNow){
+  const fitCm=Math.floor((WALL_FACE-KID_MARGIN-KID_HALF*KID_SCALE_MIN)/ppcNow);
+  return clamp(fitCm,MIN,MAX);          /* 10 cm on any normal laptop window   */
+}
+/* Inside the parking range the drawing is exactly true to scale. When the sensor
+   reports a much bigger gap the reading is shown as it is — the view zooms out and
+   the car shrinks, so the car is *seen* parked far from the wall instead of the
+   number being clamped to the biggest gap that still fits.                       */
+/* The far view is a camera pull-back: the whole scene - the fort, the carpet, the labels -
+   shrinks by 1/zoom while the car shrinks a little more, so being far away is seen
+   as well as read. Under the parking range zoom is exactly 1, which is the orginal
+   designed view, untouched.                                                     */
+function applyZoom(z){
+  z=clamp(z,1,1+FAR_ZOOM_MAX);
+  const near=Math.abs(z-zoom)<.0025;
+  /* the ends always land exactly: zoom 1 is the designed view, byte for byte */
+  if(near&&z!==1&&zoom!==1)return false;
+  if(z===zoom)return false;
+  zoom=z;
+  viewX0=500-500*z;
+  const v=570-570*z;
+  n.scene.setAttribute('viewBox',`${viewX0.toFixed(2)} ${v.toFixed(2)} ${(1000*z).toFixed(2)} ${(570*z).toFixed(2)}`);
+  sceneK=sceneKBase/zoom;
+  return true;
+}
+function viewFor(d){
+  const room=WALL_FACE-KID_CROP_MARGIN;
+  /* inside the shooting range absolutely nothing changes — the distance stays true
+     to scale and the player keeps the designed size, in simulation and on the sensor */
+  if(d<=MAX)return {u:ppc,s:kidScale};           /* under 10 cm: the designed view */
+  /* past 10 cm the view pulls back — the distance stops growing one-for-one — and the
+     player gets smaller as they walk away, so being far is *seen* as well as read on
+     the meter. Walking back under 10 cm restores the original view exactly.         */
+  const t=clamp((d-MAX)/(FAR_SPAN-MAX),0,1);      /* the pull-back starts past 10 cm */
+  const s=kidScale+(KID_SCALE_FAR_MIN-kidScale)*t;
+  const u=Math.min(ppc,(room-100*s)/Math.max(d,.001));
+  return {u:u,s:s};
+}
+function measureRange(){
+  const stage=n.scene.parentElement;
+  const w=Math.max(1,stage.clientWidth), h=Math.max(1,stage.clientHeight);
+  const k=(w/h>1000/570?Math.max(w/1000,h/570):Math.min(w/1000,h/570));
+  return rangeFor(PX_PER_CM/Math.max(.0001,k));
+}
+function nativeFitScene(){
+  const stage=n.scene.parentElement;
+  const w=Math.max(1,stage.clientWidth), h=Math.max(1,stage.clientHeight);
+  const ratio=w/h, sceneRatio=1000/570;
+  /* when the stage is wider than the artwork, fill it and crop sky/road —
+     never crop sideways, so the car and the wall always stay visible. */
+  const slice=ratio>sceneRatio;
+  n.scene.setAttribute('preserveAspectRatio',slice?'xMidYMid slice':'xMidYMid meet');
+  /* css px per viewBox unit, so the drawing can be held to true centimetres */
+  const k=slice?Math.max(w/1000,h/570):Math.min(w/1000,h/570);
+  sceneKBase=Math.max(.0001,k);
+  /* the centimetre scale is fixed by the unzoomed artwork, so pulling the camera
+     back for a far reading never changes how big a centimetre is on screen      */
+  ppc=PX_PER_CM/sceneKBase;
+  applyZoom(zoom);
+  MAXD=rangeFor(ppc);
+  /* the player is drawn at the designed size inside the range — only a far reading
+     pulls the camera back and shrinks them                                            */
+  kidScale=KID_SCALE;
+  paint();
+}
+/* ================= AUTO-FIT (same approach as distance_explorer2.0) =================
+   The authored layout is kept exactly as designed on laptops. On every other
+   device the activity switches to auto-fit: in-scene labels and hit targets are
+   re-scaled from the real render scale, and the shell compacts itself.          */
+/* a laptop/desktop is any device driven by a real pointer: the window size is
+   deliberately NOT part of this test, so resizing a laptop window can never swap
+   the designed UI out for the compact one */
+const laptop=matchMedia('(any-hover:hover) and (any-pointer:fine)');
+let frame=null,adapted=false;
+const NATIVE_LABELS={measureFont:18,pillW:116,pillH:32,pillR:16,wallFont:13,hitW:100,hitH:64};
+
+function sceneScale(){
+  const m=n.scene.getScreenCTM();
+  return (m&&Number.isFinite(m.a)&&m.a>0)?m.a:1;
+}
+function fitSceneLabels(){
+  const k=Math.max(.0001,sceneScale());
+  /* the meter pill and the labels inside the drawing grow back to readable size —
+     for consistency with explorer 2.0 a bigger drawing keeps the native sizes and
+     never shrinks them                                                          */
+  const pillH=Math.max(32,NATIVE_LABELS.pillH,Math.min(NATIVE_LABELS.pillH/k,NATIVE_LABELS.pillH*1.18));
+  const pillW=Math.max(116,NATIVE_LABELS.pillW,Math.min(NATIVE_LABELS.pillW/k,NATIVE_LABELS.pillW*1.18));
+  pillHalf=pillW/2;
+  n.pill.setAttribute('x',(-pillW/2).toFixed(2));
+  n.pill.setAttribute('y',(386-(pillH-32)/2).toFixed(2));
+  n.pill.setAttribute('width',pillW.toFixed(2));
+  n.pill.setAttribute('height',pillH.toFixed(2));
+  n.pill.setAttribute('rx',(pillH/2).toFixed(2));
+  n.measureText.setAttribute('font-size',Math.max(18,NATIVE_LABELS.measureFont/k).toFixed(2));
+  n.measureText.setAttribute('y',(408+(pillH-32)/2+2).toFixed(2));
+  n.wallLabel.setAttribute('font-size',Math.max(13,NATIVE_LABELS.wallFont/k).toFixed(2));
+  const hitW=Math.max(100,NATIVE_LABELS.hitW/k), hitH=Math.max(64,NATIVE_LABELS.hitH/k);
+  n.hit.setAttribute('width',hitW.toFixed(1));
+  n.hit.setAttribute('height',hitH.toFixed(1));
+  n.hit.setAttribute('x',((100-hitW)/2).toFixed(1));
+  n.hit.setAttribute('y',(78-hitH+8).toFixed(1));
+  lastPaintedDist=NaN;                      /* force one repaint with the new sizes */
+}
+function restoreNativeLabels(){
+  pillHalf=NATIVE_LABELS.pillW/2;
+  n.pill.setAttribute('x',-NATIVE_LABELS.pillW/2);
+  n.pill.setAttribute('y',386);
+  n.pill.setAttribute('width',NATIVE_LABELS.pillW);
+  n.pill.setAttribute('height',NATIVE_LABELS.pillH);
+  n.pill.setAttribute('rx',NATIVE_LABELS.pillR);
+  n.measureText.setAttribute('font-size',NATIVE_LABELS.measureFont);
+  n.measureText.setAttribute('y',408);
+  n.wallLabel.setAttribute('font-size',NATIVE_LABELS.wallFont);
+  /* the car's touch area always covers the car itself, on every screen */
+  const cover=(el,min)=>el&&el.getBBox?Math.max(min,el.getBBox().width+16):min;
+  const hitW=cover(n.body,NATIVE_LABELS.hitW), hitH=cover(n.body,NATIVE_LABELS.hitH);
+  n.hit.setAttribute('width',hitW.toFixed(1));
+  n.hit.setAttribute('height',hitH.toFixed(1));
+  n.hit.setAttribute('x',((100-hitW)/2).toFixed(1));
+  n.hit.setAttribute('y',(78-hitH+8).toFixed(1));
+  n.hit.setAttribute('x',6);
+  n.hit.setAttribute('y',26);
+  lastPaintedDist=NaN;
+}
+function fitScene(){
+  nativeFitScene();
+  const original=laptop.matches;
+  document.documentElement.dataset.layoutMode=original?'original-laptop':'auto-fit';
+  if(original){if(adapted){restoreNativeLabels();adapted=false;}}
+  else{fitSceneLabels();adapted=true;}
+  /* a window that became narrower can leave the current target out of range —
+     pull the round back inside the reachable range instead of soft-locking it */
+  if(phase==='active'&&!hardware&&target>MAXD){
+    target=MAXD;
+    if(dist>MAXD)setDistance(MAXD);else resetHold();
+    updateProgress();updateStatus();
+  }
+  paint();
+}
+function scheduleFit(){
+  if(frame!==null)return;
+  frame=requestAnimationFrame(()=>{frame=null;fitScene();});
+}
+if('ResizeObserver' in window)new ResizeObserver(scheduleFit).observe(n.scene.parentElement);
+if(laptop.addEventListener)laptop.addEventListener('change',scheduleFit);
+else laptop.addListener?.(scheduleFit);
+window.addEventListener('resize',scheduleFit,{passive:true});
+window.addEventListener('orientationchange',scheduleFit,{passive:true});
+if(window.visualViewport)window.visualViewport.addEventListener('resize',scheduleFit,{passive:true});
+window.addEventListener('pageshow',scheduleFit);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleFit();});
+document.fonts?.ready.then(scheduleFit);
+document.fonts?.addEventListener?.('loadingdone',scheduleFit);
+
+/* ---------- boot ---------- */
+applyKidModel(0,false);            /* the first player is on the court before the round starts */
+applyChestModel(0,false);          /* and the first chest is already buried */
+targets=makeTargets();
+target=targets[0];
+dist=spawnDistance();visualDist=dist;
+updateProgress();
+paint();connectionUI();updateStatus();fitScene();
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a41ae904680bdf6e',t:'MTc5MDUxNjMyMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
