@@ -1,0 +1,1393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pattern and Sequence · Smart Block</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#83358C;--pink:#F01A8C;--yellow:#FFF212;
+  --purple-deep:#5C2563;--pink-dk:#B01268;--yellow-dk:#D6C900;
+  --ink:#161016;--muted:#4A3A4D;--line:#E7D8EA;
+  --ok:#2FBF6D;--ok-deep:#1D7A45;--no:#E0433A;
+  --font-display:'Fredoka','SB Display',Boulder,sans-serif;
+  --font-text:'Nunito','SB Text',Bariol,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#E6DCEB;overflow:hidden;display:flex;flex-direction:column;font-family:var(--font-text);color:var(--ink)}
+button{font:inherit;cursor:pointer}
+
+/* ===================== SHELL ===================== */
+.topbar{flex:0 0 auto;height:clamp(62px,8vh,76px);display:flex;align-items:center;gap:16px;
+  padding:8px clamp(12px,2vw,24px);border-bottom:3px solid var(--purple);background:var(--yellow)}
+.brand-logo{height:34px;width:auto}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(18px,2.8vh,26px);color:#5C2563}
+h1 b{color:var(--pink)}
+.layout{flex:1;min-height:0;display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:14px;padding:14px clamp(12px,2vw,24px)}
+.col{display:flex;flex-direction:column;gap:12px;min-height:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;
+  box-shadow:0 12px 25px -20px var(--purple-deep);min-height:0}
+.stage-card{position:relative;flex:1;display:flex;flex-direction:column;padding:10px;min-height:0}
+.stage{position:relative;flex:1;min-height:200px;border-radius:15px;border:1px solid var(--line);overflow:hidden;background:#CDE7FB}
+
+/* ---- task header + progress dots ---- */
+.task-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:1px 6px 6px;flex-wrap:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.eyebrow{font-family:var(--font-display);font-weight:700;font-size:10.5px;letter-spacing:.11em;color:var(--pink);text-transform:uppercase}
+.task-title{font-family:var(--font-display);font-weight:700;font-size:clamp(16px,2.2vh,21px);color:var(--purple-deep);margin:3px 0 0}
+.task-title strong{color:var(--pink)}
+.progress{display:flex;gap:6px;flex:0 0 auto}
+/* the screen dots are little glazed beads — a bright top highlight, a soft
+   inner shade and a drop shadow, the same finish the symbol tiles wear */
+.progress .dot{position:relative;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;
+  color:#AE8FB8;border:1px solid #DCCAE4;font:700 11px var(--font-display);
+  text-shadow:0 1px 0 rgba(255,255,255,.85);
+  background:radial-gradient(115% 100% at 50% 0%,#FFFFFF 0%,#F8F1FC 46%,#E8DAF0 100%);
+  box-shadow:inset 0 2px 1px rgba(255,255,255,.97), inset 0 -2.5px 3px rgba(131,53,140,.13),
+             0 2px 0 rgba(92,37,99,.13), 0 5px 9px -5px rgba(92,37,99,.35);
+  transition:color .25s,border-color .25s,box-shadow .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+.progress .dot::after{content:"";position:absolute;left:17%;right:17%;top:9%;height:44%;border-radius:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,255,255,.10));pointer-events:none}
+.progress .dot.current{color:#fff;border-color:#D81C86;text-shadow:0 1px 1px rgba(150,10,80,.45);
+  background:radial-gradient(115% 105% at 50% 0%,#FF80C5 0%,var(--pink) 52%,#D6167F 100%);
+  box-shadow:inset 0 2px 1px rgba(255,255,255,.78), inset 0 -2.5px 3px rgba(140,8,72,.32),
+             0 3px 0 rgba(176,18,104,.42), 0 8px 13px -6px rgba(240,26,140,.70);
+  transform:scale(1.12)}
+.progress .dot.done{color:#188348;border-color:#79CAA0;text-shadow:0 1px 0 rgba(255,255,255,.9);
+  background:radial-gradient(115% 100% at 50% 0%,#FFFFFF 0%,#E5FAED 46%,#BDECCF 100%);
+  box-shadow:inset 0 2px 1px rgba(255,255,255,.97), inset 0 -2.5px 3px rgba(47,150,90,.17),
+             0 2px 0 rgba(47,150,90,.24), 0 5px 9px -5px rgba(47,150,90,.50)}
+
+/* ---- banner ---- */
+.banner{margin:0 auto;flex:0 1 auto;min-width:0;background:#fff;border:3px solid var(--purple);
+  border-radius:18px;padding:4px 18px;font:700 clamp(13px,2.4vh,19px) var(--font-display);color:var(--purple-deep);
+  box-shadow:0 5px 0 rgba(92,37,99,.18);width:max-content;max-width:94%;text-align:center;letter-spacing:.4px}
+.banner .target{color:var(--pink)}
+.banner.pop{animation:bp .4s cubic-bezier(.22,1,.36,1)}
+@keyframes bp{0%{opacity:0;transform:translateY(-10px) scale(.92)}
+  60%{opacity:1;transform:translateY(0) scale(1.035)}100%{transform:scale(1)}}
+@keyframes holdFill{0%{transform:scaleX(0);opacity:0}12%{opacity:1}to{transform:scaleX(1);opacity:1}}
+@keyframes iconIn{0%{transform:scale(.4) rotate(-10deg);opacity:0}60%{transform:scale(1.18) rotate(3deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===================== AUTO-FIT SHELL (non-laptop devices) =====================
+   Same idea as distance_explorer2.0: the laptop build keeps the authored sizes,
+   every other device compacts the shell so the whole activity fits one screen. */
+html[data-layout-mode="auto-fit"] .topbar{height:clamp(50px,7vh,62px);gap:12px;padding:6px clamp(10px,1.6vw,18px)}
+html[data-layout-mode="auto-fit"] .brand h1{font-size:clamp(17px,2.4vh,22px)}
+html[data-layout-mode="auto-fit"] .brand-logo{height:clamp(26px,3.6vh,31px)}
+html[data-layout-mode="auto-fit"] .layout{padding:12px;gap:12px}
+html[data-layout-mode="auto-fit"] .card{border-radius:18px}
+html[data-layout-mode="auto-fit"] .stage-card{padding:10px}
+html[data-layout-mode="auto-fit"] .task-header{padding-bottom:8px}
+html[data-layout-mode="auto-fit"] .eyebrow{font-size:10px}
+html[data-layout-mode="auto-fit"] .task-title{font-size:clamp(17px,2.3vh,21px)}
+html[data-layout-mode="auto-fit"] .dot{width:22px;height:22px;font-size:11px}
+html[data-layout-mode="auto-fit"] .dots{gap:4px}
+html[data-layout-mode="auto-fit"] .banner{font-size:clamp(14px,2vh,17px);padding:5px 14px}
+html[data-layout-mode="auto-fit"] .ctrl{padding:11px 13px 13px}
+html[data-layout-mode="auto-fit"] .card-title{font-size:14px;padding-bottom:7px}
+html[data-layout-mode="auto-fit"] .conn{font-size:12.5px;padding:6px 10px}
+html[data-layout-mode="auto-fit"] .btn{padding:8px 10px;font-size:13px}
+html[data-layout-mode="auto-fit"] .btn-yellow.big{min-height:40px;font-size:16px;box-shadow:0 5px 0 var(--yellow-dk)}
+html[data-layout-mode="auto-fit"] .hint{font-size:11px;margin-top:7px}
+html[data-layout-mode="auto-fit"] .ov-box{padding:24px 30px}
+html[data-layout-mode="auto-fit"] .ov-box h2{font-size:clamp(22px,4vh,32px)}
+html[data-layout-mode="auto-fit"] .ov-box p{font-size:19px;margin:14px 0 20px}
+html[data-layout-mode="auto-fit"] .ov-icons svg{width:88px;height:88px}
+html[data-layout-mode="auto-fit"] .ov-start{padding:11px 30px;font-size:19px}
+html[data-layout-mode="auto-fit"] .final-box{padding:22px 26px}
+html[data-layout-mode="auto-fit"] .tally{font-size:44px}
+/* portrait phones: stack the scene over the controls, exactly like explorer 2.0 */
+@media(max-width:760px){
+  /* phones and tablets: the scene takes the space that is left over, and the
+     two cards underneath it always keep their natural height */
+  html[data-layout-mode="auto-fit"] .layout{grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(0,1fr) auto;gap:10px;padding:10px}
+  html[data-layout-mode="auto-fit"] .rightcol{display:grid;grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto;gap:8px;align-content:start}
+  html[data-layout-mode="auto-fit"] .metercard{flex:0 0 auto;min-height:0;justify-content:center}
+  html[data-layout-mode="auto-fit"] .ctrl>*{flex:0 0 auto}
+  html[data-layout-mode="auto-fit"] .stage{min-height:0}
+}
+@media(max-width:480px){
+  /* small phones: everything shrinks one more notch so nothing scrolls */
+  html[data-layout-mode="auto-fit"] .layout{gap:8px;padding:8px 8px 4px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .task-title{font-size:16px}
+  html[data-layout-mode="auto-fit"] .eyebrow{font-size:8.9px}
+  html[data-layout-mode="auto-fit"] .dot{width:19px;height:19px;font-size:10px}
+  html[data-layout-mode="auto-fit"] .banner{font-size:12.5px;padding:4px 11px}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:9px 11px 11px}
+  html[data-layout-mode="auto-fit"] .card-title{font-size:12.5px;padding-bottom:5px}
+  html[data-layout-mode="auto-fit"] .conn{font-size:11px;padding:5px 9px}
+  html[data-layout-mode="auto-fit"] .btn{padding:7px 9px;font-size:12px}
+  html[data-layout-mode="auto-fit"] .btn-yellow.big{min-height:36px;font-size:15px;box-shadow:0 4px 0 var(--yellow-dk)}
+  html[data-layout-mode="auto-fit"] .btn-row{margin-top:6px}
+  html[data-layout-mode="auto-fit"] .hint{font-size:10.4px;margin-top:5px}
+}
+@media(max-width:760px) and (max-height:720px){
+  /* short phones (640–720 px tall): trim one more notch so the whole scene,
+     the read-out and the buttons still fit on one screen */
+  html[data-layout-mode="auto-fit"] .layout{gap:7px;padding:7px 7px 3px}
+  html[data-layout-mode="auto-fit"] .board{gap:5px;padding:6px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .task-head{padding:8px 11px 6px}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:8px 10px 9px}
+  html[data-layout-mode="auto-fit"] .card-title{font-size:12px;padding:0 2px 4px}
+  html[data-layout-mode="auto-fit"] .conn{font-size:10.6px;padding:4px 8px;margin-bottom:6px}
+  html[data-layout-mode="auto-fit"] .conn .dot{width:8px;height:8px}
+  html[data-layout-mode="auto-fit"] .btn{padding:6px 8px;font-size:11.5px;border-radius:10px}
+  html[data-layout-mode="auto-fit"] .btn-yellow.big{min-height:33px;font-size:14px;box-shadow:0 3px 0 var(--yellow-dk)}
+  html[data-layout-mode="auto-fit"] .btn-row{margin-top:5px}
+  html[data-layout-mode="auto-fit"] .hint{font-size:9.6px;margin-top:4px;line-height:1.4}
+}
+/* ===================== RIGHT COLUMN ===================== */
+.rightcol{display:flex;flex-direction:column;gap:12px;min-height:0}
+.card-title{font-family:var(--font-display);font-weight:700;font-size:15.5px;color:var(--purple);padding:2px 4px 10px}
+.ctrl{flex:0 0 auto;display:flex;flex-direction:column;padding:14px 16px 16px}
+
+.conn{display:flex;align-items:center;gap:8px;background:#F7F2F8;border-radius:10px;padding:6px 12px;
+  font:700 12.5px var(--font-display);color:var(--muted);margin:0 0 8px;border:1px solid #EBE2EE}
+.conn .dot{width:10px;height:10px}
+.dot{width:11px;height:11px;border-radius:50%;background:#C9C2D6;box-shadow:inset 0 -2px 3px rgba(0,0,0,.15);transition:background .25s}
+.dot.on{background:var(--ok);box-shadow:0 0 9px rgba(47,191,109,.85)}
+
+.btn{border:none;border-radius:12px;padding:9px 12px;font:700 14px var(--font-display);width:100%;cursor:pointer;
+  transition:transform .16s cubic-bezier(.22,1,.36,1),filter .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1)}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn:active{transform:translateY(2px)}
+.btn:disabled{filter:grayscale(.5) brightness(.92);cursor:default;transform:none}
+.btn-pink{background:var(--pink);color:#fff;box-shadow:0 4px 0 var(--pink-dk)}
+.btn-pink:active{box-shadow:0 1px 0 var(--pink-dk)}
+.btn-yellow{background:var(--yellow);color:var(--ink);box-shadow:0 4px 0 var(--yellow-dk)}
+.btn-yellow.big{min-height:45px;font-size:17px;box-shadow:0 6px 0 var(--yellow-dk);letter-spacing:.3px}
+.btn-yellow.big:active{box-shadow:0 2px 0 var(--yellow-dk)}
+.btn-ghost{background:#F0E8F2;color:var(--purple-deep);box-shadow:0 3px 0 #DCC6E4}
+.btn-ghost:active{box-shadow:0 1px 0 #DCC6E4}
+.ctrl .btn{position:relative;overflow:hidden;-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+.ctrl .btn::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10) 40%,rgba(255,255,255,0) 60%)}
+.ctrl .btn::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.12)}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.hint{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.55;font-weight:600}
+#connBtn.attn{animation:connPing 2.2s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes connPing{0%{box-shadow:0 4px 0 var(--pink-dk),0 0 0 0 rgba(240,26,140,.42)}
+  70%,100%{box-shadow:0 4px 0 var(--pink-dk),0 0 0 14px rgba(240,26,140,0)}}
+
+/* ===================== OVERLAYS ===================== */
+.ov{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px}
+.ov.hide{opacity:0;pointer-events:none;transition:opacity .35s}
+.ov-box{background:var(--yellow);border:5px solid var(--purple);border-radius:28px;padding:30px 42px;text-align:center;
+  max-width:560px;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.ov.hide .ov-box{transform:scale(.9) translateY(10px)}
+.ov-box h2{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,4.6vh,40px);color:var(--purple-deep)}
+.ov-box h2 b{color:inherit}
+.ov-box p{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--pink);margin:16px 0 24px;
+  line-height:1.45;letter-spacing:.4px}
+.ov-icons{display:flex;gap:20px;justify-content:center;margin:6px 0 16px}
+.ov-icons svg{width:clamp(84px,12vh,112px);height:clamp(84px,12vh,112px);filter:drop-shadow(0 6px 10px rgba(92,37,99,.3));
+  animation:iconIn2 .6s cubic-bezier(.34,1.56,.64,1) both, iconFloat 3.4s ease-in-out infinite}
+.ov-icons svg:nth-child(1){animation-delay:.05s,1.0s}
+.ov-icons svg:nth-child(2){animation-delay:.18s,1.5s}
+@keyframes iconIn2{from{opacity:0;transform:translateY(16px) scale(.45)}to{opacity:1;transform:none}}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.ov-box.task-in h2{animation:ovRise .5s cubic-bezier(.22,1,.36,1) backwards}
+.ov-box.task-in p{animation:ovRise .5s .1s cubic-bezier(.22,1,.36,1) backwards}
+.ov-box.task-in .ov-start{animation:ovRise .5s .2s cubic-bezier(.22,1,.36,1) backwards}
+@keyframes ovRise{from{opacity:0;transform:translateY(14px)}}
+.ov-start{background:var(--pink);color:#fff;border:none;border-radius:18px;padding:13px 36px;
+  font:700 21px var(--font-display);box-shadow:0 7px 0 var(--pink-dk);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.ov-start:hover{transform:translateY(-3px);box-shadow:0 10px 0 var(--pink-dk)}
+.ov-start:active{transform:translateY(4px);box-shadow:0 3px 0 var(--pink-dk)}
+.ov-start{position:relative;overflow:hidden;-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+.ov-start::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10) 40%,rgba(255,255,255,0) 60%)}
+.ov-start::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.12)}
+
+.final{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;
+  background:rgba(22,16,22,.45);backdrop-filter:blur(4px)}
+.final.show{display:flex}
+.final-box{background:#fff;border:5px solid var(--purple);border-radius:28px;padding:32px 42px;text-align:center;max-width:440px;
+  animation:finIn .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes finIn{from{opacity:0;transform:scale(.82) translateY(16px)}to{opacity:1;transform:none}}
+.trophy{font-size:62px;animation:tp .7s cubic-bezier(.3,1.6,.4,1)}
+@keyframes tp{0%{transform:scale(.3) rotate(-20deg)}100%{transform:scale(1)}}
+.final-box h2{font-family:var(--font-display);color:var(--purple);font-size:30px;margin:6px 0}
+.tally{font:800 52px var(--font-display);color:var(--pink);line-height:1}
+.tally small{font-size:22px;color:var(--purple-deep)}
+.final-box p{margin:10px 0 16px;color:var(--muted);font-weight:700}
+.again{background:var(--pink);color:#fff;border:none;border-radius:16px;padding:12px 28px;font:700 18px var(--font-display);
+  box-shadow:0 6px 0 var(--pink-dk);transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.again:hover{transform:translateY(-3px);box-shadow:0 9px 0 var(--pink-dk)}
+.again:active{transform:translateY(4px);box-shadow:0 2px 0 var(--pink-dk)}
+
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden;contain:layout paint}
+.confetti i{position:absolute;top:-14px;width:10px;height:14px;border-radius:2px;
+  will-change:transform,opacity;backface-visibility:hidden}
+#kidWorld{cursor:grab;touch-action:none;outline:none;will-change:transform}
+#kidBob{will-change:transform}
+#kidWorld:active{cursor:grabbing}
+/* the watering can that lies on the plot: lifts off the soil and tips over the pot */
+/* the buried chest: the dust, the mound, the lid and the loot */
+#digMound{transform-box:fill-box;transform-origin:50% 100%}
+#chestWrap{transform-box:fill-box;transform-origin:50% 100%}
+#chestLid{transform-box:fill-box;transform-origin:0% 100%}
+#chestLidCap{transform-box:fill-box;transform-origin:0% 100%}
+#chestLidInner{transform-box:fill-box;transform-origin:50% 100%}
+#chestTilt{transform-box:fill-box;transform-origin:50% 100%}
+#chestLock{transform-box:fill-box;transform-origin:50% 50%}
+#chestLoot{transform-box:fill-box;transform-origin:50% 100%}
+#chestBeam{transform-box:fill-box;transform-origin:50% 100%}
+.d2{animation-delay:-.22s}.d3{animation-delay:-.44s}.d4{animation-delay:-.66s}.d5{animation-delay:-.88s}
+#chestShine{transform-box:fill-box;transform-origin:50% 100%;
+            filter:drop-shadow(0 0 5px rgba(255,242,196,.95)) drop-shadow(0 0 12px rgba(255,225,150,.65))}
+/* breathing while standing, a walking cycle the moment the player starts moving */
+#kidBob{transform-box:fill-box;transform-origin:50% 100%}
+/* the hoop answers every made shot */
+#net{transform-box:fill-box;transform-origin:50% 0%}
+#net.swish{animation:netSwish .46s cubic-bezier(.22,1,.36,1)}
+.m2{animation-delay:-1.4s}
+.m3{animation-delay:-2.6s}
+.m4{animation-delay:-3.4s}
+.m5{animation-delay:-4.2s}
+#ball{will-change:transform}
+
+
+
+.dc1{animation:cldA 118s linear infinite;animation-delay:-26s}
+.dc2{animation:cldB 142s linear infinite;animation-delay:-72s}
+.dc3{animation:cldC 104s linear infinite;animation-delay:-48s}
+
+.db1{animation:birdL1 62s linear infinite;animation-delay:-16s}
+.db2{animation:birdL2 78s linear infinite;animation-delay:-52s}
+.db3{animation:birdL3 96s linear infinite;animation-delay:-14s}
+.wingB{transform-box:fill-box;transform-origin:0% 60%;animation:flap .5s ease-in-out infinite alternate}
+.db2 .wingB{animation-delay:-.22s}
+
+@media (prefers-reduced-motion:reduce){
+  .sonar-wave{animation:none;opacity:0}
+  .confetti{display:none}
+}
+
+/* ===================== THE PATTERN BOARD (6.0) ===================== */
+.stage{background:
+  radial-gradient(120% 90% at 50% -10%, #FDF6FF 0%, #F1E6FA 46%, #E5D6F4 100%)}
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(78% 58% at 50% 118%, rgba(131,53,140,.09), transparent 72%)}
+.board{position:absolute;inset:0;display:flex;flex-direction:column;gap:clamp(4px,1vh,9px);
+  padding:clamp(6px,1.2vh,12px);overflow:hidden}
+.board{will-change:opacity,transform}
+.board.out{animation:boardOut .34s cubic-bezier(.4,0,.7,.2) forwards}
+.board.in{animation:boardIn .56s cubic-bezier(.22,1,.36,1)}
+@keyframes boardOut{to{opacity:0;transform:translateY(-14px) scale(.99)}}
+@keyframes boardIn{from{opacity:0;transform:translateY(16px) scale(.99)}}
+
+.prow{position:relative;flex:1 1 0;min-height:0;display:flex;align-items:center;gap:clamp(6px,1.2vw,14px);
+  padding:clamp(4px,.9vh,10px) clamp(8px,1.4vw,16px);border-radius:16px;
+  background:#FFFFFF;border:2.5px solid #E7DAF0;
+  box-shadow:0 3px 0 rgba(92,37,99,.07);
+  transition:border-color .3s,box-shadow .3s,background .3s,opacity .3s,filter .3s}
+/* the questions still to come wait in black and white, so the eye always
+   lands on the one being asked */
+.prow:not(.active):not(.done){filter:grayscale(1) contrast(.96);opacity:.58}
+.prow:not(.active):not(.done) .pnum{background:#8E8A92;box-shadow:0 2px 0 #6E6A72}
+/* a wrong answer turns the row red for a moment */
+.board .prow.wrongFx{border-color:#E23B3B;
+  background:linear-gradient(180deg,#FFF8F8 0%,#FFEBEB 100%);
+  box-shadow:0 8px 24px rgba(226,59,59,.28),0 3px 0 rgba(92,37,99,.06)}
+.board .prow.wrongFx .pnum{background:#E23B3B;box-shadow:0 2px 0 #A82A2A}
+.board .prow.wrongFx .chip.blank{border-color:#E23B3B;color:#E23B3B;background:#FFF3F3}
+.board .prow.wrongFx .opt.picked{border-color:#E23B3B}
+.board .prow.wrongFx .opt.used{border-color:rgba(226,59,59,.5);
+  background:linear-gradient(180deg,#FFF7F7,#FFECEC);opacity:.8}
+.prow.active{border-color:var(--pink);box-shadow:0 8px 22px rgba(240,26,140,.20),0 3px 0 rgba(92,37,99,.06);
+  background:linear-gradient(180deg,#FFFDFF 0%,#FDF3FA 100%)}
+.prow .popts{transition:opacity .28s ease}
+.prow.done{background:linear-gradient(180deg,#F6FDF7 0%,#E9F9EE 100%);border-color:#7FCB95}
+.prow.shake{animation:rowShake .44s cubic-bezier(.36,.07,.19,.97)}
+@keyframes rowShake{10%,90%{transform:translateX(-3px)}20%,80%{transform:translateX(4px)}
+  30%,50%,70%{transform:translateX(-6px)}40%,60%{transform:translateX(6px)}}
+.pnum{flex:0 0 auto;width:clamp(20px,3.4vh,28px);height:clamp(20px,3.4vh,28px);border-radius:50%;
+  background:var(--purple);color:#fff;display:grid;place-items:center;
+  font:700 clamp(10px,1.7vh,14px) var(--font-display);box-shadow:0 2px 0 var(--purple-deep)}
+.prow.done .pnum{background:#4FA96B;box-shadow:0 2px 0 #3B8452}
+.pbody{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:clamp(1px,.4vh,4px)}
+/* a question is a strip of pills — one pill per line of the pattern, laid
+   side by side so even the five-line ones stay a single row tall */
+/* a question reads as a little paragraph: one line of the pattern per row,
+   stacked top to bottom (one star / two stars / three stars …) */
+.pblock{display:flex;flex-direction:column;align-items:flex-start;
+  gap:clamp(3px,.7vh,8px)}
+.pgroup{display:flex;align-items:center;gap:clamp(3px,.7vw,8px);flex-wrap:wrap}
+.chip{display:inline-grid;place-items:center;min-width:clamp(22px,4.4vh,40px);height:clamp(22px,4.4vh,40px);
+  padding:0 clamp(3px,.5vw,7px);border-radius:11px;background:#F7F2FB;border:1.8px solid #E3D4EF;
+  font-size:clamp(13px,2.7vh,23px);line-height:1;white-space:nowrap}
+.chip.num{font:700 clamp(13px,2.6vh,22px) var(--font-display);color:var(--purple-deep);background:#FFF;border-color:#D9C6E8}
+.chip.blank{border-style:dashed;border-color:var(--pink);color:var(--pink);font:700 clamp(13px,2.6vh,22px) var(--font-display);
+  background:#FFF6FB;animation:blankPulse 1.5s ease-in-out infinite}
+@keyframes blankPulse{0%,100%{box-shadow:0 0 0 0 rgba(240,26,140,.22)}50%{box-shadow:0 0 0 6px rgba(240,26,140,0)}}
+.chip.filled{background:#EAF9EF;border-color:#7FCB95;color:inherit;font-weight:inherit;animation:slotIn .42s cubic-bezier(.34,1.56,.64,1)}
+@keyframes slotIn{0%{transform:scale(.4)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.arrow{font:700 clamp(12px,2.4vh,20px) var(--font-display);color:#B396BA}
+.popts{display:flex;align-items:center;justify-content:flex-end;gap:clamp(5px,1vw,12px);
+  row-gap:clamp(4px,.7vh,8px);flex:0 1 auto;margin-left:auto;flex-wrap:wrap;min-width:0}
+.opt{display:inline-flex;align-items:center;gap:2px;cursor:pointer;border:2.5px solid #E3D4EF;border-radius:14px;
+  background:#fff;padding:clamp(3px,.7vh,7px) clamp(6px,1vw,12px);min-height:clamp(28px,5.6vh,48px);
+  box-shadow:0 4px 0 rgba(92,37,99,.10);transition:transform .18s,box-shadow .18s,border-color .2s,background .2s}
+.opt:hover{transform:translateY(-2px);border-color:var(--pink);box-shadow:0 7px 0 rgba(240,26,140,.16)}
+.opt:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(92,37,99,.12)}
+.opt:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+.opt.used{opacity:.42;pointer-events:none;filter:grayscale(.4)}
+.opt.picked{border-color:var(--pink);background:#FFF6FB}
+.ochip{font-size:clamp(14px,3vh,26px);line-height:1;white-space:nowrap}
+.ochip.num{font:700 clamp(14px,2.9vh,24px) var(--font-display);color:var(--purple-deep)}
+.pmark{flex:0 0 auto;width:clamp(18px,3vh,26px);height:clamp(18px,3vh,26px);display:grid;place-items:center;
+  font:700 clamp(13px,2.4vh,20px) var(--font-display);color:#4FA96B;opacity:0}
+.pmark.ok{opacity:1}
+
+/* the chip that flies from the option into the blank */
+.fly-chip{position:fixed;z-index:90;pointer-events:none;display:grid;place-items:center;
+  min-width:34px;height:34px;padding:0 6px;border-radius:11px;background:#fff;border:2px solid var(--pink);
+  font-size:20px;line-height:1;box-shadow:0 8px 18px rgba(92,37,99,.28)}
+.fly-chip.num{font:700 20px var(--font-display);color:var(--purple-deep)}
+
+/* the symbol card in the right column */
+.symcard{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;
+  background:linear-gradient(180deg,#FFFDFF,#F6ECFB)}
+.symwrap{width:clamp(96px,17vh,150px);height:clamp(96px,17vh,150px);
+  filter:drop-shadow(0 8px 14px rgba(92,37,99,.22))}
+.symwrap svg{width:100%;height:100%;display:block;animation:symFloat 4.2s ease-in-out infinite}
+@keyframes symFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.symtitle{font:700 clamp(16px,3.2vh,26px) var(--font-display);color:var(--pink);margin:2px 0 0}
+.symtext{font:600 clamp(11px,1.9vh,15px) var(--font-display);color:#7C6A88;line-height:1.45;margin:0}
+.conn .dot.on{background:#4FA96B;box-shadow:0 0 0 4px rgba(79,169,107,.16)}
+.confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:120;overflow:hidden}
+.cf{position:absolute;will-change:transform,opacity}
+@media (prefers-reduced-motion:reduce){
+  .board.in,.board.out,.symwrap svg,.chip.blank{animation:none!important}
+}
+
+/* ---- 6.0 · glossy inline symbols ---- */
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:1px}
+.chip .sy{width:1.26em;height:1.26em;display:block;flex:0 0 auto}
+.chip .sy.sm{width:.98em;height:.98em}
+.ochip{display:inline-flex;align-items:center;gap:1px}
+.ochip .sy{width:1.22em;height:1.22em;display:block;flex:0 0 auto}
+.ochip .sy.sm{width:.96em;height:.96em}
+.fly-chip .sy{width:1.05em;height:1.05em;display:block}
+.chip.filled .sy{animation:symIn .42s cubic-bezier(.34,1.56,.64,1)}
+@keyframes symIn{0%{transform:scale(.4)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.prow{flex-wrap:wrap}
+/* rows keep their natural height — the board scrolls rather than clipping a row */
+.board{overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none}
+.board::-webkit-scrollbar{width:0;height:0}
+.prow{flex:1 0 auto;min-height:clamp(44px,7.2vh,84px)}
+.popts{flex-wrap:wrap}
+@media (max-width:760px){
+  .prow{gap:5px;padding:4px 8px}
+  .popts{margin-left:auto}
+  .pnum{width:clamp(18px,3vh,24px);height:clamp(18px,3vh,24px)}
+}
+/* phones: the controls fold into one row so the board keeps the height */
+html[data-layout-mode="auto-fit"] .ctrl{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:center;padding:8px 10px}
+html[data-layout-mode="auto-fit"] .ctrl .conn{grid-column:1 / -1;margin:0}
+html[data-layout-mode="auto-fit"] .ctrl .btn-row{margin:0;display:grid;grid-template-columns:minmax(0,1fr)}
+html[data-layout-mode="auto-fit"] .ctrl .card-title,
+html[data-layout-mode="auto-fit"] .ctrl .hint{display:none}
+/* phones: the symbol card slides beside its title so the board keeps the height */
+html[data-layout-mode="auto-fit"] .symcard{flex-direction:row;align-items:center;text-align:left;gap:10px;padding:8px 11px}
+/* the right-hand panel is gone for this activity: the board owns the whole width */
+html[data-layout-mode="auto-fit"] .symwrap{width:clamp(44px,7.4vh,60px);height:clamp(44px,7.4vh,60px);flex:0 0 auto}
+html[data-layout-mode="auto-fit"] .symtitle{font-size:clamp(13px,2vh,16px);margin:0}
+html[data-layout-mode="auto-fit"] .symtext{display:none}
+
+/* ---- 6.0 · only the live question shows its options — and it slides in
+     smoothly. The four rows are equal flex shares, so rows never resize
+     when the options come and go ---- */
+.prow .popts{display:none}
+.prow.active .popts{display:flex;animation:optsIn .42s cubic-bezier(.22,1,.36,1)}
+@keyframes optsIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.trophy{line-height:0}
+
+/* ---- 6.0 · the house gloss: every chip is a glazed tile ---- */
+.chip{background:linear-gradient(180deg,#FFFFFF 0%,#F6EFFB 62%,#EFE4F7 100%);
+  border:2px solid #E1D0EE;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.95), inset 0 -2.5px 0 rgba(131,53,140,.07),
+             0 3px 0 rgba(92,37,99,.08)}
+.chip.num{background:linear-gradient(180deg,#FFFFFF 0%,#F4F0FA 100%);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.95), inset 0 -2.5px 0 rgba(131,53,140,.06),
+             0 3px 0 rgba(92,37,99,.07)}
+.chip.filled{background:linear-gradient(180deg,#F6FFF9 0%,#E2F7EA 100%);border-color:#77C795;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.95), inset 0 -2.5px 0 rgba(47,150,90,.10),
+             0 3px 0 rgba(47,150,90,.10)}
+.chip.blank{background:linear-gradient(180deg,#FFFFFF 0%,#FFF3FA 100%);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.95), 0 0 0 0 rgba(240,26,140,.16)}
+.opt{background:linear-gradient(180deg,#FFFFFF 0%,#F8F3FC 100%);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.96), 0 5px 0 rgba(92,37,99,.11)}
+.opt:hover{box-shadow:inset 0 3px 0 rgba(255,255,255,.96), 0 8px 0 rgba(240,26,140,.18)}
+.opt:active{box-shadow:inset 0 3px 0 rgba(255,255,255,.96), 0 2px 0 rgba(92,37,99,.12)}
+/* ---- 6.0 · the fit ladder: chips, options and labels shrink in measured steps
+     until the whole board fits the stage without scrolling ---- */
+.board{--cs0:1.14;--os0:1.08;--csf:1;--osf:1;--cs:calc(var(--cs0)*var(--csf));--os:calc(var(--os0)*var(--osf))}
+html[data-layout-mode="original-laptop"] .board{--cs0:1.38;--os0:1.22}
+.chip{min-width:calc(clamp(32px,7vh,58px)*var(--cs));height:calc(clamp(32px,7vh,58px)*var(--cs));
+  font-size:calc(clamp(17px,3.8vh,32px)*var(--cs))}
+.ochip{font-size:calc(clamp(16px,3.7vh,31px)*var(--os)*var(--ok,1))}
+.opt{min-height:calc(clamp(38px,7.8vh,66px)*var(--os));
+  padding:calc(clamp(5px,1vh,10px)*var(--os)) calc(clamp(8px,1.2vw,15px)*var(--os))}
+.arrow{font-size:calc(clamp(11px,2.2vh,19px)*var(--cs))}
+/* the dense step keeps every symbol at full size and simply gives the rows their
+   space back, which is all the tall questions need */
+.board.dense{gap:clamp(3px,.7vh,6px);padding:clamp(4px,.9vh,8px)}
+.board.dense .prow{padding-top:clamp(3px,.5vh,6px);padding-bottom:clamp(3px,.5vh,6px)}
+.board.fit1{--csf:.9;--osf:.92}
+.board.fit2{--csf:.8;--osf:.84}
+.board.fit3{--csf:.71;--osf:.78}
+.board.fit4{--csf:.62;--osf:.72}
+.board.fit5{--csf:.55;--osf:.66}
+
+.chip.blank,.chip.num{line-height:1;font-size:calc(clamp(17px,3.7vh,31px)*var(--cs))}
+.chip.blank{font-size:calc(clamp(19px,4.1vh,34px)*var(--cs))}
+.trophy{display:grid;place-items:center}
+.trophy svg{width:1em;height:1em}
+
+/* ===================== 6.0 · the polish pass ===================== */
+/* the four questions glide in one after another when a screen arrives */
+.board.in .prow{animation:rowIn .52s cubic-bezier(.22,1,.36,1) backwards}
+.board.in .prow:nth-child(1){animation-delay:.02s}
+.board.in .prow:nth-child(2){animation-delay:.09s}
+.board.in .prow:nth-child(3){animation-delay:.16s}
+.board.in .prow:nth-child(4){animation-delay:.23s}
+@keyframes rowIn{from{opacity:0;transform:translateY(15px)}}
+
+/* a gloss sweep crosses the row the moment it is answered — it travels on
+   the compositor (transform), never on the layout */
+.prow{overflow:hidden}
+.prow.done::after{content:"";position:absolute;top:0;bottom:0;left:-45%;width:42%;pointer-events:none;
+  will-change:transform,opacity;backface-visibility:hidden;
+  background:linear-gradient(100deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.92) 50%,rgba(255,255,255,0) 100%);
+  animation:rowShine .9s cubic-bezier(.35,.6,.4,1) .08s both}
+@keyframes rowShine{from{transform:translate3d(0,0,0);opacity:.96}
+  to{transform:translate3d(374%,0,0);opacity:0}}
+
+/* the badge and the finished dot give a small hop */
+.prow.fresh .pnum{animation:badgePop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes badgePop{0%{transform:scale(1)}45%{transform:scale(1.26)}100%{transform:scale(1)}}
+.progress .dot.pop{animation:dotPop .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes dotPop{0%{transform:scale(1)}42%{transform:scale(1.5)}100%{transform:scale(1)}}
+
+/* a wrong choice makes the empty slot itself shake its head */
+.chip.blank.wrong{animation:blankWrong .58s cubic-bezier(.36,.07,.19,.97)}
+@keyframes blankWrong{
+  0%,100%{transform:scale(1)}
+  20%{transform:scale(1.16);border-color:#E23B3B;color:#E23B3B;background:#FFF1F1}
+  55%{transform:scale(.94)}
+  80%{transform:scale(1.06)}}
+
+@media (prefers-reduced-motion:reduce){
+  .board.in .prow,.prow.done::after,.prow.fresh .pnum,.progress .dot.pop,.chip.blank.wrong{animation:none!important}
+}
+
+/* ===================== 6.0 · score chip + in-row feedback ===================== */
+.hdr-right{display:flex;align-items:center;gap:clamp(6px,1vw,12px);flex:0 0 auto}
+.scorechip{display:flex;align-items:baseline;gap:2px;background:#fff;border:2.5px solid var(--purple);
+  border-radius:14px;padding:2px clamp(8px,1vw,13px);box-shadow:0 4px 0 rgba(92,37,99,.16);
+  font:700 clamp(15px,2.8vh,23px) var(--font-display);color:var(--purple-deep);white-space:nowrap}
+.scorechip b{color:var(--pink)}
+.scorechip small{font-size:.6em;color:var(--muted);font-weight:700}
+html[data-layout-mode="auto-fit"] .scorechip{padding:1px 9px;font-size:clamp(13px,2.1vh,17px);
+  border-width:2px;border-radius:11px;box-shadow:0 3px 0 rgba(92,37,99,.16)}
+
+.sr-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.rowToast{position:absolute;right:clamp(8px,1vw,14px);bottom:clamp(4px,.7vh,8px);
+  display:flex;align-items:center;gap:clamp(6px,.8vw,10px);
+  padding:clamp(4px,.7vh,7px) clamp(9px,1.2vw,16px);border-radius:14px;
+  background:#fff;border:2.5px solid #7FCB95;box-shadow:0 10px 24px rgba(92,37,99,.22);
+  font:700 clamp(13px,2.1vh,19px) var(--font-display);color:#1B7A45;
+  pointer-events:none;z-index:30;max-width:92%;
+  animation:toastIn .32s cubic-bezier(.22,1,.36,1) both}
+.rowToast .tic{width:1.35em;height:1.35em;flex:0 0 auto;display:grid;place-items:center}
+.rowToast .tic svg{width:100%;height:100%;display:block}
+.rowToast .ttx{font:600 clamp(10.5px,1.6vh,14px) var(--font-display);color:#4B6B58;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rowToast.again{border-color:var(--pink);color:var(--pink-dk);box-shadow:0 10px 24px rgba(240,26,140,.22)}
+.rowToast.again .ttx{color:#8A5A74}
+.rowToast.out{animation:toastOut .32s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(9px) scale(.95)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(7px) scale(.96)}}
+/* a wrong pick gives the option itself a quick shake */
+.opt.nope{animation:optNope .52s cubic-bezier(.36,.07,.19,.97)}
+@keyframes optNope{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}
+  40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+@media (prefers-reduced-motion:reduce){
+  .rowToast,.rowToast.out{animation:none}
+}
+
+/* ===================== 6.0 · no controls panel: the board is the page ===================== */
+/* the SCREEN label stays wherever the header row can hold the banner on one
+   line; below ~412 px the two would collide, so there it steps aside */
+@media (max-width:411px){ .task-header .eyebrow{display:none} }
+/* the question banner is the one quiet control: tap it to hear the question again */
+.banner{cursor:pointer;user-select:none}
+.banner:active{transform:translateY(1px)}
+
+/* ===================== 7.0 · the smooth pass =====================
+   Everything a finger touches reacts on the press itself, every animation
+   runs on transform/opacity, and no gesture is swallowed by the browser. */
+html,body{overscroll-behavior:none}
+.board,.opt,.banner,.btn,.ov-start,.ov-box{touch-action:manipulation}
+.opt,.banner,.btn,.ov-start{-webkit-user-select:none;user-select:none;backface-visibility:hidden}
+.opt{transition:transform .11s ease,box-shadow .16s ease,border-color .16s ease}
+.opt.press,.opt:active{transform:translateY(2px) scale(.972);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.96),0 2px 0 rgba(92,37,99,.12)}
+.banner{transition:transform .12s ease,box-shadow .18s ease}
+.banner:active{transform:translateY(2px) scale(.985);box-shadow:0 2px 0 rgba(92,37,99,.16)}
+.pnum,.pmark,.chip,.ochip{backface-visibility:hidden}
+.fly-chip,.rowToast{will-change:transform,opacity;backface-visibility:hidden}
+/* on a touch screen a "hover" must never stick to the tile that was tapped */
+@media (hover:none){ .opt:hover{transform:none;border-color:#E3D4EF;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.96),0 5px 0 rgba(92,37,99,.11)} }
+@media (prefers-reduced-motion:reduce){ .opt,.banner{transition:none} }
+</style>
+<script>
+/* The layout mode is decided before the first paint — exactly the same query
+   distance_explorer2.0 uses — so a phone or tablet never flashes the laptop
+   layout on the way in, and the laptop page never flickers into auto-fit. */
+try{
+  const layoutQuery=matchMedia('(any-hover:hover) and (any-pointer:fine)');
+  document.documentElement.dataset.layoutMode=layoutQuery.matches?'original-laptop':'auto-fit';
+}catch(e){document.documentElement.dataset.layoutMode='auto-fit';}
+</script>
+</head>
+<body>
+<svg class="glyph-defs" width="0" height="0" aria-hidden="true" focusable="false"
+     style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <radialGradient id="gRed" cx="34%" cy="28%" r="78%">
+      <stop offset="0%" stop-color="#FF9184"/><stop offset="52%" stop-color="#F0342C"/><stop offset="100%" stop-color="#AF0F0F"/></radialGradient>
+    <radialGradient id="gBlue" cx="34%" cy="28%" r="78%">
+      <stop offset="0%" stop-color="#93C9FF"/><stop offset="52%" stop-color="#2F7FEE"/><stop offset="100%" stop-color="#0E4FA8"/></radialGradient>
+    <radialGradient id="gGreen" cx="34%" cy="28%" r="78%">
+      <stop offset="0%" stop-color="#93E9A9"/><stop offset="52%" stop-color="#35B85B"/><stop offset="100%" stop-color="#127A33"/></radialGradient>
+    <radialGradient id="gYellow" cx="34%" cy="28%" r="78%">
+      <stop offset="0%" stop-color="#FFF4A6"/><stop offset="52%" stop-color="#FFD21E"/><stop offset="100%" stop-color="#D89400"/></radialGradient>
+    <radialGradient id="gPink" cx="34%" cy="26%" r="80%">
+      <stop offset="0%" stop-color="#FFB0D6"/><stop offset="50%" stop-color="#F0348F"/><stop offset="100%" stop-color="#B60C63"/></radialGradient>
+    <radialGradient id="gOrange" cx="34%" cy="28%" r="78%">
+      <stop offset="0%" stop-color="#FFD6A2"/><stop offset="52%" stop-color="#FF9422"/><stop offset="100%" stop-color="#CE5C00"/></radialGradient>
+    <linearGradient id="gGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE873"/><stop offset="55%" stop-color="#FFC91E"/><stop offset="100%" stop-color="#E39B00"/></linearGradient>
+    <linearGradient id="gDog" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E6AE72"/><stop offset="100%" stop-color="#C07C3A"/></linearGradient>
+    <linearGradient id="gFur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#BCC8D3"/><stop offset="100%" stop-color="#8B98A6"/></linearGradient>
+    <linearGradient id="gLeaf" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#7FE08F"/><stop offset="100%" stop-color="#2C9A4C"/></linearGradient>
+    <linearGradient id="gBan" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0%" stop-color="#FFE873"/><stop offset="100%" stop-color="#F0B61C"/></linearGradient>
+    <linearGradient id="gHand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE08A"/><stop offset="100%" stop-color="#F0A512"/></linearGradient>
+    <linearGradient id="gPur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C88BD2"/><stop offset="100%" stop-color="#83358C"/></linearGradient>
+    <clipPath id="clipBall"><circle cx="50" cy="52" r="38"/></clipPath>
+    <clipPath id="clipHead"><circle cx="50" cy="56" r="33"/></clipPath>
+    <clipPath id="clipOrange"><circle cx="50" cy="58" r="32"/></clipPath>
+  </defs>
+</svg>
+
+
+<header class="topbar">
+  <img class="brand-logo" src="data:image/png;base64,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" alt="Smart Block">
+  <div><h1>Pattern <b>and</b> Sequence</h1></div>
+</header>
+
+<main class="layout">
+  <section class="col">
+    <div class="card stage-card">
+      <div class="task-header">
+        <h2 class="task-title sr-only" id="taskTitle">Pattern and sequence — find the correct pattern</h2>
+        <div class="eyebrow" id="taskCount">SCREEN 1 / 8</div>
+        <div class="banner" id="banner">Question 1 of 20</div>
+        <div class="hdr-right">
+          <div class="progress" id="progress" aria-label="Questions on this screen"></div>
+          <div class="scorechip" id="scoreChip" aria-label="Correct answers"><b>0</b><small> / 20</small></div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="board" id="board" aria-live="polite"></div>
+      </div>
+            <div class="sr-live" id="toast" aria-live="polite"></div>
+    </div>
+  </section>
+
+
+</main>
+
+<div class="final" id="final">
+  <div class="final-box">
+    <div class="trophy" id="fi"></div>
+    <h2 id="fh">Pattern master!</h2>
+    <div class="tally"><span id="fs">0</span><small id="ftotal"> / 20</small></div>
+    <p id="fmsg"></p>
+    <button class="again" id="restart">Play again ↻</button>
+  </div>
+</div>
+
+<div class="ov" id="ov">
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+    <pattern id="inlayBorderX" width="7" height="4" patternUnits="userSpaceOnUse">
+      <rect width="7" height="4" fill="#F7F2E6"/><path d="M3.5 .6l2 1.4l-2 1.4l-2 -1.4Z" fill="#C9A22E" opacity=".85"/>
+    </pattern>
+  </defs></svg>
+  <div class="ov-box task-in">
+    <div class="ov-icons">
+      <!-- the glossy pattern strip: three set beads and the bead that is still to come -->
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="pvP" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#BB74C6"/><stop offset="100%" stop-color="#83358C"/>
+          </linearGradient>
+          <linearGradient id="pvK" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#FF74B6"/><stop offset="100%" stop-color="#EA0F85"/>
+          </linearGradient>
+          <linearGradient id="pvY" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#FFF98C"/><stop offset="100%" stop-color="#FFD400"/>
+          </linearGradient>
+          <linearGradient id="pvGlass" x1="0" y1="0" x2="0.4" y2="1">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity=".98"/>
+            <stop offset="55%" stop-color="#F2E7FA" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#DCC8EC" stop-opacity=".92"/>
+          </linearGradient>
+          <linearGradient id="pvShine" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity=".85"/>
+            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="50" cy="82" rx="40" ry="5.6" fill="#161016" opacity=".14"/>
+        <!-- three beads of the pattern, each with its own gloss -->
+        <g>
+          <rect x="4" y="40" width="22" height="22" rx="6.6" fill="url(#pvP)" stroke="#5C2563" stroke-width="1.3"/>
+          <rect x="6.6" y="42.4" width="16.8" height="7.4" rx="3.7" fill="url(#pvShine)" opacity=".55"/>
+          <circle cx="9.6" cy="56.6" r="2" fill="#FFFFFF" opacity=".35"/>
+        </g>
+        <g>
+          <rect x="28" y="40" width="22" height="22" rx="6.6" fill="url(#pvK)" stroke="#A80C62" stroke-width="1.3"/>
+          <rect x="30.6" y="42.4" width="16.8" height="7.4" rx="3.7" fill="url(#pvShine)" opacity=".6"/>
+          <circle cx="33.6" cy="56.6" r="2" fill="#FFFFFF" opacity=".38"/>
+        </g>
+        <g>
+          <rect x="52" y="40" width="22" height="22" rx="6.6" fill="url(#pvY)" stroke="#C79C00" stroke-width="1.3"/>
+          <rect x="54.6" y="42.4" width="16.8" height="7.4" rx="3.7" fill="url(#pvShine)" opacity=".7"/>
+          <circle cx="57.6" cy="56.6" r="2" fill="#FFFFFF" opacity=".45"/>
+        </g>
+        <!-- the bead still to come, in frosted glass with a question mark -->
+        <g>
+          <rect x="76" y="40" width="22" height="22" rx="6.6" fill="url(#pvGlass)" stroke="#83358C" stroke-width="1.9"/>
+          <rect x="78.6" y="42.4" width="16.8" height="7.4" rx="3.7" fill="url(#pvShine)" opacity=".75"/>
+          <text x="87" y="56.6" text-anchor="middle" font-size="17" font-weight="700" fill="#83358C"
+                font-family="Fredoka, &quot;Trebuchet MS&quot;, sans-serif">?</text>
+        </g>
+        <!-- the little sparkles that say "keep the rhythm going" -->
+        <g fill="#FFF3B4">
+          <path d="M15 24l2 4.6l4.6 2l-4.6 2l-2 4.6l-2 -4.6l-4.6 -2l4.6 -2Z"/>
+          <path d="M74 20l1.6 3.6l3.6 1.6l-3.6 1.6l-1.6 3.6l-1.6 -3.6l-3.6 -1.6l3.6 -1.6Z" opacity=".9"/>
+        </g>
+        <g fill="#FFFFFF" opacity=".95">
+          <circle cx="46" cy="26" r="2.2"/><circle cx="92" cy="30" r="1.8"/><circle cx="62" cy="70" r="1.6"/>
+        </g>
+      </svg>
+    </div>
+    <h2>Pattern <b>and</b> Sequence</h2>
+    <p id="ovSub">Find the correct pattern</p>
+    <button class="ov-start" id="start">🔍 Let's Find</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ===================== SMART BLOCK · PATTERN AND SEQUENCE 6.0 =====================
+   Twenty pattern questions, five to a screen. Each answered question keeps its row —
+   the chip the learner picked flies into the "?" slot and the row locks — then the
+   next question takes the frame. Finish five rows and a fresh screen starts at six.
+   Every pattern symbol is drawn as glossy inline SVG, so it looks identical on
+   every device. */
+
+const $=id=>document.getElementById(id);
+
+/* ---------------- the glossy symbol library ---------------- */
+const GLOSS=(id)=>`<ellipse cx="35" cy="32" rx="15" ry="9.5" transform="rotate(-30 35 32)" fill="#fff" opacity=".78"/>
+     <circle cx="64" cy="73" r="4.6" fill="#fff" opacity=".45"/>`;
+const BALL=(g)=>`<g><circle cx="50" cy="52" r="38" fill="url(#${g})"/>
+     <g clip-path="url(#clipBall)"><ellipse cx="50" cy="99" rx="48" ry="34" fill="#3A0A2A" opacity=".18"/></g>
+     ${GLOSS(g)}
+     <circle cx="50" cy="52" r="37.4" fill="none" stroke="rgba(60,10,20,.20)" stroke-width="2.6"/></g>`;
+const SYM={
+  red:()=>BALL('gRed'), blue:()=>BALL('gBlue'), green:()=>BALL('gGreen'), yellow:()=>BALL('gYellow'),
+  bsquare:()=>`<g><rect x="12" y="14" width="76" height="72" rx="18" fill="url(#gBlue)"/>
+     <rect x="18" y="20" width="64" height="24" rx="12" fill="#fff" opacity=".52"/>
+     <rect x="18" y="21.5" width="64" height="12" rx="6" fill="#fff" opacity=".55"/>
+     <rect x="12" y="14" width="76" height="72" rx="18" fill="none" stroke="rgba(10,35,80,.22)" stroke-width="2.6"/></g>`,
+  ysquare:()=>`<g><rect x="12" y="14" width="76" height="72" rx="18" fill="url(#gYellow)"/>
+     <rect x="18" y="20" width="64" height="24" rx="12" fill="#fff" opacity=".6"/>
+     <rect x="18" y="21.5" width="64" height="12" rx="6" fill="#fff" opacity=".6"/>
+     <rect x="12" y="14" width="76" height="72" rx="18" fill="none" stroke="rgba(120,80,0,.24)" stroke-width="2.6"/></g>`,
+  star:()=>`<g><path d="M50 7 L63.5 37 L95 40.5 L71 62 L78.8 93 L50 76 L21.2 93 L29 62 L5 40.5 L36.5 37 Z"
+       fill="url(#gGold)" stroke="#CE8F00" stroke-width="2.8" stroke-linejoin="round"/>
+     <path d="M50 19 L58 36 L74.5 38 L62.5 49.5 L66 65 L50 56.5 L34 65 L37.5 49.5 L25.5 38 L42 36 Z" fill="#fff" opacity=".34"/>
+     <ellipse cx="35" cy="35" rx="10" ry="6" transform="rotate(-38 35 35)" fill="#fff" opacity=".6"/></g>`,
+  heart:()=>`<g><path d="M50 89 C16 65 8 46 8 34 C8 18.5 20.5 9 33 9 C41.5 9 47.5 14 50 21 C52.5 14 58.5 9 67 9
+       C79.5 9 92 18.5 92 34 C92 46 84 65 50 89 Z" fill="url(#gPink)" stroke="#B30C63" stroke-width="2.8" stroke-linejoin="round"/>
+     <ellipse cx="30" cy="29" rx="11" ry="7.5" transform="rotate(-34 30 29)" fill="#fff" opacity=".68"/>
+     <circle cx="70" cy="62" r="4" fill="#fff" opacity=".4"/></g>`,
+  triangle:()=>`<g><path d="M44.5 12 Q50 4.5 55.5 12 L94 81 Q97.5 91 86 91 L14 91 Q2.5 91 6 81 Z"
+       fill="url(#gRed)" stroke="#A8100F" stroke-width="2.8" stroke-linejoin="round"/>
+     <path d="M43 28 Q50 19 57 28 L70 52 L30 52 Z" fill="#fff" opacity=".3"/>
+     <ellipse cx="42" cy="36" rx="7" ry="5" transform="rotate(-42 42 36)" fill="#fff" opacity=".5"/></g>`,
+  dog:()=>`<g>
+     <ellipse cx="23" cy="39" rx="11" ry="18" transform="rotate(-20 23 39)" fill="#A2642C"/>
+     <ellipse cx="77" cy="39" rx="11" ry="18" transform="rotate(20 77 39)" fill="#A2642C"/>
+     <circle cx="50" cy="55" r="34" fill="url(#gDog)" stroke="#8E5622" stroke-width="2.4"/>
+     <g clip-path="url(#clipHead)"><ellipse cx="50" cy="96" rx="44" ry="30" fill="#5A3410" opacity=".16"/></g>
+     <circle cx="36" cy="46" r="5.4" fill="#3B2415"/><circle cx="64" cy="46" r="5.4" fill="#3B2415"/>
+     <circle cx="37.8" cy="44.2" r="1.8" fill="#fff"/><circle cx="65.8" cy="44.2" r="1.8" fill="#fff"/>
+     <ellipse cx="50" cy="69" rx="17" ry="12.5" fill="#F8E9D6"/>
+     <ellipse cx="50" cy="61" rx="7" ry="5.6" fill="#3B2415"/>
+     <path d="M50 66 v5 M50 71 q-5.5 4.5 -9.5 1 M50 71 q5.5 4.5 9.5 1" fill="none" stroke="#3B2415" stroke-width="2.6" stroke-linecap="round"/>
+     <path d="M44 79 q6 9 12 0 q-2 9 -6 9 q-4 0 -6 -9Z" fill="#FF6B8A"/>
+     <ellipse cx="33" cy="34" rx="9" ry="6" transform="rotate(-32 33 34)" fill="#fff" opacity=".42"/></g>`,
+  cat:()=>`<g>
+     <path d="M20 43 L24 8 L50 27 L76 8 L80 43 Z" fill="url(#gFur)" stroke="#7C8794" stroke-width="2.4" stroke-linejoin="round"/>
+     <path d="M26 37 L28.5 17 L43 28 Z" fill="#FFB3C9"/><path d="M74 37 L71.5 17 L57 28 Z" fill="#FFB3C9"/>
+     <circle cx="50" cy="58" r="32" fill="url(#gFur)" stroke="#7C8794" stroke-width="2.4"/>
+     <g clip-path="url(#clipHead)"><ellipse cx="50" cy="97" rx="42" ry="28" fill="#3C4A57" opacity=".15"/></g>
+     <circle cx="38" cy="52" r="5.2" fill="#2C3640"/><circle cx="62" cy="52" r="5.2" fill="#2C3640"/>
+     <circle cx="39.6" cy="50.4" r="1.7" fill="#fff"/><circle cx="63.6" cy="50.4" r="1.7" fill="#fff"/>
+     <path d="M50 62 l-4.5 3.6 h9 Z" fill="#FF7BA6"/>
+     <path d="M50 66 q-4 5 -8 3 M50 66 q4 5 8 3" fill="none" stroke="#2C3640" stroke-width="2.4" stroke-linecap="round"/>
+     <g stroke="#2C3640" stroke-width="1.8" stroke-linecap="round" opacity=".75">
+       <path d="M18 58 h11"/><path d="M18 65 h11"/><path d="M82 58 h-11"/><path d="M82 65 h-11"/>
+     </g>
+     <ellipse cx="33" cy="38" rx="8.5" ry="5.5" transform="rotate(-32 33 38)" fill="#fff" opacity=".5"/></g>`,
+  apple:()=>`<g>
+     <path d="M50 27 q3 -13 -7 -19" fill="none" stroke="#7A4A22" stroke-width="5.4" stroke-linecap="round"/>
+     <path d="M47 22 q16 -14 27 -5 q-7 14 -27 5Z" fill="url(#gLeaf)" stroke="#1E7A38" stroke-width="2.2" stroke-linejoin="round"/>
+     <path d="M50 28 C30 20 16 34 16 54 C16 74 32 90 50 90 C68 90 84 74 84 54 C84 34 70 20 50 28Z"
+       fill="url(#gRed)" stroke="#A8100F" stroke-width="2.6"/>
+     <ellipse cx="33" cy="45" rx="9.5" ry="13.5" transform="rotate(-25 33 45)" fill="#fff" opacity=".6"/>
+     <circle cx="68" cy="72" r="5" fill="#fff" opacity=".35"/></g>`,
+  banana:()=>`<g>
+     <path d="M13 30 C14 60 36 82 68 82 C80 82 88 74 86 66 C66 74 38 58 27 28 C24 20 13 22 13 30Z"
+       fill="url(#gBan)" stroke="#C08A00" stroke-width="2.6" stroke-linejoin="round"/>
+     <path d="M13 30 q-2 -9 6 -10" fill="none" stroke="#7A5A12" stroke-width="4.6" stroke-linecap="round"/>
+     <path d="M86 66 q6 -3 5 4" fill="none" stroke="#7A5A12" stroke-width="4.2" stroke-linecap="round"/>
+     <path d="M24 40 C30 60 48 74 68 76 C52 66 34 55 28 36Z" fill="#fff" opacity=".45"/>
+     <ellipse cx="34" cy="38" rx="6" ry="9" transform="rotate(-30 34 38)" fill="#fff" opacity=".5"/></g>`,
+  orange:()=>`<g>
+     <path d="M50 26 q3 -12 -6 -17" fill="none" stroke="#7A4A22" stroke-width="5" stroke-linecap="round"/>
+     <path d="M48 21 q15 -12 25 -4 q-6 13 -25 4Z" fill="url(#gLeaf)" stroke="#1E7A38" stroke-width="2.2"/>
+     <circle cx="50" cy="58" r="32" fill="url(#gOrange)" stroke="#C25E00" stroke-width="2.6"/>
+     <g clip-path="url(#clipOrange)"><ellipse cx="50" cy="99" rx="42" ry="30" fill="#7A2E00" opacity=".16"/></g>
+     <circle cx="50" cy="58" r="23" fill="none" stroke="#fff" stroke-width="2" opacity=".45" stroke-dasharray="5 6"/>
+     <ellipse cx="34" cy="43" rx="9.5" ry="12.5" transform="rotate(-28 34 43)" fill="#fff" opacity=".55"/>
+     <circle cx="66" cy="72" r="4.4" fill="#fff" opacity=".4"/></g>`,
+  sprout:()=>`<g>
+     <path d="M50 90 V44" fill="none" stroke="#2E9E4E" stroke-width="6.5" stroke-linecap="round"/>
+     <path d="M50 56 q-28 -4 -31 -30 q28 0 31 30Z" fill="url(#gLeaf)" stroke="#1E7A38" stroke-width="2.4" stroke-linejoin="round"/>
+     <path d="M50 56 q28 -4 31 -30 q-28 0 -31 30Z" fill="url(#gLeaf)" stroke="#1E7A38" stroke-width="2.4" stroke-linejoin="round"/>
+     <path d="M42 48 q-16 -4 -19 -20 q16 2 19 20Z" fill="#fff" opacity=".38"/>
+     <path d="M58 48 q16 -4 19 -20 q-16 2 -19 20Z" fill="#fff" opacity=".3"/>
+     <ellipse cx="50" cy="90" rx="24" ry="6" fill="#8B5A2B" opacity=".26"/></g>`,
+  hand:()=>`<g transform="rotate(-8 50 55)">
+     <path d="M28 88 q-12 -24 0 -40 q5 -6 11 -3 q-3 -14 8 -17 q9 -2 11 9 l2 9 q2 -11 12 -9 q10 2 8 13 l-4 15 q-3 12 -13 16 l-16 6 q-14 5 -19 -1Z"
+       fill="url(#gHand)" stroke="#D08F0A" stroke-width="2.6" stroke-linejoin="round"/>
+     <path d="M40 62 q4 -12 12 -12 M60 60 q6 -2 8 6" fill="none" stroke="#C07E05" stroke-width="2.2" stroke-linecap="round" opacity=".7"/>
+     <ellipse cx="44" cy="56" rx="8.5" ry="11" transform="rotate(-20 44 56)" fill="#fff" opacity=".5"/>
+     <circle cx="66" cy="80" r="4" fill="#fff" opacity=".3"/></g>`
+};
+
+function glyph(id,small){
+  const fn=SYM[id]; if(!fn)return '';
+  return `<svg class="sy${small?' sm':''}" viewBox="0 0 100 100" aria-hidden="true" focusable="false">${fn()}</svg>`;
+}
+function symHtml(t){
+  if(typeof t==='object'&&t.k){
+    const small=t.k>=3;
+    return Array.from({length:t.k},()=>glyph(t.s,small)).join('');
+  }
+  return glyph(String(t));
+}
+const isNum=t=>typeof t==='string'&&/^\d+$/.test(t);
+const count=t=>(typeof t==='object'&&t.k)?t.k:1;
+const NAME={red:'red ball',blue:'blue ball',green:'green ball',yellow:'yellow ball',
+  bsquare:'blue square',ysquare:'yellow square',star:'star',heart:'heart',triangle:'red triangle',
+  dog:'dog',cat:'cat',apple:'apple',banana:'banana',orange:'orange',sprout:'sprout',hand:'clap'};
+const tokenName=t=>{
+  if(isNum(t))return String(t);
+  if(typeof t==='object')return `${t.k} ${NAME[t.s]||t.s}${t.k>1?'s':''}`;
+  return NAME[t]||String(t);
+};
+
+/* ---------------- the questions ---------------- */
+const C=(s,k=1)=>k===1?s:{s,k};
+const QS=[
+ {n:1, tag:'AB repeating', rows:[[C('red'),C('blue'),C('red'),C('blue'),C('red'),'?']],
+  opts:[[C('blue')],[C('red')],[C('yellow')]], ans:0, say:'Red, blue, red, blue, red. What comes next?'},
+ {n:2, tag:'AB repeating', rows:[[C('star'),C('heart'),C('star'),C('heart'),C('star'),'?']],
+  opts:[[C('heart')],[C('star')],[C('blue')]], ans:0, say:'Star, heart, star, heart, star. What comes next?'},
+ {n:3, tag:'AAB pattern', rows:[[C('yellow'),C('yellow'),C('green'),C('yellow'),C('yellow'),'?']],
+  opts:[[C('green')],[C('yellow')],[C('red')]], ans:0, say:'Yellow, yellow, green, yellow, yellow. What comes next?'},
+ {n:4, tag:'ABC pattern', rows:[[C('triangle'),C('green'),C('blue'),C('triangle'),C('green'),'?']],
+  opts:[[C('blue')],[C('green')],[C('triangle')]], ans:0, say:'Red triangle, green ball, blue ball, red triangle, green ball. What comes next?'},
+ {n:5, tag:'ABB pattern', rows:[[C('dog'),C('cat'),C('cat'),C('dog'),C('cat'),C('cat'),'?']],
+  opts:[[C('dog')],[C('cat')],[C('banana')]], ans:0, say:'Dog, cat, cat, dog, cat, cat. What comes next?'},
+ {n:6, tag:'Missing element', rows:[[C('bsquare'),C('ysquare'),C('bsquare'),C('ysquare'),'?']],
+  opts:[[C('bsquare')],[C('ysquare')],[C('green')]], ans:0, say:'Blue square, yellow square, blue square, yellow square. What comes next?'},
+ {n:7, tag:'ABC pattern', rows:[[C('apple'),C('banana'),C('orange'),C('apple'),C('banana'),'?']],
+  opts:[[C('orange')],[C('apple')],[C('banana')]], ans:0, say:'Apple, banana, orange, apple, banana. What comes next?'},
+ {n:8, tag:'Growing pattern', rows:[[C('star')],[C('star'),C('star')],[C('star'),C('star'),C('star')],['?']],
+  opts:[[C('star',3)],[C('star',4)],[C('star',5)]], ans:1,
+  say:'One star, two stars, three stars. What comes next?'},
+ {n:9, tag:'ABC pattern', rows:[[C('red'),C('blue'),C('green'),C('red'),C('blue'),'?']],
+  opts:[[C('green')],[C('red')],[C('blue')]], ans:0, say:'Red, blue, green, red, blue. What comes next?'},
+ {n:10, tag:'AAB pattern', rows:[[C('green'),C('green'),C('red'),C('green'),C('green'),'?']],
+  opts:[[C('red')],[C('green')],[C('yellow')]], ans:0, say:'Green, green, red, green, green. What comes next?'},
+ {n:11, tag:'Counting up by 1', rows:[['1','2','3','4','?']], opts:[['5'],['6'],['4']], ans:0,
+  say:'One, two, three, four. What comes next?'},
+ {n:12, tag:'Skip counting by 2', rows:[['2','4','6','8','?']], opts:[['10'],['9'],['12']], ans:0,
+  say:'Two, four, six, eight. What comes next?'},
+ {n:13, tag:'Skip counting by 5', rows:[['5','10','15','20','?']], opts:[['25'],['24'],['30']], ans:0,
+  say:'Five, ten, fifteen, twenty. What comes next?'},
+ {n:14, tag:'Counting down', rows:[['10','9','8','7','?']], opts:[['6'],['5'],['8']], ans:0,
+  say:'Ten, nine, eight, seven. What comes next?'},
+ {n:15, tag:'Rhythm pattern', rows:[[C('hand')],[C('hand'),C('hand')],[C('hand')],[C('hand'),C('hand')],['?']],
+  opts:[[C('hand')],[C('hand',2)],[C('star')]], ans:0, say:'Clap, clap clap, clap, clap clap. What comes next?'},
+ {n:16, tag:'Missing one', rows:[[C('red'),C('yellow'),C('green')],[C('red'),'?',C('green')],[C('red'),C('yellow'),C('green')]],
+  opts:[[C('yellow')],[C('red')],[C('green')]], ans:0, say:'Which ball is missing from the middle row?'},
+ {n:17, tag:'Missing one', rows:[[C('star'),C('star'),C('heart')],[C('star'),C('star'),C('heart')],[C('star'),'?',C('heart')]],
+  opts:[[C('star')],[C('heart')],[C('blue')]], ans:0, say:'Which shape is missing from the last row?'},
+ {n:18, tag:'Growing pattern', rows:[[C('sprout')],[C('sprout'),C('sprout')],[C('sprout'),C('sprout'),C('sprout')],
+    [C('sprout'),C('sprout'),C('sprout'),C('sprout')],['?']],
+  opts:[[C('sprout',4)],[C('sprout',5)],[C('sprout',6)]], ans:1,
+  say:'One sprout, two sprouts, three sprouts, four sprouts. What comes next?'},
+ {n:19, tag:'Counting up by ten', rows:[['10','→','20','→','30','→','?']], opts:[['40'],['50'],['35']], ans:0,
+  say:'Ten, twenty, thirty. Count up by ten. What comes next?'},
+ {n:20, tag:'Missing two', rows:[[C('green'),C('blue'),C('blue')],[C('green'),C('blue'),C('blue')],[C('green'),'?','?']],
+  opts:[[C('blue',2)],[C('green'),C('green')],[C('blue'),C('green')]], ans:0,
+  say:'Green, blue, blue, again and again. What is missing at the end?'}
+];
+
+/* ---------------- state ---------------- */
+const SHORT_PAGE=4;                       /* short patterns: four to a screen      */
+const MULTI_PAGE=2;                       /* a multi-line pattern: two to a screen */
+const isMulti=q=>q.rows.length>1;         /* one star / two stars / three stars …  */
+let PAGES=[];                             /* the questions on each screen          */
+function buildPages(){
+  PAGES=[]; let cur=[];
+  const flush=()=>{if(cur.length){PAGES.push(cur);cur=[];}};
+  QS.forEach((q,i)=>{
+    if(!cur.length){cur=[i];return;}
+    const hasMulti=cur.some(n=>isMulti(QS[n]));
+    const limit=(isMulti(q)||hasMulti)?MULTI_PAGE:SHORT_PAGE;
+    if(cur.length>=limit){flush();cur=[i];return;}
+    cur.push(i);
+  });
+  flush();
+}
+const pageOf=n=>{for(let k=0;k<PAGES.length;k++)if(PAGES[k].includes(n))return k;return 0;};
+let quest=0, score=0, locked=false, tries=0, started=false;
+/* what has already happened on this run. The board can be repainted at any
+   moment — a window resize re-measures the fit — so the answered rows and the
+   rejected options are remembered here, not only in the DOM. */
+let SOLVED=[], TRIED={}, JUST=null;   /* JUST = the question solved a moment ago */
+const board=$('board');
+
+/* ---------------- option order is shuffled for every run ---------------- */
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    const t=a[i];a[i]=a[j];a[j]=t;
+  }
+  return a;
+}
+function shuffleOptions(){ QS.forEach(q=>{ q.order=shuffle(q.opts.map((_,i)=>i)); }); }
+const orderOf=q=>q.order||q.opts.map((_,i)=>i);
+
+/* ---------------- sound ---------------- */
+let audio=null;
+function ensureAudio(){
+  if(audio)return audio;
+  try{audio=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  return audio;
+}
+function tone(freq,dur,delay=0,type='sine',vol=.08){
+  const a=ensureAudio(); if(!a)return;
+  const t0=a.currentTime+delay;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type=type;o.frequency.setValueAtTime(freq,t0);
+  g.gain.setValueAtTime(0,t0);
+  g.gain.linearRampToValueAtTime(vol,t0+.02);
+  g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+  o.connect(g).connect(a.destination);o.start(t0);o.stop(t0+dur+.05);
+}
+const blipSnd =()=>{tone(660,.08,0,'sine',.06);tone(990,.1,.09,'sine',.05);};
+const rightSnd=()=>{tone(880,.12,0,'sine',.08);tone(1180,.14,.1,'sine',.07);tone(1560,.24,.2,'sine',.06);};
+const wrongSnd=()=>{tone(330,.16,0,'triangle',.07);tone(240,.24,.12,'triangle',.06);};
+const pickSnd =()=>{tone(520,.06,0,'sine',.05);};
+const slotSnd =()=>{tone(640,.07,0,'sine',.05);tone(900,.09,.06,'sine',.045);};
+const screenSnd=()=>{[523,659,784,1046].forEach((f,i)=>tone(f,.16,i*.08,'sine',.055));};
+const nopeSnd =()=>{tone(300,.14,0,'triangle',.055);};
+const cheerSnd=()=>{[660,880,1320].forEach((f,i)=>tone(f,.22,i*.09,'sine',.07));tone(1760,.4,.3,'sine',.05);};
+
+/* ---------------- confetti (DOM, so it floats over the whole card) ---------------- */
+const cLayer=document.createElement('div');
+cLayer.className='confetti-layer';
+document.body.appendChild(cLayer);
+const CONF_COLS=['#F01A8C','#83358C','#FFF212','#2FBF6D','#FFD34D','#63C8E8','#FF8A3D'];
+function confetti(n=26,fromEl){
+  const r=fromEl?fromEl.getBoundingClientRect():{x:innerWidth/2,y:innerHeight*.4,width:0,height:0};
+  for(let i=0;i<n;i++){
+    const d=document.createElement('i');
+    d.className='cf';
+    d.style.background=CONF_COLS[i%CONF_COLS.length];
+    d.style.left=(r.x+r.width/2+(Math.random()-.5)*Math.min(420,innerWidth*.6))+'px';
+    d.style.top=(r.y+r.height/2)+'px';
+    d.style.width=(6+Math.random()*6)+'px';
+    d.style.height=(8+Math.random()*8)+'px';
+    d.style.borderRadius=Math.random()<.4?'50%':'2px';
+    cLayer.appendChild(d);
+    const dx=(Math.random()-.5)*260, dy=180+Math.random()*260, rot=Math.random()*720-360;
+    d.animate([{transform:'translate(0,0) rotate(0deg)',opacity:1},
+               {transform:`translate(${dx*.6}px,${dy*.55}px) rotate(${rot*.6}deg)`,opacity:1,offset:.55},
+               {transform:`translate(${dx}px,${dy}px) rotate(${rot}deg)`,opacity:0}],
+              {duration:900+Math.random()*700,easing:'cubic-bezier(.25,.7,.5,1)'})
+      .finished.then(()=>d.remove()).catch(()=>d.remove());
+  }
+}
+const ICONS={
+  pattern:`<g>
+      <circle cx="17" cy="54" r="13" fill="url(#gRed)"/><circle cx="41" cy="54" r="13" fill="url(#gBlue)"/>
+      <circle cx="65" cy="54" r="13" fill="url(#gYellow)"/>
+      <rect x="80" y="41" width="17" height="26" rx="6" fill="#F4EAFB" stroke="#83358C" stroke-width="3"/>
+      <text x="88.5" y="61" text-anchor="middle" font-size="19" font-weight="700" fill="#83358C"
+            font-family="Fredoka, Trebuchet MS, sans-serif">?</text></g>`,
+  correct:`<circle cx="50" cy="52" r="38" fill="url(#gGreen)"/>
+      <path d="M32 54 l13 13 l24 -29" fill="none" stroke="#fff" stroke-width="9.5"
+            stroke-linecap="round" stroke-linejoin="round"/>`,
+  again:`<circle cx="50" cy="52" r="38" fill="url(#gYellow)"/>
+      <text x="50" y="70" text-anchor="middle" font-size="48" font-weight="700" fill="#7A5400"
+            font-family="Fredoka, Trebuchet MS, sans-serif">?</text>`,
+  trophy:`<g>
+      <path d="M26 16 h48 v20 q0 26 -24 30 q-24 -4 -24 -30 Z" fill="url(#gGold)" stroke="#C88E00" stroke-width="3"/>
+      <path d="M24 18 h-9 q-5 0 -5 6 q0 16 14 19" fill="none" stroke="#C88E00" stroke-width="5" stroke-linecap="round"/>
+      <path d="M76 18 h9 q5 0 5 6 q0 16 -14 19" fill="none" stroke="#C88E00" stroke-width="5" stroke-linecap="round"/>
+      <rect x="43" y="65" width="14" height="12" fill="url(#gGold)" stroke="#C88E00" stroke-width="2.6"/>
+      <rect x="30" y="77" width="40" height="12" rx="5" fill="url(#gGold)" stroke="#C88E00" stroke-width="2.6"/>
+      <ellipse cx="40" cy="28" rx="6" ry="8" fill="#fff" opacity=".45"/></g>`,
+  medal:`<g>
+      <path d="M34 6 l13 24 M66 6 l-13 24" fill="none" stroke="#2F7FEE" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="50" cy="62" r="30" fill="url(#gGold)" stroke="#C88E00" stroke-width="3"/>
+      <circle cx="50" cy="62" r="20" fill="none" stroke="#C88E00" stroke-width="2.4" opacity=".5"/>
+      <path d="M50 50 l4.4 9.2 l10 1.4 l-7.2 7 l1.7 10 l-8.9 -4.7 l-8.9 4.7 l1.7 -10 l-7.2 -7 l10 -1.4 Z" fill="#fff" opacity=".55"/></g>`,
+  spark:SYM.star()
+};
+function setIc(el,name){
+  if(!el||!ICONS[name])return;
+  el.innerHTML=`<svg class="ic-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">${ICONS[name]}</svg>`;
+  pop(el,[{transform:'scale(.4)'},{transform:'scale(1.18)',offset:.7},{transform:'scale(1)'}],420);
+}
+function pop(el,frames,dur=300,ease='cubic-bezier(.34,1.56,.64,1)'){
+  if(!el)return;
+  try{el.animate(frames,{duration:dur,easing:ease});}catch(e){}
+}
+
+/* ---------------- speech ---------------- */
+let speech=null;
+function stopSpeech(){
+  if(speech){speech.onend=speech.onerror=null;speech=null;}
+  if('speechSynthesis' in window)try{speechSynthesis.cancel();}catch(e){}
+}
+function speak(text){
+  if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window))return;
+  stopSpeech();
+  const u=new SpeechSynthesisUtterance(text);
+  speech=u;u.lang='en';u.rate=.92;u.pitch=1.06;
+  const done=()=>{if(speech===u)speech=null;};
+  u.onend=u.onerror=done;
+  try{speechSynthesis.resume();speechSynthesis.speak(u);}catch(e){done();}
+}
+const sayQuestion=()=>speak(QS[quest].say);
+
+/* ---------------- rendering ---------------- */
+function chip(t,filled){
+  if(t==='?')return `<span class="chip blank" aria-label="missing">?</span>`;
+  if(filled&&typeof t==='object')return `<span class="chip filled" aria-label="${tokenName(t)}">${symHtml(t)}</span>`;
+  if(filled&&isNum(t))return `<span class="chip num filled" aria-label="${t}">${t}</span>`;
+  if(t==='→')return `<span class="arrow">→</span>`;
+  if(isNum(t))return `<span class="chip num">${t}</span>`;
+  return `<span class="chip" aria-label="${tokenName(t)}">${symHtml(t)}</span>`;
+}
+function optionInner(o){
+  const toks=Array.isArray(o)?o:[o];
+  return toks.map(t=>isNum(t)?`<span class="ochip num">${t}</span>`:`<span class="ochip">${symHtml(t)}</span>`).join('');
+}
+function answerTokens(q){
+  const a=q.opts[q.ans];
+  return Array.isArray(a)?a:[a];
+}
+/* rowHTML(q, done, filled): filled puts the right answer into the "?" slots, which
+   is how the row really looks once it has been answered — and it is a little wider
+   than the empty slot, so the fit is measured with it in place */
+function rowHTML(q,done,filled){
+  const order=orderOf(q);
+  const rows=q.rows.map(r=>r.slice());
+  if(filled){
+    const ans=answerTokens(q); let k=0;
+    rows.forEach(r=>r.forEach((t,i)=>{if(t==='?'&&k<ans.length)r[i]=ans[k++];}));
+  }
+  const tried=TRIED[q.n]||[];
+  const opts=`<div class="popts">${
+     done?'':order.map((oi,slot)=>{
+        const o=q.opts[oi], toks=Array.isArray(o)?o:[o];
+        const wide=toks.length>=4?(toks.length>=6?'.7':toks.length>=5?'.78':'.86'):'1';
+        const used=tried.indexOf(oi)>=0;
+        return `<button class="opt${used?' used':''}" data-opt="${oi}" data-slot="${slot}" style="--ok:${wide}"
+          ${used?'disabled':''} aria-label="Option ${slot+1}: ${toks.map(tokenName).join(', ')}">${optionInner(o)}</button>`;
+     }).join('')
+  }</div>`;
+  const mark=done?'<span class="pmark ok">✓</span>':'<span class="pmark"></span>';
+  return `<span class="pnum">${q.n}</span>
+    <div class="pbody">
+      <div class="pblock">${rows.map(r=>`<span class="pgroup">${r.map(t=>chip(t,filled)).join('')}</span>`).join('')}</div>
+    </div>
+    ${opts}${mark}`;
+}
+/* a row shows its answer in the slot as soon as it is solved, whether it was
+   solved a moment ago or before the fit was re-measured */
+const filled_for=(idx,done,answeredN)=>done||idx<answeredN;
+function paint(pageIdx,activeN,answeredN){
+  if(answeredN===undefined)answeredN=activeN;
+  board.innerHTML='';
+  const page=PAGES[pageIdx]||[];
+  for(const idx of page){
+    const q=QS[idx];
+    if(!q)continue;
+    const done=idx<activeN||!!SOLVED[idx], active=idx===activeN&&!done;
+    const el=document.createElement('div');
+    el.className='prow'+(done?' done':(active?' active':''));
+    el.dataset.n=idx;
+    el.innerHTML=rowHTML(q,done,filled_for(idx,done,answeredN));
+    board.appendChild(el);
+  }
+}
+function renderScreen(){
+  paint(pageOf(quest), quest, quest);
+  board.classList.remove('out');
+  board.classList.add('in');
+  setTimeout(()=>board.classList.remove('in'),980);
+  updateHeader();
+  applyFit();
+}
+function updateHeader(){
+  const pi=pageOf(quest), page=PAGES[pi]||[];
+  $('taskCount').textContent=`SCREEN ${pi+1} / ${PAGES.length}`;
+  $('banner').textContent=`Question ${Math.min(quest+1,QS.length)} of ${QS.length}`;
+  $('progress').innerHTML=page.map(i=>{
+    const done=i<quest||!!SOLVED[i], cur=i===quest&&!done, fresh=i===JUST;
+    return `<span class="dot ${done?'done':cur?'current':''}${fresh?' pop':''}" title="Question ${i+1}">${done?'✓':i+1}</span>`;
+  }).join('');
+  JUST=null;                                  /* one hop per solved question */
+  updateScore();
+}
+function updateScore(){
+  const el=$('scoreChip');
+  if(el)el.innerHTML=`<b>${score}</b><small> / ${QS.length}</small>`;
+}
+/* the feedback floats inside the row that was just answered: always in view,
+   never over the question that comes next */
+function toast(kind,title,text,rowEl){
+  const live=$('toast');
+  if(live)live.textContent=`${title} ${text}`;
+  if(!rowEl)return;
+  const old=rowEl.querySelector('.rowToast');
+  if(old)old.remove();
+  const t=document.createElement('div');
+  t.className='rowToast '+kind;
+  t.setAttribute('aria-hidden','true');
+  t.innerHTML=`<span class="tic"><svg viewBox="0 0 100 100" aria-hidden="true">${ICONS[kind]||''}</svg></span>`
+             +`<b>${title}</b><span class="ttx">${text}</span>`;
+  rowEl.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},1080);
+}
+buildPages();
+shuffleOptions();
+
+const LADDER=['dense','fit1','fit2','fit3','fit4','fit5'];   /* dense trims spacing, not symbols */
+let FIT=null;                       /* the one scale that suits every screen */
+function applyFit(){
+  LADDER.forEach(c=>board.classList.remove(c));
+  if(FIT)board.classList.add(FIT);
+}
+/* walk every screen at every scale and keep the largest scale that fits them all,
+   so the symbols never change size from one question to the next */
+function measureFit(){
+  const back=quest;
+  LADDER.forEach(c=>board.classList.remove(c));
+  board.classList.remove('in','out');
+  board.style.visibility='hidden';
+  /* every question is tried live and answered, on the screen it belongs to */
+  const states=[];
+  PAGES.forEach((page,pi)=>page.forEach(idx=>{
+    states.push([pi,idx]);        /* the question as it is being asked  */
+    states.push([pi,idx+1]);      /* and as it looks once it is answered */
+  }));
+  let chosen=null;
+  for(const lvl of [null].concat(LADDER)){
+    if(lvl)board.classList.add(lvl);
+    let ok=true;
+    for(const [pi,active] of states){
+      paint(pi,active,active);
+      if(board.scrollHeight>board.clientHeight+2){ok=false;break;}
+    }
+    if(ok){chosen=lvl;break;}
+    if(lvl)board.classList.remove(lvl);
+  }
+  FIT=chosen;
+  board.style.visibility='';
+  quest=back;
+  if(started){
+    paint(pageOf(quest), quest, quest);
+    board.classList.add('in');
+    setTimeout(()=>board.classList.remove('in'),980);
+  }else{
+    board.innerHTML='';
+  }
+  applyFit();
+  return FIT;
+}
+const autoFit=applyFit;   /* kept for the render paths: nothing to re-measure mid-play */
+function activeRow(){return board.querySelector('.prow.active');}
+function rowFor(n){return board.querySelector(`.prow[data-n="${n}"]`);}
+function blanksOf(rowEl){return [...rowEl.querySelectorAll('.chip.blank')];}
+
+/* the chosen chip flies from the option button into the "?" slot */
+function fly(btn,blanks,toks){
+  const jobs=[];
+  const br=btn.getBoundingClientRect();
+  toks.forEach((t,i)=>{
+    const target=blanks[i]; if(!target)return;
+    const tr=target.getBoundingClientRect();
+    const ghost=document.createElement('span');
+    ghost.className='fly-chip'+(isNum(t)?' num':'');
+    if(isNum(t))ghost.textContent=t; else ghost.innerHTML=symHtml(t);
+    ghost.style.left=(br.x+br.width/2)+'px';
+    ghost.style.top=(br.y+br.height/2)+'px';
+    document.body.appendChild(ghost);
+    const a=ghost.animate([
+      {transform:'translate(-50%,-50%) scale(1)',opacity:1},
+      {transform:`translate(calc(-50% + ${(tr.x+tr.width/2-br.x-br.width/2)*.55}px), calc(-50% + ${(tr.y+tr.height/2-br.y-br.height/2)*.55}px)) scale(1.22)`,opacity:1,offset:.55},
+      {transform:`translate(calc(-50% + ${tr.x+tr.width/2-br.x-br.width/2}px), calc(-50% + ${tr.y+tr.height/2-br.y-br.height/2}px)) scale(.82)`,opacity:.95}
+    ],{duration:460+i*60,easing:'cubic-bezier(.3,1.16,.45,1)',fill:'forwards'});
+    jobs.push(a.finished.then(()=>ghost.remove()).catch(()=>ghost.remove()));
+  });
+  return Promise.all(jobs);
+}
+
+/* ---------------- answering ---------------- */
+const motionOk=()=>!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+async function choose(btn){
+  if(locked)return; locked=true;
+  const qi=quest;
+  const q=QS[qi], rowEl=activeRow();
+  if(!rowEl){locked=false;return;}
+  const idx=+btn.dataset.opt;
+  const toks=Array.isArray(q.opts[idx])?q.opts[idx]:[q.opts[idx]];
+  const correct=idx===q.ans;
+  btn.classList.add('picked');
+  /* a right answer flies into the slot; a wrong one never does */
+  if(correct){ slotSnd(); if(motionOk())await fly(btn,blanksOf(rowEl),toks); }
+
+  /* the board can be rebuilt while the chip is in the air — a window resize
+     re-measures the fit — so every finish line is drawn on the row that is
+     really on screen, never on a node that has just been replaced */
+  const row=rowFor(qi)||rowEl;
+
+  if(correct){
+    SOLVED[qi]=true; JUST=qi; delete TRIED[q.n];
+    blanksOf(row).forEach((b,i)=>{
+      b.classList.remove('blank');b.classList.add('filled');
+      b.innerHTML=toks[i]!==undefined?(isNum(toks[i])?toks[i]:symHtml(toks[i])):'';
+    });
+    row.classList.add('done','fresh');row.classList.remove('active','shake','wrongFx');
+    setTimeout(()=>row.classList.remove('fresh'),780);
+    const mark=row.querySelector('.pmark');mark.classList.add('ok');mark.textContent='✓';
+    pop(mark,[{transform:'scale(0)',opacity:0},{transform:'scale(1.25)',opacity:1,offset:.7},{transform:'scale(1)',opacity:1}],420);
+    row.querySelectorAll('.opt').forEach(o=>o.classList.add('used'));
+    rightSnd(); confetti(18,row);
+    toast('correct','Correct!',tries===0?'Well spotted!':'Got it!',row);
+    if(tries===0)score++;
+    updateScore();
+    tries=0;
+    setTimeout(nextQuestion,780);
+  }else{
+    tries++;
+    (TRIED[q.n]=TRIED[q.n]||[]).push(idx);
+    btn.classList.add('used','nope');btn.disabled=true;
+    setTimeout(()=>btn.classList.remove('nope'),560);
+    wrongSnd();
+    row.classList.add('shake','wrongFx');
+    setTimeout(()=>row.classList.remove('shake'),460);
+    const slot=row.querySelector('.chip.blank');
+    if(slot){slot.classList.add('wrong');setTimeout(()=>slot.classList.remove('wrong'),620);}
+    toast('again','Try again!','Look at the pattern once more.',row);
+    locked=false;
+  }
+}
+
+function nextQuestion(){
+  quest++;
+  if(quest>=QS.length){finish();return;}
+  if(pageOf(quest)!==pageOf(quest-1)){newScreen();return;}
+  activate();
+}
+function newScreen(){
+  locked=true;
+  board.classList.add('out');
+  screenSnd();
+  setTimeout(()=>{
+    renderScreen();
+    activate();
+    confetti(26,$('banner'));
+    pop($('banner'),[{transform:'scale(.86)'},{transform:'scale(1.06)',offset:.6},{transform:'scale(1)'}],460);
+  },300);
+}
+function activate(){
+  locked=false;
+  const rowEl=rowFor(quest);
+  if(!rowEl)return;
+  rowEl.querySelectorAll('.opt').forEach(b=>{b.disabled=false;});   /* the live row is always answerable */
+  updateHeader();
+  board.querySelectorAll('.prow').forEach(r=>r.classList.toggle('active',r===rowEl));
+  pop(rowEl,[{transform:'translateY(10px)',opacity:.55},{transform:'translateY(0)',opacity:1}],420);
+  requestAnimationFrame(()=>{autoFit();requestAnimationFrame(autoFit);});
+  setTimeout(sayQuestion,420);
+}
+function finish(){
+  locked=true;
+  board.classList.add('out');
+  cheerSnd(); confetti(110);
+  setIc($('fi'),score>=18?'trophy':score>=13?'medal':'spark');
+  $('fh').textContent=score>=18?'Pattern master!':score>=13?'Great work!':'Well done!';
+  $('fs').textContent=score;
+  $('ftotal').textContent=` / ${QS.length}`;
+  $('fmsg').textContent=`You finished all ${QS.length} pattern questions.`;
+  $('final').classList.add('show');
+}
+
+/* ---------------- wiring ---------------- */
+/* ---- the finger path: the tile dips the instant the finger lands, and the
+   answer is taken the moment the finger lifts, without waiting for the
+   browser's synthesised click. The mouse and the keyboard keep the click
+   path, and a click that merely follows a touch is ignored. ---- */
+function pickable(t){
+  const b=t&&t.closest?t.closest('.opt'):null;
+  const row=b&&b.closest('.prow');
+  return (b&&!b.disabled&&row&&row.classList.contains('active'))?b:null;
+}
+let touchPick=null;
+board.addEventListener('pointerdown',e=>{
+  const b=pickable(e.target);
+  if(!b||(e.button!==undefined&&e.button!==0))return;
+  b.classList.add('press');
+  const off=()=>{
+    b.classList.remove('press');
+    b.removeEventListener('pointerup',off);
+    b.removeEventListener('pointercancel',off);
+    b.removeEventListener('pointerleave',off);
+  };
+  b.addEventListener('pointerup',off);
+  b.addEventListener('pointercancel',off);
+  b.addEventListener('pointerleave',off);
+},{passive:true});
+/* a finger that lifts anywhere always releases the press state, even if the
+   gesture ended far from the tile it started on */
+const clearPress=()=>document.querySelectorAll('.opt.press').forEach(o=>o.classList.remove('press'));
+window.addEventListener('pointerup',clearPress,true);
+window.addEventListener('pointercancel',clearPress,true);
+board.addEventListener('pointerup',e=>{
+  if(e.pointerType==='mouse')return;                /* the mouse keeps the click path */
+  const b=pickable(e.target);
+  if(!b)return;
+  b.classList.remove('press');
+  touchPick={el:b,t:performance.now()};             /* …so the click that follows is a no-op */
+  choose(b);
+},{passive:true});
+board.addEventListener('click',e=>{
+  const b=pickable(e.target);
+  if(!b)return;
+  if(touchPick&&touchPick.el===b&&performance.now()-touchPick.t<800){touchPick=null;return;}
+  choose(b);
+});
+document.addEventListener('keydown',e=>{
+  if(!started)return;
+  const n=parseInt(e.key,10);
+  if(n>=1&&n<=9){
+    const rowEl=activeRow(); if(!rowEl)return;
+    const b=rowEl.querySelector(`.opt[data-slot="${n-1}"]`);
+    if(b&&!b.disabled)choose(b);
+  }
+  if(e.key==='h'||e.key==='H')sayQuestion();
+});
+function begin(){
+  document.documentElement.classList.add('playing');
+  buildPages();
+  shuffleOptions();
+  SOLVED=[];TRIED={};
+  measureFit();
+  $('ov').classList.add('hide');
+  setTimeout(()=>{$('ov').style.display='none';},360);
+  quest=0;score=0;tries=0;locked=false;
+  board.classList.remove('out');
+  $('final').classList.remove('show');
+  renderScreen();activate();
+}
+$('start').onclick=()=>{
+  if(started)return; started=true;
+  ensureAudio(); pickSnd();
+  begin();
+};
+$('restart').onclick=()=>{begin();};
+/* the question is read out on arrival; tapping the banner repeats it,
+   and the H key repeats it from the keyboard */
+$('banner').title='Tap to hear the question again';
+$('banner').setAttribute('role','button');
+$('banner').setAttribute('tabindex','0');
+$('banner').onclick=()=>{sayQuestion();pop($('banner'),[{transform:'scale(1)'},{transform:'scale(.95)',offset:.5},{transform:'scale(1)'}],260);};
+$('banner').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('banner').click();}};
+/* R restarts a round — but only once the round has begun */
+document.addEventListener('keydown',e=>{if((e.key==='r'||e.key==='R')&&started){begin();}});
+/* the scale is settled once, before question 1, and only ever revisited when the
+   window itself really changes size — never while the questions are moving */
+let rzT=null, lastW=innerWidth, lastH=innerHeight;
+window.addEventListener('resize',()=>{
+  if(Math.abs(innerWidth-lastW)<24&&Math.abs(innerHeight-lastH)<48)return;
+  lastW=innerWidth;lastH=innerHeight;
+  clearTimeout(rzT);
+  rzT=setTimeout(()=>{measureFit();},200);
+},{passive:true});
+
+</script>
+</body>
+</html>
