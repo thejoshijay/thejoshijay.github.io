@@ -352,7 +352,7 @@ html[data-layout-mode="auto-fit"] .tally{font-size:44px}
 .opt.picked{border-color:var(--pink);background:#FFF6FB}
 .ochip{font-size:clamp(14px,3vh,26px);line-height:1;white-space:nowrap}
 .ochip.num{font:700 clamp(14px,2.9vh,24px) var(--font-display);color:var(--purple-deep)}
-.pmark{flex:0 0 auto;width:clamp(18px,3vh,26px);height:clamp(18px,3vh,26px);display:grid;place-items:center;
+.pmark{flex:0 0 auto;pointer-events:none;width:clamp(18px,3vh,26px);height:clamp(18px,3vh,26px);display:grid;place-items:center;
   font:700 clamp(13px,2.4vh,20px) var(--font-display);color:#4FA96B;opacity:0}
 .pmark.ok{opacity:1}
 
@@ -396,7 +396,13 @@ html[data-layout-mode="auto-fit"] .tally{font-size:44px}
 .popts{flex-wrap:wrap}
 @media (max-width:760px){
   .prow{gap:5px;padding:4px 8px}
-  .popts{margin-left:auto}
+  /* on a phone the tray drops onto its own line under the pattern, so it can
+     sit in the middle of the row instead of against the right edge */
+  .prow .popts{margin-left:auto;margin-right:auto}
+  /* the little tick moves up beside the question number, so nothing else
+     shares the tray's line (it used to, and pushed the tray off-centre) */
+  .prow .pnum{order:-2}
+  .prow .pmark{order:-1;width:clamp(18px,3vh,24px);height:clamp(18px,3vh,24px)}
   .pnum{width:clamp(18px,3vh,24px);height:clamp(18px,3vh,24px)}
 }
 /* phones: the controls fold into one row so the board keeps the height */
@@ -571,13 +577,13 @@ html,body{overscroll-behavior:none}
    pink tile — a soft pink glaze with a pink rim and a pink glow underneath —
    and each symbol rests on a frost-white pill inside it. The pill is drawn
    with a shadow ring, never with padding, so the fit never changes. */
-.opt{position:relative;overflow:hidden;border-color:#F7A0CD;
+.opt{position:relative;border-color:#F7A0CD;
   background:linear-gradient(180deg,
     rgba(255,250,254,.96) 0%,rgba(255,224,242,.96) 46%,rgba(255,192,226,.97) 100%);
   backdrop-filter:blur(8px) saturate(1.4);-webkit-backdrop-filter:blur(8px) saturate(1.4);
   box-shadow:inset 0 3px 0 rgba(255,255,255,.99), inset 0 -3px 0 rgba(226,120,178,.20),
              0 5px 0 rgba(240,156,201,.46), 0 14px 22px -14px rgba(226,120,178,.80)}
-.opt::before{content:"";position:absolute;inset:0;pointer-events:none;
+.opt::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
   background:
     linear-gradient(168deg,rgba(255,255,255,.88) 0%,rgba(255,255,255,.30) 34%,rgba(255,255,255,0) 58%),
     radial-gradient(130% 84% at 50% 116%,rgba(255,255,255,.55),rgba(255,255,255,0) 62%)}
@@ -609,6 +615,41 @@ html,body{overscroll-behavior:none}
   .opt:hover{transform:none;border-color:#F7A0CD;
     box-shadow:inset 0 3px 0 rgba(255,255,255,.99), inset 0 -3px 0 rgba(226,120,178,.20),
                0 5px 0 rgba(240,156,201,.46), 0 14px 22px -14px rgba(226,120,178,.80)}
+}
+
+/* ===================== 7.3 · the choices travel as one block =====================
+   The options live inside a single frosted tray — one glance says "these three
+   belong together, and they are the buttons". And, exactly like the Connect
+   Arduino button, every tile sends out a pink wave; the wave is staggered
+   tile by tile, so it rolls across the block. */
+.prow.active .popts{position:relative;border-radius:22px;padding:6px;
+  background:linear-gradient(180deg,#FFFDFE 0%,#FDF1F8 100%);
+  border:2.5px solid #F7A0CD;
+  box-shadow:inset 0 2px 0 #fff, inset 0 -3px 0 rgba(226,120,178,.16),
+             0 7px 0 rgba(240,156,201,.38), 0 16px 26px -18px rgba(200,80,140,.7)}
+.prow.active .popts::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,0) 58%)}
+/* the wave: the Connect-Arduino pink ping, one tile after another */
+.prow.active .opt::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:0 0 0 0 rgba(240,26,140,.42);
+  animation:optPing 2.2s cubic-bezier(.45,0,.55,1) infinite}
+.prow.active .opt[data-slot="1"]::after{animation-delay:.22s}
+.prow.active .opt[data-slot="2"]::after{animation-delay:.44s}
+@keyframes optPing{
+  0%{box-shadow:0 0 0 0 rgba(240,26,140,.42)}
+  70%,100%{box-shadow:0 0 0 15px rgba(240,26,140,0)}}
+/* a tile that has been spent, or a question already answered, holds its wave */
+.prow.active .opt.used::after{animation:none;box-shadow:none}
+@media (prefers-reduced-motion:reduce){ .prow.active .opt::after{animation:none} }
+
+/* tablets and wider: the same centring, but only on a row whose tray really has
+   dropped onto its own line (settleTray marks it). The tick is invisible until
+   the row is solved — and solving ends .active in the same instant — so while
+   the question is live it steps out of the tray's line. Phones get this from
+   their own block above. */
+@media (min-width:761px){
+  .prow.active.stack .popts{margin-left:auto;margin-right:auto}
+  .prow.active.stack .pmark{display:none}
 }
 
 </style>
@@ -1170,7 +1211,7 @@ function updateScore(){
 /* the badge never sits on a symbol or an option: it tries the four corners of
    its row and keeps the one that covers nothing */
 function placeToast(row,t){
-  const tiles=[...row.querySelectorAll('.chip,.opt')];
+  const tiles=[...row.querySelectorAll('.chip,.opt,.popts')];
   if(!tiles.length)return;
   const area=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*
                     Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
@@ -1215,6 +1256,18 @@ let FIT=null;                       /* the one scale that suits every screen */
 function applyFit(){
   LADDER.forEach(c=>board.classList.remove(c));
   if(FIT)board.classList.add(FIT);
+  settleTray();
+}
+/* whenever the live question's options have dropped onto a line of their own
+   under the pattern (phones, portrait tablets) the tray sits in the middle of
+   the row; beside the pattern (laptops, landscape) it keeps to the right edge */
+function settleTray(){
+  board.querySelectorAll('.prow.stack').forEach(r=>r.classList.remove('stack'));
+  const row=board.querySelector('.prow.active');
+  if(!row)return;
+  const tray=row.querySelector('.popts'), body=row.querySelector('.pbody');
+  if(!tray||!body||!tray.firstElementChild)return;
+  if(tray.getBoundingClientRect().top>=body.getBoundingClientRect().bottom-1)row.classList.add('stack');
 }
 /* walk every screen at every scale and keep the largest scale that fits them all,
    so the symbols never change size from one question to the next */
@@ -1357,6 +1410,7 @@ function activate(){
   rowEl.querySelectorAll('.opt').forEach(b=>{b.disabled=false;});   /* the live row is always answerable */
   updateHeader();
   board.querySelectorAll('.prow').forEach(r=>r.classList.toggle('active',r===rowEl));
+  settleTray();                                 /* placed before the first frame is drawn */
   pop(rowEl,[{transform:'translateY(10px)',opacity:.55},{transform:'translateY(0)',opacity:1}],420);
   requestAnimationFrame(()=>{autoFit();requestAnimationFrame(autoFit);});
   setTimeout(sayQuestion,420);
@@ -1459,6 +1513,7 @@ document.addEventListener('keydown',e=>{if((e.key==='r'||e.key==='R')&&started){
    window itself really changes size — never while the questions are moving */
 let rzT=null, lastW=innerWidth, lastH=innerHeight;
 window.addEventListener('resize',()=>{
+  requestAnimationFrame(settleTray);      /* even a small resize can re-wrap the options */
   if(Math.abs(innerWidth-lastW)<24&&Math.abs(innerHeight-lastH)<48)return;
   lastW=innerWidth;lastH=innerHeight;
   clearTimeout(rzT);
@@ -1466,5 +1521,5 @@ window.addEventListener('resize',()=>{
 },{passive:true});
 
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a42a428a7edbf9b4',t:'MTc5MDY3NzI3NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a435c53a8a4fdb32',t:'MTc5MDc5Nzk3MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
