@@ -1,0 +1,2258 @@
+<!doctype html>
+<html class="intro" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plant Growth · Smart Block</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#83358C;--pink:#F01A8C;--yellow:#FFF212;
+  --purple-deep:#5C2563;--pink-dk:#B01268;--yellow-dk:#D6C900;
+  --ink:#161016;--muted:#4A3A4D;--line:#E7D8EA;
+  --ok:#2FBF6D;--ok-deep:#1D7A45;--no:#E0433A;
+  --sig-red:#FF2D2D;--sig-yellow:#FFC400;--sig-green:#22D35A;
+  --font-display:'Fredoka','SB Display',Boulder,sans-serif;
+  --font-text:'Nunito','SB Text',Bariol,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+@supports (height:100dvh){
+  /* Use the visible phone/tablet viewport, not the larger area behind browser chrome.
+     --vvh is updated from visualViewport; 100dvh remains the built-in fallback. */
+  html[data-layout-mode="auto-fit"],html[data-layout-mode="auto-fit"] body{
+    height:100dvh;
+    height:min(100dvh,var(--vvh,100dvh));
+  }
+}
+body{background:#E6DCEB;overflow:hidden;display:flex;flex-direction:column;font-family:var(--font-text);color:var(--ink)}
+button{font:inherit;cursor:pointer}
+
+/* ===================== SHELL (the Distance Detective house layout) ===================== */
+.topbar{flex:0 0 auto;height:clamp(62px,8vh,76px);display:flex;align-items:center;gap:16px;
+  padding:8px clamp(12px,2vw,24px);border-bottom:3px solid var(--purple);background:var(--yellow)}
+.brand-logo{height:34px;width:auto}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(18px,2.8vh,26px);color:#5C2563}
+h1 b{color:var(--pink)}
+.layout{flex:1;min-height:0;display:grid;
+  grid-template-columns:minmax(0,3fr) minmax(340px,1fr);
+  gap:14px;padding:14px clamp(12px,2vw,24px)}
+@media(max-width:940px) and (orientation:portrait){
+  .layout{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+  /* a grid track defaulting to min-content is what held the cards at 418 px in a
+     390 px window: let every item shrink, and let the header row wrap if it must */
+  .col,.rightcol,.card{min-width:0}
+  .rightcol{grid-template-columns:minmax(0,1fr)}
+  .task-header{flex-wrap:wrap;row-gap:5px}
+  .progress{flex-wrap:wrap;justify-content:center}
+}
+.col{display:flex;flex-direction:column;gap:12px;min-height:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;
+  box-shadow:0 12px 25px -20px var(--purple-deep);min-height:0}
+.stage-card{flex:1;display:flex;flex-direction:column;padding:12px;min-height:0}
+.stage{position:relative;flex:1;min-height:200px;border-radius:15px;border:1px solid var(--line);overflow:hidden;
+  background:linear-gradient(#8FC6EC,#DDEFFA 33%,#9BCB72 33.2%,#7AB656)}
+.scene{width:100%;height:100%;display:block;overflow:visible}
+
+/* ---- task header + progress dots ---- */
+.task-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 6px 10px;flex-wrap:wrap;row-gap:6px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.eyebrow{font-family:var(--font-display);font-weight:700;font-size:10.5px;letter-spacing:.11em;color:var(--pink);text-transform:uppercase;white-space:nowrap}
+.progress{display:flex;gap:6px;flex:0 0 auto}
+/* the round dots are little glazed beads — the Pattern and Sequence finish */
+.progress .dot{position:relative;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;
+  color:#AE8FB8;border:1px solid #DCCAE4;font:700 11px var(--font-display);
+  text-shadow:0 1px 0 rgba(255,255,255,.85);
+  background:radial-gradient(115% 100% at 50% 0%,#FFFFFF 0%,#F8F1FC 46%,#E8DAF0 100%);
+  box-shadow:inset 0 2px 1px rgba(255,255,255,.97), inset 0 -2.5px 3px rgba(131,53,140,.13),
+             0 2px 0 rgba(92,37,99,.13), 0 5px 9px -5px rgba(92,37,99,.35);
+  transition:color .25s,border-color .25s,box-shadow .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+.progress .dot::after{content:"";position:absolute;left:17%;right:17%;top:9%;height:44%;border-radius:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,255,255,.10));pointer-events:none}
+.progress .dot.current{color:#fff;border-color:#D81C86;text-shadow:0 1px 1px rgba(150,10,80,.45);
+  background:radial-gradient(115% 105% at 50% 0%,#FF80C5 0%,var(--pink) 52%,#D6167F 100%);
+  box-shadow:inset 0 2px 1px rgba(255,255,255,.78), inset 0 -2.5px 3px rgba(140,8,72,.32),
+             0 3px 0 rgba(176,18,104,.42), 0 8px 13px -6px rgba(240,26,140,.70);
+  transform:scale(1.12)}
+.progress .dot.done{color:#188348;border-color:#79CAA0;text-shadow:0 1px 0 rgba(255,255,255,.9);
+  background:radial-gradient(115% 100% at 50% 0%,#FFFFFF 0%,#E5FAED 46%,#BDECCF 100%);
+  box-shadow:inset 0 2px 1px rgba(255,255,255,.97), inset 0 -2.5px 3px rgba(47,150,90,.17),
+             0 2px 0 rgba(47,150,90,.24), 0 5px 9px -5px rgba(47,150,90,.50)}
+.progress .dot.pop{animation:dotPop .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes dotPop{0%{transform:scale(1)}42%{transform:scale(1.5)}100%{transform:scale(1)}}
+
+/* ---- banner (tap it to hear the question again) ---- */
+.banner{margin:0 auto;flex:0 1 auto;min-width:0;background:#fff;border:3px solid var(--purple);
+  border-radius:18px;padding:4px 18px;font:700 clamp(13px,2.4vh,19px) var(--font-display);color:var(--purple-deep);
+  box-shadow:0 5px 0 rgba(92,37,99,.18);width:max-content;max-width:94%;text-align:center;letter-spacing:.4px;
+  cursor:pointer;user-select:none}
+.banner .target{color:var(--pink)}
+.banner .l-red{color:#D4141C}
+.banner .l-yellow{color:#B57F00}
+.banner .l-green{color:#13873B}
+.banner.pop{animation:bp .4s cubic-bezier(.22,1,.36,1)}
+@keyframes bp{0%{opacity:0;transform:translateY(-10px) scale(.92)}
+  60%{opacity:1;transform:translateY(0) scale(1.035)}100%{transform:scale(1)}}
+
+/* ===================== RIGHT COLUMN ===================== */
+.rightcol{display:flex;flex-direction:column;gap:12px;min-height:0}
+.card-title{font-family:var(--font-display);font-weight:700;font-size:15.5px;color:var(--purple);padding:2px 4px 10px}
+
+/* -- the choices: the prediction throws the light, so the pads sit up here -- */
+.optcard{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;min-height:0;padding:16px;
+  background:linear-gradient(170deg,#F7EFF9,#FFFFFF 60%)}
+.optcard .legend .rule{text-align:center}
+.optcard .sig-status{margin-top:clamp(8px,1.3vh,13px);text-align:center;font-size:clamp(14px,2vh,17px)}
+.sig-status{font:700 clamp(15px,2.2vh,19px) var(--font-display);color:var(--purple-deep);
+  min-height:1.3em;letter-spacing:.2px}
+.sig-status b{font-weight:700}
+.sig-status .c-red{color:#D4141C}.sig-status .c-yellow{color:#B57F00}.sig-status .c-green{color:#13873B}
+.sig-status.fs{animation:fadeSlide .38s cubic-bezier(.22,1,.36,1) both}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* -- choose the signal: where Distance Detective keeps its controls -- */
+/* the three choices travel as one light frosted-pink block */
+.opts{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.2vh,12px);
+  padding:clamp(7px,1vh,10px);border-radius:22px;
+  background:linear-gradient(180deg,#FFFDFE 0%,#FDF1F8 100%);border:2.5px solid #F7A0CD;
+  box-shadow:inset 0 2px 0 #fff,inset 0 -3px 0 rgba(226,120,178,.16),
+             0 7px 0 rgba(240,156,201,.38),0 16px 26px -18px rgba(200,80,140,.7)}
+.opts::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,0) 58%)}
+.opt{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(4px,.8vh,8px);
+  padding:clamp(8px,1.3vh,12px) 4px clamp(7px,1.1vh,10px);border-radius:16px;border:2.5px solid #F7A0CD;
+  background:linear-gradient(180deg,rgba(255,250,254,.96) 0%,rgba(255,224,242,.96) 46%,rgba(255,192,226,.97) 100%);
+  -webkit-backdrop-filter:blur(8px) saturate(1.4);backdrop-filter:blur(8px) saturate(1.4);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.99),inset 0 -3px 0 rgba(226,120,178,.20),
+             0 5px 0 rgba(240,156,201,.46),0 14px 22px -14px rgba(226,120,178,.80);
+  transition:transform .18s cubic-bezier(.22,1,.36,1),box-shadow .18s,border-color .2s,opacity .25s,filter .25s;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.opt::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(168deg,rgba(255,255,255,.88) 0%,rgba(255,255,255,.30) 34%,rgba(255,255,255,0) 58%),
+             radial-gradient(130% 84% at 50% 116%,rgba(255,255,255,.55),rgba(255,255,255,0) 62%)}
+/* the Connect-Arduino wave, rolling across the block one tile after another */
+.opts.live .opt:not(.used)::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  border:3px solid rgba(240,26,140,.55);opacity:0;transform-origin:50% 50%;
+  will-change:transform,opacity;                    /* compositor, not the main thread */
+  animation:optPing 2.2s cubic-bezier(.45,0,.55,1) infinite}
+.opts.live .opt[data-slot="1"]::after{animation-delay:.22s}
+.opts.live .opt[data-slot="2"]::after{animation-delay:.44s}
+@keyframes optPing{0%{opacity:.5;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.17)}}
+.lens{position:relative;z-index:1;width:clamp(46px,7.4vh,68px);height:clamp(46px,7.4vh,68px);border-radius:50%;
+  box-shadow:0 0 0 3.5px rgba(255,255,255,.95),0 0 0 5.5px rgba(247,160,205,.35),0 4px 9px rgba(120,30,80,.28),
+             inset 0 -4px 6px rgba(0,0,0,.25)}
+.lens::after{content:"";position:absolute;left:20%;right:30%;top:10%;height:36%;border-radius:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,0))}
+.lens.red{background:radial-gradient(circle at 42% 36%,#FFB3AD 0%,#FF4A3F 34%,#D9101A 72%,#8E0510 100%)}
+.lens.yellow{background:radial-gradient(circle at 42% 36%,#FFF3B0 0%,#FFD43B 34%,#F5A900 72%,#9C6B00 100%)}
+.lens.green{background:radial-gradient(circle at 42% 36%,#C9FFD6 0%,#4FE07C 34%,#12A844 72%,#066A28 100%)}
+.opt b{position:relative;z-index:1;font:700 clamp(15px,2.2vh,19px) var(--font-display);color:var(--purple-deep);letter-spacing:.3px}
+.opt:hover{transform:translateY(-2px);border-color:#FF74BD;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.99),inset 0 -3px 0 rgba(226,120,178,.22),
+             0 8px 0 rgba(240,140,196,.52),0 18px 26px -14px rgba(226,120,178,.88)}
+.opt.press,.opt:active{transform:translateY(2px) scale(.972);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.99),inset 0 -2px 0 rgba(226,120,178,.22),0 2px 0 rgba(240,156,201,.42)}
+.opt:focus-visible{outline:3px solid var(--purple);outline-offset:3px}
+.opts:not(.live) .opt{cursor:default}
+/* a wrong pick shakes its head and steps aside; the pink only ever means "you can choose this" */
+.opt.used{opacity:.45;filter:grayscale(.85);cursor:default;transform:none}
+.opt.used::after{content:"✕";position:absolute;right:6px;top:4px;z-index:2;font:700 15px var(--font-display);color:#C2342F;
+  animation:none!important;box-shadow:none!important;inset:auto;width:auto;height:auto}
+.opt.nope{animation:optNope .52s cubic-bezier(.36,.07,.19,.97)}
+@keyframes optNope{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+/* the right one lights up in its own colour */
+.opt.right{border-color:#fff;transform:translateY(-2px)}
+.opt.right[data-c="red"]{box-shadow:0 0 0 4px rgba(255,45,45,.35),0 0 24px rgba(255,45,45,.55),0 5px 0 rgba(200,40,40,.35)}
+.opt.right[data-c="yellow"]{box-shadow:0 0 0 4px rgba(255,196,0,.38),0 0 24px rgba(255,196,0,.55),0 5px 0 rgba(190,140,0,.35)}
+.opt.right[data-c="green"]{box-shadow:0 0 0 4px rgba(34,211,90,.35),0 0 24px rgba(34,211,90,.55),0 5px 0 rgba(20,140,60,.35)}
+.opts.solved .opt:not(.right){opacity:.55;filter:saturate(.6)}
+/* the rule, always in view under the choices */
+.legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.2vh,12px);margin-top:9px;padding:0 clamp(7px,1vh,10px);
+  font:700 11.5px var(--font-display);color:var(--muted);text-align:center;line-height:1.25}
+.legend span{display:block}
+.legend .rule{ grid-column:1/-1;font-size:12.5px;color:#7A5B86;letter-spacing:.2px }
+@media (hover:none){
+  .opt:hover{transform:none;border-color:#F7A0CD;
+    box-shadow:inset 0 3px 0 rgba(255,255,255,.99),inset 0 -3px 0 rgba(226,120,178,.20),
+               0 5px 0 rgba(240,156,201,.46),0 14px 22px -14px rgba(226,120,178,.80)}
+  .opt.right:hover{transform:translateY(-2px)}
+}
+
+/* ---- the feedback badge floats in the scene's lower-right corner, clear of the road ---- */
+.toast{position:absolute;right:clamp(8px,1.2vw,14px);bottom:clamp(8px,1.2vh,14px);z-index:30;
+  display:flex;align-items:center;gap:clamp(5px,.6vw,8px);
+  padding:clamp(4px,.6vh,7px) clamp(10px,1.2vw,15px);border-radius:999px;
+  background:#fff;border:2.5px solid #7FCB95;box-shadow:0 8px 18px rgba(92,37,99,.25);
+  font:700 clamp(13px,2vh,17px) var(--font-display);color:#1B7A45;
+  pointer-events:none;white-space:nowrap;animation:toastIn .3s cubic-bezier(.22,1,.36,1) both}
+.toast .tic{width:1.35em;height:1.35em;flex:0 0 auto;display:grid;place-items:center}
+.toast .tic svg{width:100%;height:100%;display:block}
+.toast.again{border-color:var(--pink);color:var(--pink-dk);box-shadow:0 10px 24px rgba(240,26,140,.22)}
+.toast.out{animation:toastOut .32s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px) scale(.94)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(7px) scale(.96)}}
+.sr-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ===================== OVERLAYS ===================== */
+.ov{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px}
+.ov.hide{opacity:0;pointer-events:none;transition:opacity .35s}
+.ov-box{background:var(--yellow);border:5px solid var(--purple);border-radius:28px;padding:30px 42px;text-align:center;
+  max-width:560px;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.ov.hide .ov-box{transform:scale(.9) translateY(10px)}
+.ov-box h2{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,4.6vh,40px);color:var(--purple-deep)}
+.ov-box h2 b{color:inherit}
+.ov-box p{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--pink);margin:16px 0 24px;
+  line-height:1.45;letter-spacing:.4px}
+.ov-icons{display:flex;gap:20px;justify-content:center;margin:6px 0 16px}
+.ov-icons svg{width:clamp(84px,12vh,112px);height:clamp(84px,12vh,112px);filter:drop-shadow(0 6px 10px rgba(92,37,99,.3));
+  animation:iconIn2 .6s cubic-bezier(.34,1.56,.64,1) both, iconFloat 3.4s ease-in-out infinite}
+.ov-icons svg:nth-child(1){animation-delay:.05s,1.0s}
+.ov-icons svg:nth-child(2){animation-delay:.18s,1.5s}
+/* the second symbol floats a beat after the first — the detective-series stagger */
+.ov-icons svg:nth-child(3){animation-delay:.30s,2.0s}
+.ov-icons svg:nth-child(4){animation-delay:.42s,2.4s}
+@keyframes iconIn2{from{opacity:0;transform:translateY(16px) scale(.45)}to{opacity:1;transform:none}}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+/* The single glossy railway-crossing emblem floats gently above the instructions. */
+.ov-box.task-in h2{animation:ovRise .5s cubic-bezier(.22,1,.36,1) backwards}
+.ov-box.task-in p{animation:ovRise .5s .1s cubic-bezier(.22,1,.36,1) backwards}
+.ov-box.task-in .ov-start{animation:ovRise .5s .2s cubic-bezier(.22,1,.36,1) backwards}
+@keyframes ovRise{from{opacity:0;transform:translateY(14px)}}
+.ov-start{background:var(--pink);color:#fff;border:none;border-radius:18px;padding:13px 36px;
+  font:700 21px var(--font-display);box-shadow:0 7px 0 var(--pink-dk);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.ov-start:hover{transform:translateY(-3px);box-shadow:0 10px 0 var(--pink-dk)}
+.ov-start .bi{width:1.05em;height:1.05em;vertical-align:-.17em;margin-right:.42em}
+.ov-start:active{transform:translateY(4px);box-shadow:0 3px 0 var(--pink-dk)}
+.ov-start{position:relative;overflow:hidden;-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+.ov-start::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10) 40%,rgba(255,255,255,0) 60%)}
+.ov-start::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.12)}
+
+.final{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;
+  background:rgba(22,16,22,.45);backdrop-filter:blur(4px)}
+.final.show{display:flex}
+.final-box{background:#fff;border:5px solid var(--purple);border-radius:28px;padding:32px 42px;text-align:center;max-width:440px;
+  margin:16px;animation:finIn .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes finIn{from{opacity:0;transform:scale(.82) translateY(16px)}to{opacity:1;transform:none}}
+.trophy{font-size:66px;line-height:0;display:grid;place-items:center;animation:tp .7s cubic-bezier(.3,1.6,.4,1)}
+.trophy svg{width:1em;height:1em;filter:drop-shadow(0 6px 8px rgba(160,110,0,.35))}
+@keyframes tp{0%{transform:scale(.3) rotate(-20deg)}100%{transform:scale(1)}}
+
+.final-box h2{font-family:var(--font-display);color:var(--purple);font-size:30px;margin:6px 0}
+.tally{font:800 52px var(--font-display);color:var(--pink);line-height:1}
+.tally small{font-size:22px;color:var(--purple-deep)}
+.final-box p{margin:10px 0 16px;color:var(--muted);font-weight:700}
+.again{background:var(--pink);color:#fff;border:none;border-radius:16px;padding:12px 28px;font:700 18px var(--font-display);
+  box-shadow:0 6px 0 var(--pink-dk);transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.again:hover{transform:translateY(-3px);box-shadow:0 9px 0 var(--pink-dk)}
+.again:active{transform:translateY(4px);box-shadow:0 2px 0 var(--pink-dk)}
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden;contain:layout paint}
+.confetti i{position:absolute;top:-14px;width:10px;height:14px;border-radius:2px;
+  will-change:transform,opacity;backface-visibility:hidden}
+
+/* ===================== THE SCENE ===================== */
+.scene{font-family:var(--font-display)}
+.scene text{user-select:none}
+.veh{will-change:transform}
+.veh .brk{opacity:0;transition:opacity .25s ease}
+.veh.braking .brk{opacity:1}
+.veh .hl{opacity:.9}
+/* the sky is alive: clouds drift, birds flap, the sun glows */
+.drift{animation:drift 38s ease-in-out infinite alternate}
+.drift.d2{animation-duration:46s;animation-delay:-17s}
+.drift.d3{animation-duration:54s;animation-delay:-31s}
+@keyframes drift{from{transform:translateX(-14px)}to{transform:translateX(14px)}}
+/* trees breathe in the breeze */
+.tree .cnp{transform-box:fill-box;transform-origin:50% 100%;animation:sway 5.6s ease-in-out infinite}
+.tree:nth-of-type(2n) .cnp{animation-duration:6.4s;animation-delay:-2.1s}
+.tree:nth-of-type(3n) .cnp{animation-duration:7.1s;animation-delay:-3.7s}
+@keyframes sway{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}
+/* the signal lamps */
+.slamp .on,.slamp .halo{opacity:0;transition:opacity .28s ease}
+.slamp.lit .on,.slamp.lit .halo{opacity:1}
+.slamp.lit .halo{animation:haloPulse 1.6s ease-in-out infinite}
+@keyframes haloPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.slamp .halo{transform-box:fill-box;transform-origin:50% 50%}
+.spill{opacity:0;transition:opacity .4s ease}
+.spill.lit{opacity:.42}
+/* horns */
+.honk{transform-box:fill-box;transform-origin:50% 100%;animation:honkPop 1.25s cubic-bezier(.22,1,.36,1) both}
+@keyframes honkPop{0%{opacity:0;transform:scale(.3) translateY(6px)}18%{opacity:1;transform:scale(1.08)}
+  30%{transform:scale(1)}78%{opacity:1;transform:translateY(-6px)}100%{opacity:0;transform:translateY(-12px)}}
+/* little puffs from the exhausts */
+.puff{animation:puff 1.4s ease-out both}
+@keyframes puff{0%{opacity:.55;transform:translate(0,0) scale(.5)}100%{opacity:0;transform:translate(var(--dx,4px),18px) scale(1.6)}}
+
+.opt,.banner,.ov-start,.again{touch-action:manipulation}
+@media (prefers-reduced-motion:reduce){
+  .btn.attn .pulse{animation:none}
+  .tree .cnp,.slamp.lit .halo,.ov-icons svg,.ov-icons .ovl,.opts.live .opt::after,
+  .drift{animation:none!important}
+  .ov-icons .ovl.l2,.ov-icons .ovl.l3{opacity:0}
+  /* the two mission symbols: no float when motion is reduced, but never hidden —
+     their little light pulses rest at a steady brightness */
+  .ov-icons svg{animation:none!important;opacity:1!important}
+  .ov-icons .rcA{animation:none!important;opacity:.5}
+  .confetti{display:none}
+}
+
+/* ===================== AUTO-FIT SHELL (touch devices) =====================
+   The laptop build keeps the authored sizes; every other device compacts the
+   shell so the whole activity fits one screen, exactly like the detective series. */
+html[data-layout-mode="auto-fit"] .topbar{height:clamp(50px,7vh,62px);gap:12px;padding:6px clamp(10px,1.6vw,18px)}
+html[data-layout-mode="auto-fit"] h1{font-size:clamp(17px,2.4vh,22px)}
+html[data-layout-mode="auto-fit"] .brand-logo{height:clamp(26px,3.6vh,31px)}
+html[data-layout-mode="auto-fit"] .layout{padding:12px;gap:12px}
+html[data-layout-mode="auto-fit"] .card{border-radius:18px}
+html[data-layout-mode="auto-fit"] .stage-card{padding:10px}
+html[data-layout-mode="auto-fit"] .task-header{padding-bottom:8px}
+html[data-layout-mode="auto-fit"] .eyebrow{font-size:10px}
+html[data-layout-mode="auto-fit"] .progress .dot{width:22px;height:22px;font-size:10.5px}
+html[data-layout-mode="auto-fit"] .progress{gap:5px}
+html[data-layout-mode="auto-fit"] .banner{font-size:clamp(14px,2vh,17px);padding:5px 14px}
+html[data-layout-mode="auto-fit"] .optcard{padding:13px}
+html[data-layout-mode="auto-fit"] .ctrl{padding:11px 13px 13px}
+html[data-layout-mode="auto-fit"] .conn{font-size:12px;padding:5px 10px}
+html[data-layout-mode="auto-fit"] .ctrl .btn{padding:8px;font-size:13px}
+html[data-layout-mode="auto-fit"] .card-title{font-size:14px;padding-bottom:7px}
+html[data-layout-mode="auto-fit"] .ov-box{padding:24px 30px}
+html[data-layout-mode="auto-fit"] .ov-box h2{font-size:clamp(22px,4vh,32px)}
+html[data-layout-mode="auto-fit"] .ov-box p{font-size:19px;margin:14px 0 20px}
+html[data-layout-mode="auto-fit"] .ov-icons svg{width:88px;height:88px}
+html[data-layout-mode="auto-fit"] .ov-start{padding:11px 30px;font-size:19px}
+html[data-layout-mode="auto-fit"] .final-box{padding:22px 26px}
+html[data-layout-mode="auto-fit"] .tally{font-size:44px}
+/* narrow portrait windows (any device): the two cards sit side by side under the
+   scene, so the scene keeps its height; only very narrow windows stack them */
+@media(max-width:940px) and (orientation:portrait){
+  .rightcol{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;align-items:stretch}
+}
+@media(max-width:600px) and (orientation:portrait){
+  .rightcol{grid-template-columns:minmax(0,1fr)}
+}
+/* portrait tablets: the scene over the two cards, side by side */
+@media(max-width:940px) and (orientation:portrait){
+  /* the scene row takes every spare pixel, but it can never be crushed: minmax(min-content,1fr)
+     will not shrink below the picture's own height, and when the activity really does not fit
+     (short phones) the whole card scrolls as one surface - nothing is ever cut off */
+  html[data-layout-mode="auto-fit"] .layout{grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(min-content,1fr) max-content;gap:10px;padding:10px;
+    overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  html[data-layout-mode="auto-fit"] .rightcol{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:10px;align-items:stretch}
+  html[data-layout-mode="auto-fit"] .layout>.col:not(.rightcol){min-height:0}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(186px,33vh,340px)}
+}
+@media(max-width:760px) and (orientation:portrait){
+  /* phones: the console folds into one row and sits on top of the choices */
+  html[data-layout-mode="auto-fit"] .rightcol{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;gap:8px;align-content:start}
+  html[data-layout-mode="auto-fit"] .optcard{padding:9px 10px 9px}
+  html[data-layout-mode="auto-fit"] .optcard .card-title{display:none}
+  html[data-layout-mode="auto-fit"] .sig-status{margin:6px 0 0;font-size:13.5px}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:8px 10px 9px}
+  html[data-layout-mode="auto-fit"] .ctrl .card-title{display:none}
+  html[data-layout-mode="auto-fit"] .conn{margin:0 0 6px;padding:5px 10px;font-size:11.5px}
+  html[data-layout-mode="auto-fit"] .ctrl .btn{padding:7px;font-size:12.5px}
+  html[data-layout-mode="auto-fit"] .lens{width:44px;height:44px}
+  html[data-layout-mode="auto-fit"] .opt b{font-size:15px}
+  html[data-layout-mode="auto-fit"] .legend{margin-top:7px;font-size:11px}
+}
+/* the round dots drop under the question on narrow screens — centred, never stranded on the left */
+@media(max-width:560px){ .task-header{justify-content:center} }
+@media(max-width:411px){ .task-header .eyebrow{display:none} }
+@media(max-width:480px) and (orientation:portrait){
+  /* small phones: everything shrinks one more notch so nothing scrolls */
+  html[data-layout-mode="auto-fit"] .layout{gap:8px;padding:8px 8px 6px}
+  html[data-layout-mode="auto-fit"] .stage-card{padding:8px}
+  html[data-layout-mode="auto-fit"] .task-header{padding:0 2px 7px;gap:6px}
+  html[data-layout-mode="auto-fit"] .progress{gap:4px}
+  html[data-layout-mode="auto-fit"] .progress .dot{width:19px;height:19px;font-size:9.5px}
+  html[data-layout-mode="auto-fit"] .banner{font-size:13px;padding:4px 11px;border-width:2.5px}
+  html[data-layout-mode="auto-fit"] .sig-status{font-size:12.5px}
+  html[data-layout-mode="auto-fit"] .lens{width:40px;height:40px}
+  html[data-layout-mode="auto-fit"] .opt{padding:7px 3px 6px}
+  html[data-layout-mode="auto-fit"] .opt b{font-size:14px}
+  html[data-layout-mode="auto-fit"] .legend{font-size:10.4px}
+}
+@media(max-width:760px) and (max-height:720px) and (orientation:portrait){
+  /* short phones: one more notch so the scene, the console and the choices share one screen */
+  html[data-layout-mode="auto-fit"] .layout{gap:7px;padding:7px 7px 5px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .lens{width:36px;height:36px}
+  html[data-layout-mode="auto-fit"] .opt{gap:3px;padding:6px 3px 5px}
+  html[data-layout-mode="auto-fit"] .opt b{font-size:13px}
+  html[data-layout-mode="auto-fit"] .legend{margin-top:5px;font-size:10px}
+}
+/* landscape phones and short windows: keep the scene big — two columns, a slim right column */
+@media(orientation:landscape) and (max-height:540px){
+  .topbar{height:44px;padding:4px 14px}
+  .brand-logo{height:24px}
+  h1{font-size:17px}
+  .layout{grid-template-columns:minmax(0,1fr) minmax(200px,29%);gap:8px;padding:8px}
+  .stage-card{padding:7px}
+  .task-header{padding:0 4px 6px;gap:8px}
+  .eyebrow{font-size:9.5px}
+  .banner{font-size:13px;padding:3px 12px;border-width:2.5px}
+  .progress{gap:4px}
+  .progress .dot{width:18px;height:18px;font-size:9px}
+  /* short landscape: the scene keeps a real height */
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(140px,28vh,210px)}
+  .rightcol{gap:8px}
+  .sig-status{font-size:12.5px;margin-top:5px}
+  .ctrl{padding:7px 8px 8px}
+  .ctrl .card-title{display:none}
+  .conn{margin:0 0 6px;padding:4px 9px;font-size:11px}
+  .ctrl .btn{padding:6px;font-size:12px}
+  .optcard{flex:1 1 auto;justify-content:center;padding:8px}
+  .optcard .card-title{display:none}
+  .opts{gap:6px;padding:6px}
+  .opt{gap:3px;padding:6px 2px 5px;border-radius:13px}
+  .lens{width:32px;height:32px}
+  .opt b{font-size:12.5px}
+  .legend{font-size:9.6px;margin-top:5px;gap:6px;padding:0 6px}
+}
+
+
+/* ===================== PATTERN & SEQUENCE 8.0 =====================
+   The strip of lights the child is watching, the "you are the signal" pads,
+   the optional Arduino bridge.                                          */
+
+/* the level chip in the topbar */
+.topbar .lv{ margin-left:auto;font-family:var(--font-display);font-weight:700;
+  font-size:clamp(11px,1.5vh,14px);color:#fff;background:var(--purple);border-radius:999px;
+  padding:5px 14px;white-space:nowrap;letter-spacing:.3px }
+
+/* ---- the light strip: every light the cycle has shown, then "?" ---- */
+.pstrip{ position:absolute;left:50%;bottom:clamp(8px,1.5vh,15px);transform:translateX(-50%);z-index:6;
+  display:flex;align-items:center;gap:clamp(4px,.85vh,8px);
+  padding:clamp(6px,.9vh,9px) clamp(10px,1.4vh,16px);border-radius:999px;max-width:94%;
+  border:2.5px solid rgba(131,53,140,.42);
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,239,252,.95));
+  box-shadow:0 10px 24px -12px rgba(60,20,70,.62),inset 0 2px 0 #fff;
+  /* no backdrop blur here: the strip sits over the moving scene, so blurring it
+     would make the browser re-blur the traffic on every single frame        */
+  cursor:pointer;transition:transform .18s cubic-bezier(.34,1.56,.64,1) }
+.pstrip:hover{ transform:translateX(-50%) translateY(-2px) }
+.pstrip:focus-visible{ outline:3px solid var(--purple);outline-offset:3px }
+.pstrip .bead{ flex:0 0 auto;width:clamp(15px,2.5vh,25px);height:clamp(15px,2.5vh,25px);border-radius:50%;
+  background:radial-gradient(circle at 42% 36%,#E9E0EE 0%,#CFC2D8 58%,#B2A2BE 100%);
+  box-shadow:inset 0 -2px 3px rgba(0,0,0,.16),inset 0 1px 1px rgba(255,255,255,.7);
+  transition:background .28s ease,box-shadow .28s ease,transform .28s cubic-bezier(.34,1.56,.64,1) }
+.pstrip .bead.lit{ transform:scale(1.08) }
+.pstrip .bead.red{ background:radial-gradient(circle at 42% 36%,#FFE3E0 0%,#FF5A4E 32%,#E5121B 72%,#9E0610 100%);
+  box-shadow:0 0 15px 4px rgba(255,45,45,.62),inset 0 -2px 3px rgba(120,0,0,.4) }
+.pstrip .bead.yellow{ background:radial-gradient(circle at 42% 36%,#FFFBE0 0%,#FFD84A 32%,#FFB300 72%,#A87400 100%);
+  box-shadow:0 0 15px 4px rgba(255,196,0,.62),inset 0 -2px 3px rgba(130,80,0,.38) }
+.pstrip .bead.green{ background:radial-gradient(circle at 42% 36%,#E6FFEC 0%,#5BEA86 32%,#14B94A 72%,#07752C 100%);
+  box-shadow:0 0 15px 4px rgba(34,211,90,.58),inset 0 -2px 3px rgba(0,80,30,.38) }
+.pstrip .sep{ flex:0 0 auto;width:clamp(8px,1.3vh,13px);height:2px;border-radius:2px;background:#C9B6D4;opacity:.7 }
+.pstrip .bead.q{ width:clamp(23px,3.5vh,33px);height:clamp(23px,3.5vh,33px);display:grid;place-items:center;
+  font:700 clamp(13px,2vh,18px) var(--font-display);color:#B01268;
+  background:linear-gradient(180deg,#FFF,#FFE9F5);border:2.5px dashed #F06BAE;
+  box-shadow:0 0 12px -2px rgba(240,26,140,.45) }
+.pstrip .bead.hint{ animation:beadHint 1.5s ease-in-out infinite;border-color:#F01A8C;color:#8C0F55 }
+.pstrip .scan{ flex:0 0 auto;width:clamp(9px,1.4vh,13px);height:clamp(9px,1.4vh,13px);border-radius:50%;
+  background:var(--pink);box-shadow:0 0 0 0 rgba(240,26,140,.5);animation:scanPing 1.4s ease-out infinite }
+@keyframes beadHint{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.14) } }
+@keyframes scanPing{ 0%{ opacity:.55;transform:scale(1) } 100%{ opacity:0;transform:scale(1.5) } }
+
+/* ---- the kit: the Distance Detective status line + Connect button ---- */
+.ctrl{flex:0 0 auto;display:flex;flex-direction:column;padding:14px 16px 16px}
+.conn{display:flex;align-items:center;gap:8px;background:#F7F2F8;border-radius:10px;padding:6px 12px;
+  font:700 12.5px var(--font-display);color:var(--muted);margin:0 0 8px;border:1px solid #EBE2EE}
+.conn .dot{width:10px;height:10px;flex:0 0 auto;border-radius:50%;background:#C9C2D6;
+  box-shadow:inset 0 -2px 3px rgba(0,0,0,.15);transition:background .25s,box-shadow .25s}
+.conn .dot.on{background:var(--ok);box-shadow:0 0 9px rgba(47,191,109,.85)}
+.btn{width:100%;border:none;border-radius:12px;padding:9px 12px;font:700 14px var(--font-display);cursor:pointer;
+  transition:transform .16s cubic-bezier(.22,1,.36,1),filter .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1)}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn:active{transform:translateY(2px)}
+.btn:disabled{cursor:default;filter:grayscale(.5) brightness(.92);transform:none}
+.btn-pink{background:var(--pink);color:#fff;box-shadow:0 4px 0 var(--pink-dk)}
+.btn-pink:active{box-shadow:0 1px 0 var(--pink-dk)}
+.ctrl .btn{position:relative}
+.ctrl .btn::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10) 40%,rgba(255,255,255,0) 60%)}
+.ctrl .btn::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.12)}
+/* the "look at me" pulses travel as a ring: only transform and opacity change,
+   so the button itself is never repainted (this one pulses all session) */
+.ctrl .btn>.pulse{position:absolute;inset:-3px;border-radius:inherit;border:3px solid transparent;opacity:0;pointer-events:none;z-index:0}
+#connBtn.attn .pulse{border-color:rgba(240,26,140,.55);animation:ringPulse 2.2s cubic-bezier(.45,0,.55,1) infinite}
+.ctrl .btn-ir.attn .pulse{border-color:rgba(255,210,63,.72);animation:ringPulse 1.6s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes ringPulse{0%{opacity:.55;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.08)}}
+
+/* when the kit is on, the pads say so */
+.opts.kit .opt::before{ box-shadow:inset 0 0 0 2px rgba(47,191,109,.35) }
+
+/* ---- auto-fit trims ---- */
+html[data-layout-mode="auto-fit"] .topbar .lv{ font-size:10.5px;padding:4px 10px }
+html[data-layout-mode="auto-fit"] .pstrip{ bottom:6px;gap:4px;padding:5px 9px }
+html[data-layout-mode="auto-fit"] .pstrip .bead{ width:13px;height:13px }
+html[data-layout-mode="auto-fit"] .pstrip .bead.q{ width:20px;height:20px;font-size:11.5px }
+@media (max-width:520px){ .topbar .lv{ display:none } }
+
+
+/* ===== ultra-smooth pass ===== */
+:root{--ease-out:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.4,.64,1)}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;scroll-behavior:smooth}
+*{-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.scene{contain:layout paint;transform:translateZ(0);backface-visibility:hidden;shape-rendering:geometricPrecision}
+/* blur behind moving traffic / buttons is the costliest thing on the page: the surfaces are near-opaque, so drop it */
+.opt,.banner{-webkit-backdrop-filter:none;backdrop-filter:none}
+.opt{transition:transform .32s var(--spring),box-shadow .3s var(--ease-out),opacity .35s var(--ease-out),filter .35s var(--ease-out),background-color .3s}
+.btn,.ov-start,.again{transition:transform .28s var(--spring),box-shadow .28s var(--ease-out),filter .25s var(--ease-out)}
+.card{transition:box-shadow .35s var(--ease-out),transform .35s var(--ease-out)}
+.ov-box,.final-box{animation:boxIn .55s var(--spring) both}
+@keyframes boxIn{from{opacity:0;transform:translateY(16px) scale(.94)}to{opacity:1;transform:none}}
+.ov{transition:opacity .4s var(--ease-out)}
+.ov-box{transition:transform .4s var(--ease-out)}
+@media (prefers-reduced-motion:reduce){.ov-box,.final-box{animation:none!important}}
+
+/* ===== requested sizing / layout ===== */
+.eyebrow{font-size:12.1px}                                   /* STEP n / 5: +15% */
+html[data-layout-mode="auto-fit"] .eyebrow{font-size:11.5px}
+#optTitle{font-size:17.8px;padding:2px 4px 0}                /* What comes next?: +15% */
+html[data-layout-mode="auto-fit"] #optTitle{font-size:16.1px}
+.optcard{justify-content:flex-start}                         /* title rides at the top of the block */
+.optcard .opts{margin-top:clamp(8px,1.4vh,14px)}
+.optcard .sig-status{margin-bottom:0;font-size:clamp(16.5px,2.36vh,20.1px)}   /* status line: +18% */
+html[data-layout-mode="auto-fit"] .sig-status{font-size:15.9px}
+@media(max-width:480px) and (orientation:portrait){html[data-layout-mode="auto-fit"] .sig-status{font-size:14.8px}}
+@media(orientation:landscape) and (max-height:540px){.eyebrow{font-size:10.9px}.optcard .sig-status{font-size:14.8px}}
+
+/* ===== options block compact, controls block bigger ===== */
+.optcard{flex:0 0 auto;justify-content:flex-start;padding:14px 16px 16px}
+.ctrl{flex:1 1 auto;justify-content:flex-start;gap:clamp(10px,1.8vh,16px);padding:18px 20px 20px}
+.ctrl .card-title{font-size:19.5px;padding:2px 4px 2px}
+.ctrl .conn{font-size:18px;padding:clamp(14px,2.4vh,20px) 18px;gap:14px;margin:auto 0 0;border-radius:16px}
+.ctrl .conn .dot{width:18px;height:18px}
+.ctrl .btn{margin:0}
+.ctrl #hearBtn{margin-bottom:auto}
+.btn-purple{background:var(--purple);color:#fff;box-shadow:0 4px 0 var(--purple-deep)}
+.btn-purple:active{box-shadow:0 1px 0 var(--purple-deep)}
+.btn-purple .ear{display:inline-block;transition:transform .3s var(--spring)}
+.btn-purple:hover .ear{transform:scale(1.18) rotate(-8deg)}
+html[data-layout-mode="auto-fit"] .ctrl{padding:11px 13px 13px}
+html[data-layout-mode="auto-fit"] .ctrl .conn{font-size:13px;padding:7px 11px;margin:0}
+html[data-layout-mode="auto-fit"] .ctrl #hearBtn{margin-bottom:0}
+@media(max-width:760px) and (orientation:portrait){
+  .ctrl{padding:8px 10px 9px;gap:6px}
+  .ctrl .conn{font-size:12px;padding:5px 10px;margin:0}
+  .ctrl #hearBtn{margin-bottom:0}
+}
+@media(orientation:landscape) and (max-height:540px){
+  .ctrl{padding:7px 8px 8px;gap:6px}.ctrl .conn{font-size:11px;padding:4px 9px;margin:0}.ctrl .btn{padding:6px;font-size:12px}.ctrl #hearBtn{margin-bottom:0}
+}
+/* small screens: status on top, the two buttons side by side so the scene keeps its height */
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  .ctrl,html[data-layout-mode="auto-fit"] .ctrl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .ctrl .card-title{display:none}
+  .ctrl .conn,html[data-layout-mode="auto-fit"] .ctrl .conn{grid-column:1/-1;margin:0}
+  .ctrl #hearBtn,html[data-layout-mode="auto-fit"] .ctrl #hearBtn{margin:0}
+  .ctrl .btn-hear,html[data-layout-mode="auto-fit"] .ctrl .btn-hear{padding:8px 6px;font-size:12.5px;border-radius:12px}
+  .ctrl .btn-hear .spk{width:17px;height:15px}
+}
+
+/* Connect Arduino: exactly the original glass-pink button and press feel */
+#connBtn{
+  transition:transform .16s cubic-bezier(.22,1,.36,1),filter .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1)}
+/* Hear the question: bright yellow slab with a darker lip, black rounded type */
+.ctrl .btn-hear{display:flex;align-items:center;justify-content:center;gap:12px;background:#FFF012;color:#141414;
+  font:700 clamp(19px,2.9vh,25px) var(--font-display);letter-spacing:.2px;border-radius:22px;
+  padding:clamp(18px,3vh,26px) 16px;box-shadow:0 7px 0 #D8C800,0 10px 18px rgba(120,100,0,.14);
+  transition:transform .16s cubic-bezier(.22,1,.36,1),filter .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1)}
+.ctrl .btn-hear:hover{filter:brightness(1.04);transform:translateY(-1px)}
+.ctrl .btn-hear:active{transform:translateY(5px);box-shadow:0 2px 0 #D8C800}
+.ctrl .btn-hear:focus-visible{outline:3px solid var(--purple);outline-offset:3px}
+.btn-hear .spk{width:32px;height:28px;flex:0 0 auto}
+.btn-hear.speaking .spk path:nth-of-type(n+2){animation:waveP .7s ease-in-out infinite alternate}
+@keyframes waveP{from{opacity:.35}to{opacity:1}}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  html .ctrl .btn-hear{padding:8px 6px;font-size:13.5px;border-radius:13px;gap:7px;white-space:nowrap;box-shadow:0 4px 0 #D8C800}
+  html .ctrl .btn-hear:active{box-shadow:0 1px 0 #D8C800}
+  html .ctrl .btn-hear .spk{width:20px;height:17px}
+  html .ctrl{align-items:stretch}
+}
+
+/* ===== railway crossing ===== */
+#opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#opts .opt{min-width:0;width:auto}
+.lens.barlens{background:none!important;box-shadow:none!important;border:0!important}
+.lens.barlens::before,.lens.barlens::after{display:none!important}
+.lens.barlens svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}
+.ctrl .btn-ir{display:flex;align-items:center;justify-content:center;gap:10px;position:relative;background:#2F7FEE;color:#fff;
+  font:700 clamp(16px,2.3vh,20px) var(--font-display);border-radius:18px;padding:clamp(12px,2vh,17px) 14px;box-shadow:0 6px 0 #1B54B5}
+.ctrl .btn-ir:active{transform:translateY(4px);box-shadow:0 2px 0 #1B54B5}
+.ctrl .btn-ir .irdot{display:none}
+@keyframes irPing{0%{transform:scale(.96);opacity:.95}100%{transform:scale(1.07);opacity:0}}
+#irBeam{animation:beamFlow .9s linear infinite}
+@keyframes beamFlow{to{stroke-dashoffset:-18}}
+#irBeam.hit{stroke:#FFE45C;stroke-width:5;opacity:1;animation:beamFlow .25s linear infinite}
+.irglow{animation:irBlink 1s ease-in-out infinite}
+@keyframes irBlink{50%{opacity:.25}}
+#irHint{transform-box:fill-box;transform-origin:center;animation:irHintP 1.2s ease-out infinite;opacity:0}
+#irHint.on{opacity:1}
+@keyframes irHintP{0%{transform:scale(.7);opacity:.95}100%{transform:scale(1.5);opacity:0}}
+.chip{display:inline-flex;font-size:0;line-height:0;margin:0 3px;opacity:.38;filter:grayscale(.7);transition:opacity .3s,transform .3s var(--spring)}
+.chip.done{opacity:1;filter:none}.chip.cur{opacity:1;filter:none;transform:scale(1.28)}
+.ctrl #irBtn{margin-bottom:auto}
+.ctrl{gap:clamp(8px,1.4vh,12px);padding:14px 18px 16px}
+.ctrl .btn{flex:0 0 auto}
+.ctrl .conn{padding:clamp(9px,1.5vh,13px) 16px;font-size:17px}
+.ctrl .btn-hear{padding:clamp(12px,2vh,17px) 14px;font-size:clamp(18px,2.6vh,23px)}
+.ctrl .btn-ir{padding:clamp(10px,1.7vh,14px) 14px}
+.opts.idle .opt{opacity:.55;filter:saturate(.7)}
+.ctrl #hearBtn{margin-bottom:0}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  .ctrl #irBtn{grid-column:1/-1;padding:7px;font-size:12.5px;border-radius:12px;margin:0;box-shadow:0 4px 0 #1B54B5}
+}
+
+/* ===== controls card: every control stays inside the card, at any height ===== */
+body.kitmode #irBtn{display:none}
+#opts .opt{padding:clamp(5px,1.1vh,12px) 6px}
+#opts .lens{width:clamp(34px,6.4vh,58px)!important;height:clamp(34px,6.4vh,58px)!important}
+#opts .opt b{font-size:clamp(12px,1.9vh,17px)}
+#opts{gap:clamp(6px,1.2vh,10px)}
+.optcard{padding:clamp(8px,1.5vh,14px) 16px clamp(8px,1.5vh,16px)}
+.optcard .sig-status{font-size:clamp(14px,2.2vh,19px)}
+.ctrl{display:flex;flex-direction:column;justify-content:flex-start;gap:clamp(7px,1.3vh,12px);padding:clamp(9px,1.7vh,16px) 18px clamp(14px,2.2vh,20px);overflow:hidden}
+.ctrl .card-title{font-size:clamp(15px,2.3vh,19.5px);margin:0;padding:0 4px}
+.ctrl .conn{margin:0;padding:clamp(6px,1.1vh,11px) 14px;font-size:clamp(13px,2vh,17px);gap:10px}
+.ctrl .conn .dot{width:clamp(12px,1.9vh,17px);height:clamp(12px,1.9vh,17px)}
+.ctrl #connBtn{margin:0;padding:clamp(8px,1.5vh,11px) 12px;font-size:clamp(13px,1.9vh,15px)}
+.ctrl #hearBtn{margin:0;padding:clamp(8px,1.7vh,15px) 14px;font-size:clamp(15px,2.4vh,22px);box-shadow:0 clamp(4px,.7vh,6px) 0 #D8C800}
+.ctrl #irBtn{margin:0;padding:clamp(8px,1.5vh,13px) 14px;font-size:clamp(14px,2.1vh,19px);box-shadow:0 clamp(4px,.7vh,6px) 0 #1B54B5}
+.ctrl .btn-hear .spk{width:clamp(22px,3.4vh,30px);height:clamp(19px,3vh,26px)}
+
+/* Slightly deeper glossy-town facades; original scene palette and geometry retained. */
+#town .bld{filter:brightness(.89) saturate(1.04)}
+
+/* Requested signal/barrier pairing: RED + DOWN, then GREEN + UP. */
+#opts{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"red down" "green up"}
+#opts .opt[data-c="red"]{grid-area:red}
+#opts .opt[data-c="down"]{grid-area:down}
+#opts .opt[data-c="green"]{grid-area:green}
+#opts .opt[data-c="up"]{grid-area:up}
+
+/* Hear the question + Train approaching: one row at the bottom of the Controls card,
+   two equal buttons side by side — the same place and layout as Undo / Reset in Distance Explorer */
+html[data-layout-mode] .ctrl{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:clamp(8px,1.4vh,12px)}
+.ctrl .control-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;width:100%}
+html .ctrl .control-pair>#hearBtn,html .ctrl .control-pair>#irBtn{
+  grid-column:auto;width:100%;height:auto;aspect-ratio:auto;min-width:0;min-height:44px;margin:0;padding:11px 8px;
+  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;
+  border-radius:14px;white-space:normal;overflow-wrap:anywhere;text-align:center;line-height:1.2;
+  font-size:clamp(13px,1.15vw,16px);
+}
+html .ctrl .control-pair>#hearBtn{box-shadow:0 5px 0 #D8C800}
+html .ctrl .control-pair>#hearBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #D8C800}
+html .ctrl .control-pair>#hearBtn .spk{width:20px;height:17px;flex:0 0 auto;margin:0}
+html .ctrl .control-pair>#irBtn{box-shadow:0 5px 0 #1B54B5}
+html .ctrl .control-pair>#irBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #1B54B5}
+html .ctrl .control-pair>#irBtn #irTxt{display:block;max-width:100%;font-size:inherit;line-height:1.2;text-align:center;white-space:normal}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  html .ctrl .control-pair>#hearBtn,html .ctrl .control-pair>#irBtn{min-height:40px;padding:8px 6px;font-size:12.5px;border-radius:12px}
+  html .ctrl .control-pair>#hearBtn .spk{width:17px;height:15px}
+}
+
+@media(orientation:landscape) and (max-height:540px){
+  /* short landscape phones: nothing is squashed — the side column scrolls so the buttons are always reachable */
+  aside.col{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  aside.col>.card{flex:0 0 auto}
+  html[data-layout-mode] .ctrl{overflow:visible}
+}
+
+/* glass layers: keep the labels and icons above the gloss */
+.ctrl .btn>*{position:relative;z-index:1}
+.ctrl .btn-hear::before,.ctrl .btn-ir::before{background:linear-gradient(180deg,rgba(255,255,255,.46),rgba(255,255,255,.14) 42%,rgba(255,255,255,0) 62%)}
+.chip svg{width:clamp(20px,3.4vh,28px);height:clamp(20px,3.4vh,28px);display:block;overflow:visible;filter:drop-shadow(0 2px 2px rgba(40,10,60,.28))}
+html[data-layout-mode="auto-fit"] .chip svg{width:19px;height:19px}
+.train{will-change:auto;pointer-events:none}
+.chip.pop{animation:chipPop .55s var(--spring)}
+@keyframes chipPop{0%{transform:scale(.5)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+/* ===== button sizes: Connect Arduino +10%, Hear the question / Train approaching -10% ===== */
+html[data-layout-mode] .ctrl #connBtn{font-size:14.63px;padding:11.55px 13.2px;border-radius:13.2px}
+html[data-layout-mode] .ctrl .control-pair{gap:7px;width:90%;margin-left:auto;margin-right:auto}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{font-size:13.46px;min-height:39.6px;padding:9.9px 7.2px;border-radius:12.6px;gap:5.4px}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{width:18px;height:15.3px}
+html[data-layout-mode="auto-fit"] .ctrl #connBtn{font-size:16.5px;padding:12.1px 13.2px}
+html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{font-size:11.7px}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{font-size:11.25px;min-height:36px;padding:7.2px 5.4px;border-radius:10.8px}
+  html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{width:15.3px;height:13.5px}
+}
+@media(max-width:760px) and (orientation:portrait){html[data-layout-mode] .ctrl #connBtn{font-size:16.5px;padding:12.1px 13.2px}}
+@media(orientation:landscape) and (max-height:540px){html[data-layout-mode] .ctrl #connBtn{font-size:14.3px;padding:8.8px 13.2px}}
+/* ===== order line: 5% bigger, bold and dark ===== */
+.legend .rule,.optcard .legend .rule{font-size:13.13px;font-weight:800;color:#2A1640;letter-spacing:.2px}
+html[data-layout-mode="auto-fit"] .legend .rule{font-size:11.55px}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){html[data-layout-mode] .legend .rule{font-size:10.1px}}
+
+/* ===== ultra-smooth pass ===== */
+.ov-start{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.ov{will-change:opacity}.ov-box{will-change:transform}
+html.intro .scene *,html.intro .stage *{animation-play-state:paused!important}
+.fx-light{position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:1;
+  background:
+    radial-gradient(ellipse 78% 88% at 50% 47%,rgba(11,14,46,0) 56%,rgba(11,14,46,.34) 100%),
+    linear-gradient(205deg,rgba(255,160,80,.24) 0%,rgba(255,160,80,.07) 38%,rgba(255,160,80,0) 62%),
+    linear-gradient(180deg,rgba(255,255,255,.07) 32%,rgba(255,255,255,0) 58%)}
+.xveh,.train{contain:layout style}
+.lite .drift,.lite .tree .cnp,.lite .irglow{animation:none!important}
+.lite .opt,.lite .banner,.lite .ctrl .btn{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+
+@media (orientation:landscape) and (max-height:400px){
+  html[data-layout-mode="auto-fit"] .rightcol{gap:4px!important}
+  html[data-layout-mode="auto-fit"] #opts{gap:3px!important}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:2px 3px!important;gap:1px!important}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:21px!important;height:21px!important}
+  html[data-layout-mode="auto-fit"] #sigStatus{font-size:10.5px!important;line-height:1.1!important}
+  html[data-layout-mode="auto-fit"] .optcard{padding:3px 7px!important;gap:2px!important}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:4px 7px!important;gap:3px!important}
+}
+/* ===== CONTROLS: one clean layout =====
+   Simulation toggle on top · Connect Arduino alone on its own row ·
+   Hear the question + Train side by side (equal width, equal height, one line each).
+   Everything is sized from variables so nothing is cut, wrapped or overlapped. */
+html[data-layout-mode] .ctrl{
+  --cg:clamp(8px,1.5vh,13px);          /* gap between rows            */
+  --tg:clamp(11px,1.9vh,15px);         /* toggle text                 */
+  --cb:clamp(14px,2.1vh,16.5px);       /* Connect Arduino text        */
+  --bh:clamp(40px,6vh,48px);           /* height of the pair buttons  */
+  display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;
+  gap:var(--cg);padding:clamp(10px,1.8vh,16px) clamp(12px,1.6vw,18px) clamp(14px,2.2vh,20px);overflow:visible;
+}
+html[data-layout-mode] .ctrl .card-title{margin:0;padding:0 4px;font-size:clamp(15px,2.3vh,19.5px);flex:0 0 auto}
+/* the toggle */
+html[data-layout-mode] .ctrl .conn{margin:0;flex:0 0 auto;width:100%;box-sizing:border-box;
+  padding:clamp(7px,1.2vh,11px) 14px;gap:10px;font-size:var(--tg);line-height:1.2;border-radius:12px;align-self:stretch}
+html[data-layout-mode] .ctrl .conn .dot{width:clamp(11px,1.7vh,15px);height:clamp(11px,1.7vh,15px)}
+/* Connect Arduino — alone on its row */
+html[data-layout-mode] .ctrl #connBtn{margin:0;flex:0 0 auto;width:100%;box-sizing:border-box;min-height:var(--bh);
+  padding:0 14px;display:flex;align-items:center;justify-content:center;font-size:var(--cb);line-height:1.2;
+  white-space:nowrap;border-radius:14px}
+/* older-Chrome fallback: vh-only button sizes; container-query cqw sizes below override where supported */
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{font-size:clamp(10px,1.75vh,13px);line-height:1.2}
+@media (orientation:portrait),(min-height:541px){
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{font-size:clamp(11px,2vh,14.5px)}
+}
+/* the pair: two equal buttons in one row, pinned to the bottom of the card */
+html[data-layout-mode] .ctrl .control-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(7px,1.2vw,10px);
+  width:100%;margin:auto 0 0;padding:0;align-items:stretch;container-type:inline-size;flex:0 0 auto}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{
+  grid-column:auto;width:100%;min-width:0;max-width:none;margin:0;box-sizing:border-box;height:auto;min-height:var(--bh);aspect-ratio:auto;
+  padding:0 6px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;
+  font-size:clamp(9.5px,3.55cqw,12.8px);line-height:1.25;white-space:nowrap;text-align:center;border-radius:14px}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{
+  display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:clip;text-align:center}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{width:1.2em;height:1.06em;flex:0 0 auto;margin:0}
+@container (max-width:250px){html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{display:none}}
+@container (max-width:200px){html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{padding:0 4px;line-height:1.05}html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{white-space:normal;overflow:visible}}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn{box-shadow:0 5px 0 #D8C800}
+html[data-layout-mode] .ctrl .control-pair>#irBtn{box-shadow:0 5px 0 #1B54B5}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn:active,html[data-layout-mode] .ctrl .control-pair>#irBtn:active{transform:translateY(3px)}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn:active{box-shadow:0 2px 0 #D8C800}
+html[data-layout-mode] .ctrl .control-pair>#irBtn:active{box-shadow:0 2px 0 #1B54B5}
+/* room for the coloured lip under the buttons */
+html[data-layout-mode] .ctrl .control-pair{padding-bottom:5px}
+/* short landscape phones: tighter, and the column may scroll instead of squashing */
+@media(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode] .ctrl{--cg:6px;--tg:11px;--cb:13px;--bh:34px;padding:8px 10px 10px}
+  html[data-layout-mode] .ctrl .card-title{display:none}
+  html[data-layout-mode] .ctrl .conn{padding:5px 10px}
+  html[data-layout-mode] .ctrl .control-pair{margin-top:0}
+  html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{padding:0 5px;border-radius:11px;box-shadow:0 4px 0 var(--lip)}
+  html[data-layout-mode] .ctrl .control-pair>#hearBtn{--lip:#D8C800}html[data-layout-mode] .ctrl .control-pair>#irBtn{--lip:#1B54B5}
+  aside.col{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  aside.col>.card{flex:0 0 auto}
+}
+/* phones in portrait */
+@media(max-width:760px) and (orientation:portrait){
+  html[data-layout-mode] .ctrl{--cg:9px;--tg:12.5px;--cb:16px;--bh:44px;padding:11px 13px 15px}
+  html[data-layout-mode] .ctrl .card-title{display:none}
+  html[data-layout-mode] .ctrl .control-pair{margin-top:0}
+}
+
+@media(orientation:landscape) and (max-height:540px){html[data-layout-mode] .ctrl{--bh:36px}}
+
+/* ===== plant growth ===== */
+.stage{background:linear-gradient(#8FC6EC,#DFF1FB 66%,#94CC70 66.2%,#72B04C)}
+/* the four cells are positional: the script deals the choices into slots 0-3
+   (growing order for the very first game, a fresh shuffle for every game after) */
+#opts{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"s0 s1" "s2 s3"}
+#opts .opt[data-slot="0"]{grid-area:s0}#opts .opt[data-slot="1"]{grid-area:s1}
+#opts .opt[data-slot="2"]{grid-area:s2}#opts .opt[data-slot="3"]{grid-area:s3}
+.lens.ic{display:grid;place-items:center;font-size:clamp(18px,3.3vh,30px);line-height:1}
+.lens.ic>i{font-style:normal;position:relative;z-index:1}
+.lens.sprout{background:radial-gradient(circle at 42% 36%,#E9FFE9 0%,#7FE08A 38%,#2FA84E 76%,#0D5E28 100%)}
+.lens.small{background:radial-gradient(circle at 42% 36%,#DFF7D6 0%,#5DBB5A 38%,#2E7D32 76%,#14481B 100%)}
+.lens.flower{background:radial-gradient(circle at 42% 36%,#FFF6D6 0%,#FFD43B 38%,#F59E00 76%,#8A5A00 100%)}
+.lens.fruit{background:radial-gradient(circle at 42% 36%,#FFE3DC 0%,#FF6A5A 38%,#E0281E 76%,#7E0A08 100%)}
+.opt.right[data-c="sprout"]{box-shadow:0 0 0 4px rgba(47,191,109,.35),0 0 24px rgba(47,191,109,.55),0 5px 0 rgba(20,120,60,.35)}
+.opt.right[data-c="small"]{box-shadow:0 0 0 4px rgba(46,125,50,.32),0 0 24px rgba(46,125,50,.5),0 5px 0 rgba(20,80,30,.35)}
+.opt.right[data-c="flower"]{box-shadow:0 0 0 4px rgba(255,196,0,.38),0 0 24px rgba(255,196,0,.55),0 5px 0 rgba(190,140,0,.35)}
+.opt.right[data-c="fruit"]{box-shadow:0 0 0 4px rgba(255,45,45,.35),0 0 24px rgba(255,45,45,.55),0 5px 0 rgba(200,40,40,.35)}
+.chip{font-size:clamp(18px,3.2vh,26px);line-height:1}
+html[data-layout-mode="auto-fit"] .chip{font-size:18px}
+.pstrip{gap:clamp(6px,1.2vh,12px)}
+.pstrip .chip{margin:0}
+.ov-icons svg text{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+
+/* --- the garden scene --- */
+.sun-rays{transform-box:fill-box;transform-origin:50% 50%;animation:pSpin 60s linear infinite}
+@keyframes pSpin{to{transform:rotate(360deg)}}
+.sun-halo{transform-box:fill-box;transform-origin:50% 50%;animation:pGlow 4.8s ease-in-out infinite}
+@keyframes pGlow{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.07);opacity:1}}
+.birdF{animation:flit 9s ease-in-out infinite alternate}
+.birdF.b2{animation-duration:11s;animation-delay:-4s}
+@keyframes flit{from{transform:translate(-10px,2px)}to{transform:translate(14px,-4px)}}
+.birdF .wing{transform-box:fill-box;transform-origin:50% 100%;animation:pFlap .9s ease-in-out infinite alternate}
+.birdF.b2 .wing{animation-duration:1.1s;animation-delay:-.4s}
+@keyframes pFlap{from{transform:scaleY(1)}to{transform:scaleY(.35)}}
+.swf{transform-box:fill-box;transform-origin:50% 100%;animation:pSway 4.4s ease-in-out infinite}
+.swf.d2{animation-duration:5.3s;animation-delay:-1.9s}
+@keyframes pSway{0%,100%{transform:rotate(-2.6deg)}50%{transform:rotate(2.6deg)}}
+/* the gardener kid walks over and plants the seed */
+#kid{animation:kidBob 2.6s ease-in-out infinite}
+#kidLean{transform-box:fill-box;transform-origin:50% 100%}
+.armL{transform-box:fill-box;transform-origin:90% 55%}
+#scene.planting #kidWalk{animation:kWalk 2.4s cubic-bezier(.33,.72,.3,1) both}
+@keyframes kWalk{0%{transform:translateX(0)}20%{transform:translateX(-84px)}72%{transform:translateX(-84px)}100%{transform:translateX(0)}}
+#scene.planting #kidLean{animation:kLean 2.4s ease-in-out both}
+@keyframes kLean{0%,16%{transform:rotate(0deg)}30%,60%{transform:rotate(-11deg)}78%,100%{transform:rotate(0deg)}}
+#scene.planting .armL{animation:kArmL 2.4s ease-in-out both}
+@keyframes kArmL{0%,16%{transform:rotate(0deg)}30%,56%{transform:rotate(-60deg)}74%,100%{transform:rotate(0deg)}}
+#scene[data-s="fruit"] #kid{animation:jump .5s ease-in-out infinite alternate}
+
+.bfly{animation:pFly 12s ease-in-out infinite alternate}
+@keyframes pFly{0%{transform:translate(0,0)}35%{transform:translate(-46px,-26px)}70%{transform:translate(18px,-44px)}100%{transform:translate(-28px,-8px)}}
+.bfly .wl,.bfly .wr{transform-box:fill-box;animation:pWing .45s ease-in-out infinite alternate}
+.bfly .wl{transform-origin:100% 50%}
+.bfly .wr{transform-origin:0% 50%;animation-direction:alternate-reverse}
+@keyframes pWing{from{transform:scaleX(1)}to{transform:scaleX(.35)}}
+
+/* the plant: one attribute on the scene drives the whole garden */
+#g-sprout,#g-small,#g-flower,#g-fruit,#bump,#spk{opacity:0;transition:opacity .45s ease}
+#g-seed{opacity:0}
+.grow{transform-box:fill-box;transform-origin:50% 100%;transform:scale(0);
+  transition:transform 1.1s var(--spring)}
+#plantSway{transform-box:fill-box;transform-origin:50% 100%;animation:pSwaySoft 6.5s ease-in-out infinite}
+@keyframes pSwaySoft{0%,100%{transform:rotate(-1deg)}50%{transform:rotate(1deg)}}
+#scene[data-s="sprout"] #g-sprout{opacity:1}
+#scene[data-s="sprout"] #g-sprout .grow{transform:scale(1)}
+#scene:is([data-s="small"],[data-s="flower"],[data-s="fruit"]) #g-small{opacity:1}
+#scene:is([data-s="small"],[data-s="flower"],[data-s="fruit"]) #g-small .grow{transform:scale(1)}
+#scene:is([data-s="flower"],[data-s="fruit"]) #g-flower{opacity:1}
+#scene:is([data-s="flower"],[data-s="fruit"]) #g-flower .grow{transform:scale(1)}
+#scene[data-s="fruit"] #g-fruit,#scene[data-s="fruit"] #spk{opacity:1}
+#scene:not([data-s="ready"]) #bump{opacity:1}
+/* petals open one after another */
+.petal{transform-box:fill-box;transform-origin:50% 100%;transform:scale(0);
+  transition:transform .7s var(--spring)}
+#scene:is([data-s="flower"],[data-s="fruit"]) .petal{transform:scale(1)}
+.pw:nth-of-type(2) .petal{transition-delay:.07s}.pw:nth-of-type(3) .petal{transition-delay:.14s}
+.pw:nth-of-type(4) .petal{transition-delay:.21s}.pw:nth-of-type(5) .petal{transition-delay:.28s}
+.pw:nth-of-type(6) .petal{transition-delay:.35s}.pw:nth-of-type(7) .petal{transition-delay:.42s}
+.pw:nth-of-type(8) .petal{transition-delay:.49s}
+.fcenter{transform-box:fill-box;transform-origin:50% 50%;transform:scale(0);
+  transition:transform .6s var(--spring) .5s}
+#scene:is([data-s="flower"],[data-s="fruit"]) .fcenter{transform:scale(1)}
+.fhead{animation:pBob 3.4s ease-in-out infinite}
+@keyframes pBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+/* the pot celebrates with the plant */
+.potM{transition:opacity .4s,transform .4s var(--spring);transform-box:fill-box;transform-origin:center}
+#scene[data-s="fruit"] .potSmile{opacity:0}
+#scene:not([data-s="fruit"]) .potOpen{opacity:0}
+#scene[data-s="fruit"] .potOpen{opacity:1}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:1;transform:scale(1.15)}}
+#spk .spk2{transform-box:fill-box;transform-origin:center;animation:twinkle 1.4s ease-in-out infinite}
+#spk g:nth-of-type(2) .spk2{animation-delay:.4s}
+#spk g:nth-of-type(3) .spk2{animation-delay:.8s}
+/* the instruction card */
+.ov-box{max-width:430px;padding:22px 30px}
+.ov-box h2{font-size:clamp(24px,4vh,32px)}
+.ov-box p{font-size:18px;margin:8px 0 12px;line-height:1.35}
+.ov-icons{margin:0 0 6px}
+.ov-icons svg{width:clamp(64px,10vh,84px);height:clamp(64px,10vh,84px)}
+.ov-start{font-size:19px;padding:11px 30px}
+/* Laptop: the instruction card measures the same as the rest of the series (Railway, Traffic
+   light, Pattern, Hand Washing) - the 30px 42px pad, the clamp(26px,4.6vh,40px) title, the
+   clamp(84px,12vh,112px) symbols with the 6px/16px spacing, the 16px/24px line margins, the
+   31.9px line box and the 13px 36px button. The one-line sentence is set at the size where
+   it measures about 325px, the width the series' sentences lay out at, so the card is the
+   same ~420 x 349px. Phones and tablets keep today's compact card, rule for rule. */
+html[data-layout-mode="original-laptop"] .ov-box{max-width:560px;padding:30px 42px}
+html[data-layout-mode="original-laptop"] .ov-box h2{font-size:clamp(26px,4.6vh,40px)}
+html[data-layout-mode="original-laptop"] .ov-box p{font-size:16px;letter-spacing:.3px;line-height:31.9px;margin:16px 0 24px;white-space:nowrap}
+html[data-layout-mode="original-laptop"] .ov-icons{margin:6px 0 16px}
+html[data-layout-mode="original-laptop"] .ov-icons svg{width:clamp(84px,12vh,112px);height:clamp(84px,12vh,112px)}
+html[data-layout-mode="original-laptop"] .ov-start{font-size:21px;padding:13px 36px}
+@media (prefers-reduced-motion:reduce){
+  #scene *{animation:none!important}
+  #g-sprout .grow,#g-small .grow,#g-flower .grow,.petal,.fcenter{transition:none}
+}
+
+/* No-scroll shell: fit the activity to the visible viewport and disable the short-landscape
+   sidebar scrollers. Laptop styles remain untouched because these rules are auto-fit-only. */
+html[data-layout-mode="auto-fit"],
+html[data-layout-mode="auto-fit"] body,
+html[data-layout-mode="auto-fit"] aside.col{
+  overflow:hidden !important;
+  overscroll-behavior:none;
+}
+html[data-layout-mode="auto-fit"] .layout,
+html[data-layout-mode="auto-fit"] aside.col,
+html[data-layout-mode="auto-fit"] aside.col>.card{
+  min-height:0;
+}
+
+/* Short landscape screens: let the two side cards flex into the available height instead of
+   scrolling. The four choices stay compact and the two control buttons remain side by side. */
+@media(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] aside.col{
+    display:flex;
+    flex-direction:column;
+    gap:clamp(2px,.9vh,5px) !important;
+  }
+  html[data-layout-mode="auto-fit"] aside.col>.optcard{
+    flex:1.45 1 0% !important;
+    min-height:0;
+    padding:clamp(3px,1.1vh,7px) 6px !important;
+  }
+  html[data-layout-mode="auto-fit"] aside.col>.ctrl{
+    flex:1 1 0% !important;
+    min-height:0;
+    padding:clamp(3px,1vh,6px) 6px !important;
+    gap:clamp(2px,.7vh,4px) !important;
+    --bh:clamp(28px,7vh,34px) !important;
+  }
+  html[data-layout-mode="auto-fit"] .optcard .opts{
+    min-height:0;
+    margin-top:clamp(2px,.7vh,4px) !important;
+    padding:3px !important;
+    gap:clamp(2px,.7vh,4px) !important;
+  }
+  html[data-layout-mode="auto-fit"] #opts .opt{
+    min-height:0;
+    padding:clamp(2px,.6vh,4px) 2px !important;
+    gap:1px !important;
+  }
+  html[data-layout-mode="auto-fit"] #opts .lens{
+    width:clamp(20px,5.6vh,30px) !important;
+    height:clamp(20px,5.6vh,30px) !important;
+  }
+  html[data-layout-mode="auto-fit"] #opts .opt b{
+    font-size:clamp(9.5px,2.8vh,12px) !important;
+    line-height:1.05;
+  }
+  html[data-layout-mode="auto-fit"] .optcard .legend{
+    margin-top:clamp(1px,.45vh,3px) !important;
+    font-size:clamp(8.5px,2.5vh,10px) !important;
+    line-height:1.1;
+  }
+  html[data-layout-mode="auto-fit"] .optcard .legend .rule{
+    font-size:clamp(8px,2.4vh,10px) !important;
+    line-height:1.05;
+  }
+  html[data-layout-mode="auto-fit"] .optcard .sig-status{
+    margin-top:clamp(1px,.45vh,3px) !important;
+    font-size:clamp(9px,2.5vh,11px) !important;
+    line-height:1.1;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .conn{
+    padding:clamp(2px,.6vh,4px) 6px !important;
+    gap:4px !important;
+    font-size:clamp(9px,2.4vh,10.5px) !important;
+    line-height:1.1;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{
+    min-height:var(--bh) !important;
+    padding:1px 4px !important;
+    font-size:clamp(10px,2.7vh,12px) !important;
+    line-height:1.1;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{
+    margin-top:0 !important;
+    padding-bottom:2px !important;
+    gap:3px !important;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{
+    min-height:calc(var(--bh) + 2px) !important;
+    padding:1px 3px !important;
+    gap:3px !important;
+    font-size:clamp(8.5px,2.5vh,11px) !important;
+    line-height:1.05;
+  }
+}
+
+/* Compact portrait phones: reserve enough height for the stage while keeping all controls
+   visible at once—no document or panel scrolling. */
+@media(max-width:600px) and (max-height:560px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .topbar{height:clamp(42px,8vh,49px);padding:4px 10px}
+  html[data-layout-mode="auto-fit"] .layout{gap:4px;padding:4px 6px}
+  html[data-layout-mode="auto-fit"] .stage-card{padding:5px}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(70px,16vh,100px)}
+  html[data-layout-mode="auto-fit"] .task-header{padding:0 2px 4px;gap:4px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:4px;min-height:0}
+  html[data-layout-mode="auto-fit"] .optcard{padding:4px 7px 5px}
+  html[data-layout-mode="auto-fit"] .optcard .opts{margin-top:3px}
+  html[data-layout-mode="auto-fit"] #opts{gap:3px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:3px 2px;gap:2px}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:24px !important;height:24px !important}
+  html[data-layout-mode="auto-fit"] #opts .opt b{font-size:11px}
+  html[data-layout-mode="auto-fit"] .optcard .legend{margin-top:2px;font-size:9px;line-height:1.05}
+  html[data-layout-mode="auto-fit"] .optcard .legend .rule{font-size:9px;white-space:nowrap}
+  html[data-layout-mode="auto-fit"] .optcard .sig-status{margin-top:2px;font-size:10.5px;line-height:1.05}
+  html[data-layout-mode="auto-fit"] .ctrl{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:4px !important;
+    padding:5px 7px !important;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .card-title{display:none}
+  html[data-layout-mode="auto-fit"] .ctrl .conn,
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn,
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{grid-column:1/-1}
+  html[data-layout-mode="auto-fit"] .ctrl .conn{margin:0;padding:3px 6px;font-size:10.5px}
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{min-height:32px;padding:3px 5px;font-size:12px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    width:100%;margin:0;padding-bottom:2px;gap:4px;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{
+    min-height:34px;padding:3px 2px;font-size:10px;line-height:1.05;
+  }
+}
+
+
+/* ===== phone portrait auto-fit: give the scene the height, compact the choices ===== */
+@media(max-width:760px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] #opts{gap:6px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:5px 4px;gap:2px;min-height:0}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:34px!important;height:34px!important}
+  html[data-layout-mode="auto-fit"] #opts .opt b{font-size:13.5px}
+  html[data-layout-mode="auto-fit"] .optcard{padding:6px 8px}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:7px 10px 9px;gap:6px}
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{font-size:14.5px;padding:8px 12px}
+  html[data-layout-mode="auto-fit"] .sig-status{font-size:13px;margin:4px 0 0}
+  html[data-layout-mode="auto-fit"] .legend .rule{font-size:10.5px}
+}
+
+/* ===================== AUTO-FIT SHELL v2 (ported from Hand Washing) =====================
+   The scene keeps its own height; spare pixels come out of padding and gaps first, and if a
+   very short phone still cannot fit everything the whole card scrolls instead of cutting off. */
+@media(max-width:940px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .layout{overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain}
+}
+@media(max-width:760px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .optcard{padding:8px 12px 9px}
+  html[data-layout-mode="auto-fit"] .optcard .opts{margin-top:7px}
+  html[data-layout-mode="auto-fit"] #opts{gap:7px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:5px 6px}
+}
+/* tall, thin phones: the picture yields the extra centimetres, the choices keep room */
+@media(max-width:600px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(150px,19vh,340px)}
+  /* the picture keeps its box but stops dictating the row's height */
+  html[data-layout-mode="auto-fit"] .scene{position:absolute;inset:0;width:100%;height:100%}
+}
+@media(max-width:760px) and (max-height:720px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .layout{padding:6px 6px 5px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .topbar{height:clamp(44px,6.6vh,52px)}
+  html[data-layout-mode="auto-fit"] .stage-card{padding:6px}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(140px,23vh,200px);max-height:clamp(146px,24vh,220px)}
+  html[data-layout-mode="auto-fit"] .banner{padding:2px 10px;line-height:1.12;margin:0}
+  html[data-layout-mode="auto-fit"] .optcard{padding:4px 10px 5px}
+  html[data-layout-mode="auto-fit"] .optcard .opts{margin-top:4px}
+  html[data-layout-mode="auto-fit"] #opts{gap:4px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:3px 6px}
+  html[data-layout-mode="auto-fit"] .optcard .legend{margin-top:0}
+  html[data-layout-mode="auto-fit"] .sig-status{margin:3px 0 0}
+  html[data-layout-mode="auto-fit"] .ctrl{--cg:5px;padding:4px 11px 5px}
+  html[data-layout-mode="auto-fit"] .ctrl .conn{padding:2px 11px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{padding-bottom:4px}
+}
+/* the smallest phones (320 pt class) */
+@media(max-width:360px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(172px,31vh,340px)}
+}
+@media(max-width:340px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .scene{position:absolute;inset:0;width:100%;height:100%}
+  html[data-layout-mode="auto-fit"] .ctrl{--cg:7px;padding:5px 10px 6px}
+  html[data-layout-mode="auto-fit"] .ctrl .conn{padding:2px 10px}
+  html[data-layout-mode="auto-fit"] #opts{gap:5px}
+}
+/* Hear / Train buttons never clip (portrait and roomy windows; short landscape keeps its tuned sizes) */
+@media (orientation:portrait),(min-height:541px){
+html[data-layout-mode] .ctrl .control-pair{padding-bottom:7px;overflow:visible}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{
+  overflow:visible;min-height:calc(var(--bh) + 4px);padding:8px 10px;gap:7px;line-height:1.2;
+  font-size:clamp(12.5px,4.3cqw,15.5px)}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{
+  overflow:visible;text-overflow:clip;white-space:nowrap;line-height:1.2;padding:1px 0}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{width:1.5em;height:1.3em}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn::before,html[data-layout-mode] .ctrl .control-pair>#irBtn::before{border-radius:inherit}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk){white-space:normal;text-wrap:balance;overflow-wrap:normal;text-align:left;flex:1 1 auto;min-width:0}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn{justify-content:center}
+@container (max-width:250px){html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{display:block;width:1.3em;height:1.15em}}
+@container (max-width:200px){html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{white-space:normal;overflow:visible}html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{display:none}}
+}
+@media(max-width:760px) and (orientation:portrait){html[data-layout-mode] .ctrl{--bh:46px}}
+/* a steady picture: the header may not change height when the message does */
+@media(max-width:760px) and (orientation:portrait), (orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] .task-header{display:flex;flex-direction:column;align-items:center;
+    flex-wrap:nowrap;gap:4px;padding:0 2px 6px}
+  html[data-layout-mode="auto-fit"] .task-header>.banner{display:flex;align-items:center;justify-content:center;
+    text-align:center;max-width:100%}
+  html[data-layout-mode="auto-fit"] .task-header>.progress{justify-content:center;flex-wrap:nowrap}
+}
+@media(max-width:760px) and (orientation:portrait), (orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] .task-header>.eyebrow{display:none}
+}
+@media(max-width:760px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .task-header>.banner{min-height:44px}
+}
+@media(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] .task-header>.banner{min-height:48px}
+}
+
+/* Plant Growth override (appended LAST in the stylesheet): this block's IR button
+   carries a longer label than the series' "+ Clothes" / "+ Train" buttons.
+   The ported never-clip rules force white-space:nowrap on #irTxt, which lets the
+   longer text spill outside the blue button — let it wrap inside the pad instead. */
+html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{white-space:normal;overflow:visible;text-overflow:clip;text-wrap:balance;line-height:1.12}
+html[data-layout-mode] .ctrl .control-pair>#irBtn{padding:6px 6px}
+html .ctrl .control-pair>#irBtn #irTxt{white-space:normal;overflow:visible}
+@media (orientation:landscape) and (max-height:540px){
+  html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{font-size:11px;line-height:1.1}
+}
+/* keep the two-word option label inside its pad at every size */
+#opts .opt b{white-space:normal;text-align:center;line-height:1.1}
+
+/* bullet-proof guard: the Hear / Plant pair can never leave the Controls card,
+   whatever the viewport, zoom, font fallback or layout mode */
+html .ctrl .control-pair,html[data-layout-mode] .ctrl .control-pair{max-width:100%;min-width:0}
+html .ctrl .control-pair>#hearBtn,html .ctrl .control-pair>#irBtn,
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{
+  max-width:100%;min-width:0;overflow:hidden}
+html .ctrl .control-pair>#hearBtn>span:not(.spk),html .ctrl .control-pair>#irBtn #irTxt,
+html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{
+  white-space:normal;overflow-wrap:anywhere;min-width:0;flex:0 1 auto}
+
+/* CSS-only safety net: portrait screens stack like a tablet even without JS,
+   mirroring the <=940px rule so no device ever gets a squashed laptop layout */
+@media (orientation:portrait) and (min-width:941px){
+  .layout{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+  .col,.rightcol,.card{min-width:0}
+  .rightcol{grid-template-columns:minmax(0,1fr)}
+  .task-header{flex-wrap:wrap;row-gap:5px}
+  .progress{flex-wrap:wrap;justify-content:center}
+}
+
+/* ===================== GARDEN DETAILS & GROWTH PASS =====================
+   More life in the garden (fence, trees, watering can, ladybug, bee, snail, pollen),
+   stems that draw themselves upward, leaves that unfurl one by one, petals that open
+   with a twist, fruit that ripens from green — and a different plant every game.   */
+/* the kid: idle breathing, a jump when the fruit arrives (both were referenced but never defined) */
+@keyframes kidBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes jump{from{transform:translateY(0)}to{transform:translateY(-16px)}}
+.armR{transform-box:fill-box;transform-origin:4% 4%}
+#scene[data-s="fruit"] .armR{animation:cheerR .46s ease-in-out infinite alternate}
+#scene[data-s="fruit"] .armL{animation:cheerL .46s ease-in-out infinite alternate}
+@keyframes cheerR{from{transform:rotate(-128deg)}to{transform:rotate(-156deg)}}
+@keyframes cheerL{from{transform:rotate(52deg)}to{transform:rotate(76deg)}}
+/* everyone blinks now and then */
+.eyes,.potEyes{transform-box:fill-box;transform-origin:50% 50%;animation:blink 5.4s ease-in-out infinite}
+.potEyes{animation-delay:-2.6s}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+/* foreground grass sways with the garden flowers */
+.tuft{transform-box:fill-box;transform-origin:50% 100%;animation:pSway 3.8s ease-in-out infinite}
+.tuft.t2{animation-duration:4.6s;animation-delay:-1.3s}.tuft.t3{animation-duration:5.2s;animation-delay:-2.7s}
+/* pollen drifts up through the sunlight */
+.mote{animation:mote 9s linear infinite;opacity:0}
+.mote.m2{animation-delay:-2.2s}.mote.m3{animation-delay:-4.1s}.mote.m4{animation-delay:-6.3s}.mote.m5{animation-delay:-7.5s}
+@keyframes mote{0%{opacity:0;transform:translate(0,0)}18%{opacity:.75}80%{opacity:.55}100%{opacity:0;transform:translate(14px,-78px)}}
+/* the ladybug patrols the rim of the pot */
+.bugWalk{animation:bugWalk 26s linear infinite}
+@keyframes bugWalk{0%{transform:translateX(0) scaleX(1)}46%{transform:translateX(150px) scaleX(1)}50%{transform:translateX(150px) scaleX(-1)}96%{transform:translateX(0) scaleX(-1)}100%{transform:translateX(0) scaleX(1)}}
+.bugLegs{animation:bugLegs .3s steps(2) infinite}
+@keyframes bugLegs{from{transform:translateY(0)}to{transform:translateY(.8px)}}
+/* the snail takes all day */
+.snailGo{animation:snailGo 44s ease-in-out infinite alternate}
+@keyframes snailGo{from{transform:translateX(0)}to{transform:translateX(-30px)}}
+.snEyes{transform-box:fill-box;transform-origin:30% 100%;animation:snEye 3.2s ease-in-out infinite alternate}
+@keyframes snEye{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+/* the bee arrives with the flower and stays for the fruit */
+#bee{opacity:0;transition:opacity .6s ease 1s}
+#scene:is([data-s="flower"],[data-s="fruit"]) #bee{opacity:1}
+.beeFly{animation:beeHover 7.5s ease-in-out infinite}
+@keyframes beeHover{0%{transform:translate(0,0)}22%{transform:translate(-58px,-18px)}48%{transform:translate(-26px,16px)}74%{transform:translate(-86px,-32px)}100%{transform:translate(0,0)}}
+.bw{transform-box:fill-box;transform-origin:50% 100%;animation:beeWing .13s linear infinite alternate}
+@keyframes beeWing{from{transform:scaleY(1)}to{transform:scaleY(.25)}}
+/* the watering can hops over and gives the sprout a drink */
+#canRig{transform-box:fill-box;transform-origin:40% 64%}
+#can.pour #canRig{animation:canPour 1.95s cubic-bezier(.45,0,.2,1) both}
+@keyframes canPour{0%{transform:translate(0,0) rotate(0deg)}24%{transform:translate(82px,-164px) rotate(-8deg)}38%,74%{transform:translate(92px,-170px) rotate(36deg)}100%{transform:translate(0,0) rotate(0deg)}}
+.wdrop,.wstream{opacity:0}
+#can.flow .wstream{opacity:1;animation:wflow .35s linear infinite}
+@keyframes wflow{to{stroke-dashoffset:-9}}
+#can.flow .wdrop{animation:wdrop .42s linear infinite}
+#can.flow .wdrop:nth-child(2){animation-delay:.1s}#can.flow .wdrop:nth-child(3){animation-delay:.21s}#can.flow .wdrop:nth-child(4){animation-delay:.32s}
+@keyframes wdrop{0%{transform:translate(0,0);opacity:0}15%{opacity:1}100%{transform:translate(40px,62px);opacity:0}}
+#soil{transition:filter .7s ease}
+#scene.wet #soil{filter:brightness(.78) saturate(1.1)}
+/* the sun leans in while the small plant grows */
+#scene.shine .sun-halo{animation:sunBurst 2.4s ease-in-out both}
+@keyframes sunBurst{0%,100%{transform:scale(1);opacity:.9}40%{transform:scale(1.5);opacity:1}}
+/* a puff of soil when the seed lands */
+.sp{opacity:0}
+#soilPuff.go .sp{animation:soilPuff .8s ease-out both}
+@keyframes soilPuff{0%{opacity:0;transform:translate(0,0) scale(.5)}18%{opacity:.95}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.15)}}
+/* stems draw themselves upward, leaves unfurl from the stem one after another */
+.stemA,.stemB,.stemC{stroke-dasharray:1 1.1;stroke-dashoffset:1.02;transition:stroke-dashoffset 1.3s cubic-bezier(.3,.5,.3,1)}
+.stemA{transition-duration:.8s}.stemC{transition-duration:.6s}
+#scene[data-s="sprout"] #g-sprout .stemA,
+#scene:is([data-s="small"],[data-s="flower"],[data-s="fruit"]) #g-small .stemB,
+#scene:is([data-s="flower"],[data-s="fruit"]) #g-flower .stemC{stroke-dashoffset:0}
+.leaf{transform-box:fill-box;transform-origin:100% 100%;transform:scale(0) rotate(16deg);transition:transform .9s var(--spring)}
+.leaf.rt{transform-origin:0% 100%;transform:scale(0) rotate(-16deg)}
+#scene[data-s="sprout"] #g-sprout .leaf,
+#scene:is([data-s="small"],[data-s="flower"],[data-s="fruit"]) #g-small .leaf{transform:scale(1) rotate(0deg)}
+#g-sprout .lfA{transition-delay:.38s}#g-sprout .lfB{transition-delay:.52s}
+#g-small .lf1{transition-delay:.3s}#g-small .lf2{transition-delay:.55s}#g-small .lf3{transition-delay:.8s}#g-small .lf4{transition-delay:1.05s}
+/* petals open with a little twist */
+.petal{transform:scale(0) rotate(-30deg)}
+#scene:is([data-s="flower"],[data-s="fruit"]) .petal{transform:scale(1) rotate(0deg)}
+/* small blooms on the side branches: they open with the flower and turn into the fruit */
+.sbloom{transform-box:fill-box;transform-origin:50% 50%;transform:scale(0);opacity:1;transition:transform .6s var(--spring) .75s,opacity .35s ease}
+.sbloom.s2{transition-delay:.9s,0s}.sbloom.s3{transition-delay:1.05s,0s}
+#scene[data-s="flower"] .sbloom{transform:scale(1)}
+#scene[data-s="fruit"] .sbloom{transform:scale(0);opacity:0;transition:transform .45s ease-in,opacity .3s ease}
+/* fruit pops where the blooms were, hangs and sways, then ripens from green */
+.frtSw{transform-box:fill-box;transform-origin:50% 0%;animation:frtSwing 5s ease-in-out infinite}
+.frtSw.sw2{animation-delay:-1.7s}.frtSw.sw3{animation-delay:-3.3s}
+@keyframes frtSwing{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.6deg)}}
+.frt{transform-box:fill-box;transform-origin:50% 6%;transform:scale(0);transition:transform .75s var(--spring) .3s}
+#scene[data-s="fruit"] .frt{transform:scale(1)}
+#scene[data-s="fruit"] .frt.f2{transition-delay:.5s}#scene[data-s="fruit"] .frt.f3{transition-delay:.7s}
+.frt .unripe{opacity:1;transition:opacity 1.5s ease 1.45s}
+#scene[data-s="fruit"] .frt .unripe{opacity:0}
+#scene:not([data-s="fruit"]) .frt .unripe{transition:none}
+/* the option tiles and the strip show this game's own flower and fruit */
+#opts{--fg:255,196,0;--fr:255,45,45}
+.lens.flower{background:radial-gradient(circle at 42% 36%,#EAF6FF 0%,#8EC9F5 38%,#3A8FD9 76%,#163F73 100%)}
+.opt.right[data-c="flower"]{box-shadow:0 0 0 4px rgba(var(--fg),.38),0 0 24px rgba(var(--fg),.55),0 5px 0 rgba(var(--fg),.4)}
+.opt.right[data-c="fruit"]{box-shadow:0 0 0 4px rgba(var(--fr),.35),0 0 24px rgba(var(--fr),.55),0 5px 0 rgba(var(--fr),.4)}
+.lens.ic>svg{width:1.3em;height:1.3em;position:relative;z-index:1;overflow:visible;filter:drop-shadow(0 1px 1px rgba(0,0,0,.28))}
+.lite .mote,.lite .tuft,.lite .snailGo,.lite .bugWalk,.lite .frtSw{animation:none!important}
+@media (prefers-reduced-motion:reduce){
+  .leaf,.stemA,.stemB,.stemC,.frt,.frt .unripe,.sbloom,#bee,#soil{transition:none}
+  .sp,.wdrop,.wstream{display:none}
+}
+
+/* ===================== AUTO-FIT PASS 3 — fit check =====================
+   Measured on 360×640, 375×667, 375×553, 412×732 and 320×568 phones, 768×954 /
+   768×1024 tablets and 667×375 / 844×390 landscape phones. Earlier passes left
+   two floors under the picture (31vh on ≤360 px phones, 140 px on short phones)
+   that pushed the Controls card below the screen edge; on portrait tablets the
+   picture's own aspect ratio set the row height. The picture now takes whatever
+   is left after the choices and the two buttons — which keep finger-sized pads. */
+/* the drawn flower chip sits in the strip at the same size as the emoji chips */
+.chip svg{width:1.22em;height:1.22em}
+html[data-layout-mode="auto-fit"] .chip svg{width:1.22em;height:1.22em}
+
+/* portrait tablets (601–940 px): the picture keeps its box but stops dictating the row's height */
+@media(min-width:601px) and (max-width:940px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .scene{position:absolute;inset:0;width:100%;height:100%}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(220px,34vh,560px)}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:clamp(44px,6vh,56px);height:clamp(44px,6vh,56px)}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:8px 6px 7px}
+  html[data-layout-mode="auto-fit"] .ctrl{--bh:clamp(42px,5.4vh,48px)}
+}
+/* portrait phones (≤600 px, up to 760 px tall): one coherent compact scale */
+@media(max-width:600px) and (max-height:760px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .topbar{height:clamp(40px,6.4vh,48px)}
+  html[data-layout-mode="auto-fit"] .layout{gap:6px;padding:6px 6px 5px}
+  html[data-layout-mode="auto-fit"] .stage-card{padding:6px}
+  html[data-layout-mode="auto-fit"] .task-header{gap:3px;padding:0 2px 5px}
+  html[data-layout-mode="auto-fit"] .task-header>.banner{min-height:36px;font-size:clamp(12px,1.9vh,13px);padding:2px 10px}
+  html[data-layout-mode="auto-fit"] .progress .dot{width:18px;height:18px;font-size:9px}
+  /* a floor that scales with the screen and no ceiling: the 1fr row hands the picture every spare pixel */
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(100px,18vh,260px);max-height:none}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .optcard{padding:5px 8px 5px}
+  html[data-layout-mode="auto-fit"] .optcard .opts{margin-top:4px;padding:5px}
+  html[data-layout-mode="auto-fit"] #opts{gap:5px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:4px 4px 3px;gap:2px;min-height:46px}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:32px!important;height:32px!important}
+  html[data-layout-mode="auto-fit"] #opts .opt b{font-size:12.5px;line-height:1.05}
+  html[data-layout-mode="auto-fit"] .optcard .legend{margin-top:3px;font-size:9.8px}
+  html[data-layout-mode="auto-fit"] .optcard .sig-status{margin:3px 0 0;font-size:12px}
+  html[data-layout-mode="auto-fit"] .ctrl{--cg:5px;--bh:40px;--cb:14px;padding:5px 10px 5px}
+  html[data-layout-mode="auto-fit"] .ctrl .conn{margin:0;padding:3px 10px;font-size:11px}
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{min-height:38px;padding:4px 12px;font-size:14px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{padding-bottom:4px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{min-height:44px;padding:5px 8px}
+}
+/* the shortest portrait screens (phones with the browser bars showing) */
+@media(max-width:600px) and (max-height:580px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .topbar{height:40px}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(80px,15vh,200px)}
+  html[data-layout-mode="auto-fit"] .task-header>.banner{min-height:32px;font-size:12px}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:26px!important;height:26px!important}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:3px 3px 2px;min-height:42px}
+  html[data-layout-mode="auto-fit"] #opts .opt b{font-size:11.5px}
+  html[data-layout-mode="auto-fit"] .ctrl{--bh:36px}
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{min-height:34px;font-size:13px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{min-height:40px;padding:3px 6px}
+}
+/* landscape phones: the Connect pad and the four choices reach a finger-sized height */
+@media(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] aside.col>.ctrl{--bh:clamp(30px,7.5vh,34px) !important}
+  html[data-layout-mode="auto-fit"] #opts .opt{min-height:44px}
+}
+</style>
+<script>
+/* Keep the auto-fit shell inside the actually visible viewport when mobile browser chrome moves. */
+(function(){
+  const el=document.documentElement;
+  function sizeToViewport(){
+    try{
+      const vv=window.visualViewport;
+      const h=Math.round(vv?(vv.height*(vv.scale||1)):window.innerHeight);
+      if(h>0)el.style.setProperty('--vvh',h+'px');
+    }catch(e){}
+  }
+  sizeToViewport();
+  addEventListener('resize',sizeToViewport,{passive:true});
+  addEventListener('orientationchange',sizeToViewport,{passive:true});
+  if(window.visualViewport){
+    visualViewport.addEventListener('resize',sizeToViewport,{passive:true});
+    visualViewport.addEventListener('scroll',sizeToViewport,{passive:true});
+  }
+})();
+</script>
+<script>
+/* The layout mode is decided before the first paint — the same query the
+   detective series uses — so a phone or tablet never flashes the laptop
+   layout on the way in, and the laptop page never flickers into auto-fit. */
+try{
+  const layoutQuery=matchMedia('(any-hover:hover) and (any-pointer:fine)');
+  document.documentElement.dataset.layoutMode=layoutQuery.matches?'original-laptop':'auto-fit';
+}catch(e){document.documentElement.dataset.layoutMode='auto-fit';}
+</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <radialGradient id="gcRed" cx="40%" cy="32%" r="75%"><stop offset="0" stop-color="#FFD9D4"/><stop offset=".3" stop-color="#FF5A4E"/><stop offset=".72" stop-color="#E5121B"/><stop offset="1" stop-color="#8E0510"/></radialGradient>
+  <radialGradient id="gcGreen" cx="40%" cy="32%" r="75%"><stop offset="0" stop-color="#E3FFEA"/><stop offset=".3" stop-color="#5BEA86"/><stop offset=".72" stop-color="#14B94A"/><stop offset="1" stop-color="#06702A"/></radialGradient>
+  <linearGradient id="gcBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7DBBFF"/><stop offset=".5" stop-color="#2F7FEE"/><stop offset="1" stop-color="#1B54B5"/></linearGradient>
+  <linearGradient id="gcGrey" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6F2FA"/><stop offset=".55" stop-color="#C5B7D2"/><stop offset="1" stop-color="#9886A8"/></linearGradient>
+  <radialGradient id="gcLens" cx="38%" cy="30%" r="80%"><stop offset="0" stop-color="#9CD0FF"/><stop offset=".45" stop-color="#2F7FEE"/><stop offset="1" stop-color="#0E2F73"/></radialGradient>
+  <linearGradient id="gcGloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient>
+</defs></svg>
+<header class="topbar">
+  <img class="brand-logo" src="data:image/png;base64,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" alt="Smart Block">
+  <div><h1>Plant <b>Growth</b></h1></div>
+</header>
+
+<main class="layout">
+  <section class="col">
+    <div class="card stage-card">
+      <div class="task-header">
+        <div class="eyebrow" id="taskCount">STEP 1 / 5</div>
+        <div class="banner" id="banner" role="button" tabindex="0" title="Tap to hear the question again"><span class="bt">Press <b>🌱 Plant the seed</b> to plant the seed</span></div>
+        <div class="progress" id="progress" aria-label="Five steps"></div>
+      </div>
+      <div class="stage" id="stage">
+        <svg class="scene" id="scene" viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid slice" data-s="ready" role="img" aria-label="A garden with a flower pot full of soil, a watering can and a young gardener">
+<defs>
+<linearGradient id="skyG" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="460">
+  <stop offset="0" stop-color="#7FB8E0"/><stop offset=".62" stop-color="#C7E4F5"/><stop offset="1" stop-color="#EAF6FB"/>
+</linearGradient>
+<radialGradient id="sunG" cx="38%" cy="34%" r="70%"><stop offset="0" stop-color="#FFF4B0"/><stop offset=".55" stop-color="#FFD24A"/><stop offset="1" stop-color="#F4A020"/></radialGradient>
+<radialGradient id="sunHalo"><stop offset="0" stop-color="#FFDA6E" stop-opacity=".55"/><stop offset=".5" stop-color="#FFCB44" stop-opacity=".2"/><stop offset="1" stop-color="#FFC93C" stop-opacity="0"/></radialGradient>
+<radialGradient id="cloudG" cx="36%" cy="32%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".75" stop-color="#F0F6FC"/><stop offset="1" stop-color="#D6E4F0"/></radialGradient>
+<linearGradient id="hillFar" gradientUnits="userSpaceOnUse" x1="0" y1="398" x2="0" y2="462">
+  <stop offset="0" stop-color="#9BD3A8"/><stop offset="1" stop-color="#7BBE8C"/>
+</linearGradient>
+<linearGradient id="grassG" gradientUnits="userSpaceOnUse" x1="0" y1="458" x2="0" y2="680">
+  <stop offset="0" stop-color="#B4DE96"/><stop offset=".35" stop-color="#93CD6E"/><stop offset="1" stop-color="#69AC47"/>
+</linearGradient>
+<linearGradient id="potG" x1="0" y1="0" x2="1" y2="0">
+  <stop offset="0" stop-color="#B4552D"/><stop offset=".18" stop-color="#D97A45"/><stop offset=".5" stop-color="#E8915A"/><stop offset=".82" stop-color="#C76A3A"/><stop offset="1" stop-color="#9E4826"/>
+</linearGradient>
+<linearGradient id="rimG" x1="0" y1="0" x2="1" y2="0">
+  <stop offset="0" stop-color="#A84E29"/><stop offset=".18" stop-color="#CE6F3C"/><stop offset=".5" stop-color="#DE8450"/><stop offset=".82" stop-color="#BC6134"/><stop offset="1" stop-color="#93421F"/>
+</linearGradient>
+<radialGradient id="soilG" cx="50%" cy="42%" r="65%"><stop offset="0" stop-color="#7A5236"/><stop offset=".6" stop-color="#5C3B25"/><stop offset="1" stop-color="#402817"/></radialGradient>
+<radialGradient id="tomG" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#FFD9C9"/><stop offset=".3" stop-color="#FF7A5C"/><stop offset=".72" stop-color="#E5341B"/><stop offset="1" stop-color="#8E1206"/></radialGradient>
+<radialGradient id="flwG" cx="42%" cy="38%" r="70%"><stop offset="0" stop-color="#FFF7C8"/><stop offset=".55" stop-color="#FFD23F"/><stop offset="1" stop-color="#F5A200"/></radialGradient>
+<radialGradient id="petalG" cx="46%" cy="34%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".7" stop-color="#FDF6E4"/><stop offset="1" stop-color="#F0DFAF"/></radialGradient>
+<linearGradient id="stemG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2F7D32"/><stop offset=".5" stop-color="#4CAF50"/><stop offset="1" stop-color="#2F7D32"/></linearGradient>
+<linearGradient id="canG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1F7F91"/><stop offset=".3" stop-color="#4FBBCB"/><stop offset=".6" stop-color="#2B9AAE"/><stop offset="1" stop-color="#166573"/></linearGradient>
+<radialGradient id="unripeG" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#E2F5C4"/><stop offset=".35" stop-color="#9CCF69"/><stop offset=".75" stop-color="#5E9E3F"/><stop offset="1" stop-color="#2F6A24"/></radialGradient>
+<g id="vGrads"></g><!-- this game's petal, centre and fruit colours are written here by the script -->
+</defs>
+
+<!-- sky -->
+<rect x="-60" y="-40" width="1120" height="504" fill="url(#skyG)"/>
+<g transform="translate(120,104) scale(1.05) translate(-50,-50)">
+  <circle class="sun-halo" cx="50" cy="50" r="52" fill="url(#sunHalo)"/>
+  <g class="sun-rays"><g stroke="#F2A820" stroke-width="5" stroke-linecap="round">
+    <line x1="50" y1="2" x2="50" y2="16"/><line x1="50" y1="84" x2="50" y2="98"/><line x1="2" y1="50" x2="16" y2="50"/><line x1="84" y1="50" x2="98" y2="50"/>
+    <line x1="16" y1="16" x2="26" y2="26"/><line x1="74" y1="74" x2="84" y2="84"/><line x1="84" y1="16" x2="74" y2="26"/><line x1="26" y1="74" x2="16" y2="84"/></g></g>
+  <circle cx="50" cy="50" r="27" fill="url(#sunG)"/>
+  <circle cx="42" cy="48" r="3.4" fill="#5A3C00"/><circle cx="58" cy="48" r="3.4" fill="#5A3C00"/>
+  <circle cx="43" cy="46.8" r="1.2" fill="#fff"/><circle cx="59" cy="46.8" r="1.2" fill="#fff"/>
+  <path d="M39 57 Q50 69 61 57" stroke="#5A3C00" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="34" cy="56" r="3.5" fill="#FF9E7A" opacity=".55"/><circle cx="66" cy="56" r="3.5" fill="#FF9E7A" opacity=".55"/>
+</g>
+<g transform="translate(300,26) scale(1.05)"><g class="drift d1" opacity=".95">
+  <ellipse cx="34" cy="58" rx="22" ry="18" fill="#C8D6E4" opacity=".5"/><ellipse cx="58" cy="48" rx="28" ry="24" fill="url(#cloudG)"/>
+  <ellipse cx="80" cy="56" rx="20" ry="16" fill="url(#cloudG)"/><ellipse cx="36" cy="56" rx="18" ry="14" fill="url(#cloudG)"/>
+  <ellipse cx="44" cy="38" rx="10" ry="7" fill="#fff" opacity=".75"/></g></g>
+<g transform="translate(600,-8) scale(.85)"><g class="drift d2" opacity=".85">
+  <ellipse cx="34" cy="58" rx="22" ry="18" fill="#C8D6E4" opacity=".5"/><ellipse cx="58" cy="48" rx="28" ry="24" fill="url(#cloudG)"/>
+  <ellipse cx="80" cy="56" rx="20" ry="16" fill="url(#cloudG)"/><ellipse cx="36" cy="56" rx="18" ry="14" fill="url(#cloudG)"/>
+  <ellipse cx="44" cy="38" rx="10" ry="7" fill="#fff" opacity=".75"/></g></g>
+<g transform="translate(830,66) scale(.66)"><g class="drift d3" opacity=".8">
+  <ellipse cx="34" cy="58" rx="22" ry="18" fill="#C8D6E4" opacity=".5"/><ellipse cx="58" cy="48" rx="28" ry="24" fill="url(#cloudG)"/>
+  <ellipse cx="80" cy="56" rx="20" ry="16" fill="url(#cloudG)"/><ellipse cx="36" cy="56" rx="18" ry="14" fill="url(#cloudG)"/>
+  <ellipse cx="44" cy="38" rx="10" ry="7" fill="#fff" opacity=".75"/></g></g>
+<g transform="translate(620,110)"><g class="birdF"><path class="wing" d="M0 0q6-7 12-1q6-6 12 1" fill="none" stroke="#5B6B7C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g>
+<g transform="translate(700,88) scale(.8)"><g class="birdF b2"><path class="wing" d="M0 0q6-7 12-1q6-6 12 1" fill="none" stroke="#5B6B7C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g>
+
+<!-- ground -->
+<path d="M-60 460 Q150 402 380 446 Q540 470 700 434 Q880 400 1060 450 L1060 470 L-60 470 Z" fill="url(#hillFar)"/>
+<!-- trees and bushes along the far edge of the lawn (their feet tuck under the grass) -->
+<g class="tree" transform="translate(252,466)">
+  <path d="M-6 2 L-4 -38 H4 L6 2Z" fill="#8B5A2B"/><path d="M-1 -10 L-1 -36" stroke="#A9733B" stroke-width="2" opacity=".6"/>
+  <g class="cnp"><circle cx="-18" cy="-48" r="21" fill="#5FAE4B"/><circle cx="18" cy="-50" r="21" fill="#6DBD57"/><circle cx="0" cy="-68" r="23" fill="#7CCB62"/><circle cx="0" cy="-46" r="18" fill="#6DBD57"/><circle cx="-7" cy="-74" r="8" fill="#A8E08C" opacity=".6"/></g>
+</g>
+<g class="tree" transform="translate(118,468) scale(.62)"><g class="cnp"><circle cx="-17" cy="-22" r="20" fill="#59A747"/><circle cx="15" cy="-24" r="20" fill="#67B553"/><circle cx="0" cy="-34" r="21" fill="#78C45E"/><circle cx="-5" cy="-41" r="7" fill="#A8E08C" opacity=".55"/></g></g>
+<g class="tree" transform="translate(690,468) scale(.7)"><g class="cnp"><circle cx="-17" cy="-22" r="20" fill="#59A747"/><circle cx="15" cy="-24" r="20" fill="#67B553"/><circle cx="0" cy="-34" r="21" fill="#78C45E"/><circle cx="-5" cy="-41" r="7" fill="#A8E08C" opacity=".55"/></g></g>
+<g class="tree" transform="translate(932,470) scale(1.12)">
+  <path d="M-6 2 L-4 -38 H4 L6 2Z" fill="#8B5A2B"/><path d="M-1 -10 L-1 -36" stroke="#A9733B" stroke-width="2" opacity=".6"/>
+  <g class="cnp"><circle cx="-18" cy="-48" r="21" fill="#5FAE4B"/><circle cx="18" cy="-50" r="21" fill="#6DBD57"/><circle cx="0" cy="-68" r="23" fill="#7CCB62"/><circle cx="0" cy="-46" r="18" fill="#6DBD57"/><circle cx="-7" cy="-74" r="8" fill="#A8E08C" opacity=".6"/></g>
+</g>
+<rect x="-60" y="458" width="1120" height="230" fill="url(#grassG)"/>
+<ellipse cx="180" cy="520" rx="150" ry="26" fill="#A3D67F" opacity=".5"/>
+<ellipse cx="840" cy="560" rx="190" ry="34" fill="#86C460" opacity=".5"/>
+<ellipse cx="520" cy="660" rx="330" ry="40" fill="#86C460" opacity=".35"/>
+<!-- a little picket fence on the left -->
+<g id="fence">
+  <rect x="-30" y="470" width="340" height="7" rx="2.5" fill="#EADCBF" stroke="#C9B088" stroke-width="1"/>
+  <rect x="-30" y="492" width="340" height="7" rx="2.5" fill="#EADCBF" stroke="#C9B088" stroke-width="1"/>
+  <g fill="#F7EEDC" stroke="#C9B088" stroke-width="1.2" stroke-linejoin="round"><path d="M-6 458l7-9 7 9v52h-14z"/><path d="M30 458l7-9 7 9v52h-14z"/><path d="M66 458l7-9 7 9v52h-14z"/><path d="M102 458l7-9 7 9v52h-14z"/><path d="M138 458l7-9 7 9v52h-14z"/><path d="M174 458l7-9 7 9v52h-14z"/><path d="M210 458l7-9 7 9v52h-14z"/><path d="M246 458l7-9 7 9v52h-14z"/><path d="M282 458l7-9 7 9v52h-14z"/></g>
+  <g fill="#D9C39A" opacity=".8"><circle cx="1" cy="473.5" r="1.2"/><circle cx="37" cy="473.5" r="1.2"/><circle cx="73" cy="473.5" r="1.2"/><circle cx="109" cy="473.5" r="1.2"/><circle cx="145" cy="473.5" r="1.2"/><circle cx="181" cy="473.5" r="1.2"/><circle cx="217" cy="473.5" r="1.2"/><circle cx="253" cy="473.5" r="1.2"/><circle cx="289" cy="473.5" r="1.2"/></g>
+</g>
+
+<!-- garden flowers -->
+<g transform="translate(140,600) scale(1.15)"><g class="swf"><path d="M0 0 L0 -30" stroke="#3E8530" stroke-width="3.4"/><path d="M0 -12 Q-11 -16 -14 -27 Q-3 -26 0 -17Z" fill="#4CAF50"/><g transform="translate(0,-36)"><circle cx="7" cy="0" r="5" fill="#fff"/><circle cx="2.2" cy="-6.7" r="5" fill="#fff"/><circle cx="-5.7" cy="-4.1" r="5" fill="#fff"/><circle cx="-5.7" cy="4.1" r="5" fill="#fff"/><circle cx="2.2" cy="6.7" r="5" fill="#fff"/><circle r="4" fill="#F5B700"/></g></g></g>
+<g transform="translate(208,560) scale(.85)"><g class="swf d2"><path d="M0 0 L0 -30" stroke="#3E8530" stroke-width="3.4"/><g transform="translate(0,-36)"><circle cx="7" cy="0" r="5" fill="#FF9FCB"/><circle cx="2.2" cy="-6.7" r="5" fill="#FF9FCB"/><circle cx="-5.7" cy="-4.1" r="5" fill="#FF9FCB"/><circle cx="-5.7" cy="4.1" r="5" fill="#FF9FCB"/><circle cx="2.2" cy="6.7" r="5" fill="#FF9FCB"/><circle r="4" fill="#F5B700"/></g></g></g>
+<g transform="translate(806,586)"><g class="swf"><path d="M0 0 L0 -30" stroke="#3E8530" stroke-width="3.4"/><path d="M0 -12 Q11 -16 14 -27 Q3 -26 0 -17Z" fill="#4CAF50"/><g transform="translate(0,-36)"><circle cx="7" cy="0" r="5" fill="#fff"/><circle cx="2.2" cy="-6.7" r="5" fill="#fff"/><circle cx="-5.7" cy="-4.1" r="5" fill="#fff"/><circle cx="-5.7" cy="4.1" r="5" fill="#fff"/><circle cx="2.2" cy="6.7" r="5" fill="#fff"/><circle r="4" fill="#F5B700"/></g></g></g>
+<g transform="translate(880,636) scale(1.2)"><g class="swf d2"><path d="M0 0 L0 -30" stroke="#3E8530" stroke-width="3.4"/><g transform="translate(0,-36)"><circle cx="7" cy="0" r="5" fill="#C77DFF"/><circle cx="2.2" cy="-6.7" r="5" fill="#C77DFF"/><circle cx="-5.7" cy="-4.1" r="5" fill="#C77DFF"/><circle cx="-5.7" cy="4.1" r="5" fill="#C77DFF"/><circle cx="2.2" cy="6.7" r="5" fill="#C77DFF"/><circle r="4" fill="#F5B700"/></g></g></g>
+<g transform="translate(66,516) scale(.6)"><g class="swf"><path d="M0 0 L0 -30" stroke="#3E8530" stroke-width="3.4"/><g transform="translate(0,-36)"><circle cx="7" cy="0" r="5" fill="#fff"/><circle cx="2.2" cy="-6.7" r="5" fill="#fff"/><circle cx="-5.7" cy="-4.1" r="5" fill="#fff"/><circle cx="-5.7" cy="4.1" r="5" fill="#fff"/><circle cx="2.2" cy="6.7" r="5" fill="#fff"/><circle r="4" fill="#F5B700"/></g></g></g>
+<g transform="translate(948,506) scale(.55)"><g class="swf d2"><path d="M0 0 L0 -30" stroke="#3E8530" stroke-width="3.4"/><g transform="translate(0,-36)"><circle cx="7" cy="0" r="5" fill="#FF9FCB"/><circle cx="2.2" cy="-6.7" r="5" fill="#FF9FCB"/><circle cx="-5.7" cy="-4.1" r="5" fill="#FF9FCB"/><circle cx="-5.7" cy="4.1" r="5" fill="#FF9FCB"/><circle cx="2.2" cy="6.7" r="5" fill="#FF9FCB"/><circle r="4" fill="#F5B700"/></g></g></g>
+<g fill="#5FA845" opacity=".85"><path d="M300 500 l4 -16 l4 16Z"/><path d="M310 500 l3 -11 l3 11Z"/><path d="M716 522 l4 -16 l4 16Z"/><path d="M726 522 l3 -11 l3 11Z"/><path d="M420 640 l5 -18 l5 18Z"/><path d="M600 646 l4 -14 l4 14Z"/></g>
+
+<!-- the watering can waits beside the pot: it hops over to water the sprout -->
+<g id="can" transform="translate(316,628)">
+  <ellipse cx="6" cy="2" rx="44" ry="6" fill="#1E3B1E" opacity=".2"/>
+  <g id="canRig">
+    <path d="M24 -28 L58 -60" stroke="#227F91" stroke-width="10" stroke-linecap="round"/>
+    <path d="M27 -31 L55 -57" stroke="#7FD7E6" stroke-width="2.6" stroke-linecap="round" opacity=".6"/>
+    <g transform="translate(61,-63) rotate(-45)"><ellipse rx="9.5" ry="6.5" fill="#2B9AAE" stroke="#1B6A78" stroke-width="1"/><g fill="#0E3F48" opacity=".85"><circle cx="-4.5" cy="-2" r="1.1"/><circle cx="0" cy="-2.8" r="1.1"/><circle cx="4.5" cy="-2" r="1.1"/><circle cx="-2.2" cy="1.4" r="1.1"/><circle cx="2.2" cy="1.4" r="1.1"/></g></g>
+    <path d="M-30 -50h50q6 0 6 6v38q0 6-6 6h-50q-6 0-6-6v-38q0-6 6-6Z" fill="url(#canG)" stroke="#1B6A78" stroke-width="1.2"/>
+    <rect x="-33" y="-55" width="56" height="9" rx="3.5" fill="#2B9AAE" stroke="#1B6A78" stroke-width="1"/>
+    <path d="M-23 -44v28" stroke="#fff" stroke-width="5" opacity=".28" stroke-linecap="round"/>
+    <path d="M-16 -56q20-27 40 0" fill="none" stroke="#227F91" stroke-width="7" stroke-linecap="round"/>
+    <path d="M-36 -42q-19 18 0 36" fill="none" stroke="#227F91" stroke-width="7" stroke-linecap="round"/>
+    <g transform="translate(66,-60) scale(1.3)" fill="#6CC8FF" stroke="#2A8DD8" stroke-width=".8">
+      <path class="wstream" d="M-2 -2C4 10 16 22 28 42" fill="none" stroke="#6CC8FF" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="5 4" opacity=".85"/>
+      <path class="wdrop" d="M0 -4C3 0 3 3 0 4C-3 3-3 0 0-4Z"/><path class="wdrop" d="M4 -1C7 3 7 6 4 7C1 6 1 3 4-1Z"/><path class="wdrop" d="M-3 2C0 6 0 9-3 10C-6 9-6 6-3 2Z"/><path class="wdrop" d="M7 4C10 8 10 11 7 12C4 11 4 8 7 4Z"/>
+    </g>
+  </g>
+</g>
+<!-- pebbles by the pot -->
+<g><ellipse cx="372" cy="646" rx="9" ry="5" fill="#B9B0A6" stroke="#8E857B" stroke-width=".8"/><ellipse cx="369" cy="644" rx="4" ry="1.8" fill="#fff" opacity=".35"/><ellipse cx="648" cy="652" rx="7" ry="4" fill="#C4BBB0" stroke="#8E857B" stroke-width=".8"/><ellipse cx="662" cy="657" rx="4.5" ry="2.6" fill="#AFA69B" stroke="#8E857B" stroke-width=".7"/><ellipse cx="392" cy="657" rx="5" ry="2.8" fill="#C9C0B4" stroke="#8E857B" stroke-width=".7"/></g>
+<!-- pollen in the sunlight -->
+<g fill="#FFF6C4"><circle class="mote" cx="430" cy="312" r="2.4"/><circle class="mote m2" cx="604" cy="268" r="2"/><circle class="mote m3" cx="566" cy="346" r="1.8"/><circle class="mote m4" cx="372" cy="236" r="2.2"/><circle class="mote m5" cx="652" cy="206" r="1.9"/></g>
+
+<!-- the falling seed (animated by the script when the IR sensor sees a hand) -->
+<g id="g-seed" transform="translate(620,440)"><g id="seedDrop">
+  <ellipse rx="8.5" ry="11.5" fill="#8A5A2B" stroke="#5C3B1E" stroke-width="1.5"/>
+  <path d="M0 -11 Q3.4 -2 0 9" stroke="#5C3B1E" stroke-width="1.2" fill="none"/>
+</g></g>
+
+<!-- the pot -->
+<g id="pot">
+  <ellipse cx="500" cy="644" rx="152" ry="19" fill="#1E3B1E" opacity=".24"/>
+  <path d="M402 496 L436 632 Q500 652 564 632 L598 496 Z" fill="url(#potG)"/>
+  <path d="M424 508 L450 622" stroke="#FFD9B8" stroke-width="13" opacity=".33" stroke-linecap="round"/>
+  <path d="M576 508 L552 622" stroke="#7E3418" stroke-width="10" opacity=".28" stroke-linecap="round"/>
+  <rect x="384" y="464" width="232" height="38" rx="17" fill="url(#rimG)"/>
+  <rect x="394" y="468" width="212" height="6" rx="3" fill="#F2A878" opacity=".5"/>
+  <ellipse id="soil" cx="500" cy="469" rx="99" ry="15.5" fill="url(#soilG)"/>
+  <g fill="#3A2414" opacity=".8"><circle cx="462" cy="466" r="2"/><circle cx="521" cy="472" r="2.2"/><circle cx="492" cy="463" r="1.7"/><circle cx="548" cy="466" r="1.8"/><circle cx="440" cy="472" r="1.8"/></g>
+  <!-- the stake names the seed that went in -->
+  <g id="stake" transform="translate(578,471)"><rect x="-2.6" y="-40" width="5.2" height="40" rx="1.5" fill="#B07A45" stroke="#7A4E26" stroke-width=".8"/><rect x="-37" y="-64" width="74" height="26" rx="5" fill="#F0D4A3" stroke="#A06B38" stroke-width="2"/><path d="M-31 -58h62" stroke="#fff" stroke-width="3" opacity=".35" stroke-linecap="round"/><text id="stakeTxt" x="0" y="-45.5" text-anchor="middle" font-size="14.5" font-weight="700" fill="#5C3B1E">Tomato</text></g>
+  <path id="bump" d="M468 464 Q500 446 532 464 Q500 474 468 464 Z" fill="#4A2F1C"/>
+  <g class="potEyes"><circle cx="466" cy="558" r="7" fill="#4A2416"/><circle cx="534" cy="558" r="7" fill="#4A2416"/>
+  <circle cx="468.5" cy="555.5" r="2.2" fill="#fff"/><circle cx="536.5" cy="555.5" r="2.2" fill="#fff"/></g>
+  <circle cx="443" cy="580" r="7" fill="#E86A4A" opacity=".4"/><circle cx="557" cy="580" r="7" fill="#E86A4A" opacity=".4"/>
+  <path class="potSmile potM" d="M468 584 Q500 608 532 584" stroke="#4A2416" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path class="potOpen potM" d="M476 584 Q500 614 524 584 Q500 596 476 584 Z" fill="#7A3320"/>
+</g>
+
+<!-- a ladybug on the rim, and a puff of soil for when the seed lands -->
+<g transform="translate(404,489)"><g class="bugWalk"><ellipse rx="7" ry="5" fill="#E8231F" stroke="#5A0A08" stroke-width=".8"/><path d="M0 -5V5" stroke="#5A0A08" stroke-width="1"/><g fill="#1A0A0A"><circle cx="-3.4" cy="-1.6" r="1.3"/><circle cx="3" cy="-2" r="1.2"/><circle cx="-2" cy="2.4" r="1.1"/><circle cx="3.4" cy="2.2" r="1"/></g><circle cx="7" cy="0" r="2.7" fill="#1A0A0A"/><circle cx="7.9" cy="-.9" r=".7" fill="#fff"/><path class="bugLegs" d="M-4 4l-2 3M0 5v3M4 4l2 3" stroke="#1A0A0A" stroke-width=".9" fill="none"/></g></g>
+<g id="soilPuff" transform="translate(540,466)"><circle class="sp" r="2.6" fill="#6B4425" style="--dx:-16px;--dy:-20px"/><circle class="sp" r="2" fill="#8A5A2B" style="--dx:12px;--dy:-24px;animation-delay:.05s"/><circle class="sp" r="2.3" fill="#5C3B25" style="--dx:-6px;--dy:-28px;animation-delay:.1s"/><circle class="sp" r="1.8" fill="#8A5A2B" style="--dx:20px;--dy:-14px;animation-delay:.03s"/><circle class="sp" r="2.1" fill="#6B4425" style="--dx:-24px;--dy:-10px;animation-delay:.08s"/><circle class="sp" r="1.6" fill="#A5713A" style="--dx:4px;--dy:-32px;animation-delay:.12s"/></g>
+
+<!-- the plant, growing step by step: stems draw themselves, leaves unfurl, the flower head,
+     side blooms and the fruit are built by the script for this game's variety -->
+<g id="plantSway">
+  <g id="g-sprout"><g class="grow">
+    <path class="stemA" pathLength="1" d="M500 466 C500 452 499 446 500 432" stroke="url(#stemG)" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path class="leaf lfA" d="M500 438 C486 434 473 423 471 408 C488 406 499 418 500 432 Z" fill="#5DBB5A"/>
+    <path class="leaf rt lfB" d="M500 438 C514 434 527 423 529 408 C512 406 501 418 500 432 Z" fill="#6FCC6C"/>
+  </g></g>
+  <g id="g-small">
+    <path class="stemB" pathLength="1" d="M500 466 C494 430 506 396 498 356 C494 330 504 306 500 282" stroke="url(#stemG)" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <g class="leaf lf1"><path d="M499 434 C468 430 444 412 440 386 C470 382 494 402 499 426 Z" fill="#4CAF50"/><path d="M497 429 C480 420 458 404 446 390" stroke="#2F7D32" stroke-width="1.6" opacity=".45" fill="none" stroke-linecap="round"/></g>
+    <g class="leaf rt lf2"><path d="M501 410 C532 406 556 388 560 362 C530 358 506 378 501 402 Z" fill="#5DBB5A"/><path d="M503 405 C520 396 542 380 556 365" stroke="#2F7D32" stroke-width="1.6" opacity=".45" fill="none" stroke-linecap="round"/></g>
+    <g class="leaf lf3"><path d="M499 358 C474 354 456 340 452 320 C476 316 494 332 499 350 Z" fill="#57B85C"/><path d="M497 353 C484 345 466 332 456 323" stroke="#2F7D32" stroke-width="1.6" opacity=".45" fill="none" stroke-linecap="round"/></g>
+    <g class="leaf rt lf4"><path d="M501 328 C526 324 544 310 548 290 C524 286 506 302 501 320 Z" fill="#66C46A"/><path d="M503 323 C516 315 534 302 544 293" stroke="#2F7D32" stroke-width="1.6" opacity=".45" fill="none" stroke-linecap="round"/></g>
+  </g>
+  <g id="g-flower">
+    <g class="grow"><path class="stemC" pathLength="1" d="M500 284 C499 274 501 268 500 258" stroke="url(#stemG)" stroke-width="7" fill="none" stroke-linecap="round"/></g>
+    <g id="sblooms"></g>
+    <g transform="translate(500,236)"><g class="fhead" id="fhead"></g></g>
+  </g>
+  <g id="g-fruit"></g>
+</g>
+
+<!-- the gardener kid: walks over and plants the seed when the sensor/button fires -->
+<g id="kidPlace" transform="translate(770,622) scale(.95) translate(0,-599)"><g id="kidWalk"><g id="kidLean"><g id="kid">
+<ellipse cx="0" cy="599" rx="38" ry="7" fill="#2a1030" opacity=".25"/>
+<rect x="-16" y="548" width="14" height="42" rx="6" fill="#F6C79B"/><rect x="3" y="548" width="14" height="42" rx="6" fill="#F0B88A"/>
+<ellipse cx="-12" cy="593" rx="15" ry="7" fill="#fff" stroke="#C9B6D4"/><ellipse cx="10" cy="593" rx="15" ry="7" fill="#fff" stroke="#C9B6D4"/><path d="M-26 596h30M-4 596h30" stroke="#F01A8C" stroke-width="3"/>
+<path d="M-21 526H21L23 560H4L0 548L-4 560H-23Z" fill="#3B4A8C" stroke="#2A356B" stroke-width="1.5"/>
+<rect x="-24" y="462" width="48" height="70" rx="16" fill="#F01A8C"/><rect x="-24" y="486" width="48" height="9" fill="#FFF212"/><path d="M-9 463Q0 474 9 463" fill="#F6C79B"/>
+<g transform="translate(22 478)"><g class="armR"><path d="M0 0L4 16" stroke="#F01A8C" stroke-width="14" stroke-linecap="round"/><path d="M4 16L10 46" stroke="#F0B88A" stroke-width="10" stroke-linecap="round"/><circle cx="10" cy="48" r="6" fill="#F0B88A"/></g></g>
+<g transform="translate(-20 478)"><g class="armL"><path d="M0 0L-14 6" stroke="#F01A8C" stroke-width="14" stroke-linecap="round"/><path d="M-14 6L-42-8" stroke="#F6C79B" stroke-width="10" stroke-linecap="round"/><circle cx="-44" cy="-9" r="6" fill="#F6C79B"/></g></g>
+<g transform="translate(-2 430)"><g id="head"><circle cx="30" cy="4" r="6" fill="#F0B88A"/><circle r="31" fill="#F6C79B"/>
+<path d="M-32 2Q-36-34-2-34Q34-34 31 2Q27-16 8-18Q-12-12-27-16Z" fill="#3A2418"/>
+<g class="eyes"><ellipse cx="-14" cy="3" rx="6" ry="7" fill="#fff"/><ellipse cx="4" cy="3" rx="6" ry="7" fill="#fff"/><circle cx="-17" cy="4" r="3.4" fill="#2B1B12"/><circle cx="1" cy="4" r="3.4" fill="#2B1B12"/></g>
+<path d="M-21-7Q-14-11-8-7M-3-7Q4-11 10-7" stroke="#3A2418" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<circle cx="-21" cy="16" r="5" fill="#F58AA8" opacity=".45"/><circle cx="11" cy="16" r="5" fill="#F58AA8" opacity=".45"/>
+<path class="mS" d="M-17 17Q-8 24 1 17" stroke="#B5453A" stroke-width="2.6" fill="none" stroke-linecap="round"/></g></g>
+</g></g></g></g>
+
+<!-- a snail in the foreground, and a bee that comes for the flower -->
+<g transform="translate(668,650)"><g class="snailGo"><path d="M-17 0C-19-8-7-12 6-9L19-2Q21 0 18 1L-14 1Z" fill="#CFA874" stroke="#8E6A3C" stroke-width=".9"/><g class="snEyes"><path d="M14-7L17-15M10-6L12-14" stroke="#8E6A3C" stroke-width="1.7" stroke-linecap="round"/><circle cx="17.3" cy="-15.6" r="1.7" fill="#333"/><circle cx="12.3" cy="-14.6" r="1.7" fill="#333"/></g><circle cx="-4" cy="-9.5" r="9.8" fill="#E79A4F" stroke="#8E4E1B" stroke-width="1"/><path d="M-9-9.5a5 5 0 1 1 10 0a3 3 0 1 1-6 0a1.4 1.4 0 1 1 2.8 0" fill="none" stroke="#8E4E1B" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="-7.5" cy="-14" rx="2.6" ry="1.4" fill="#fff" opacity=".5"/></g></g>
+<g id="bee" transform="translate(592,234)"><g class="beeFly"><g class="bw"><ellipse cx="-3" cy="-8" rx="6" ry="4" fill="#fff" opacity=".85" stroke="#9FB7C9" stroke-width=".8"/><ellipse cx="4" cy="-8" rx="6" ry="4" fill="#fff" opacity=".85" stroke="#9FB7C9" stroke-width=".8"/></g><ellipse rx="9" ry="6.5" fill="#FFC928" stroke="#3A2A00" stroke-width="1"/><path d="M-4-5.6V5.6M1-6.4V6.4M6-4.6V4.6" stroke="#3A2A00" stroke-width="2.4"/><circle cx="-9" cy="-1" r="3.7" fill="#3A2A00"/><circle cx="-10.2" cy="-2" r=".9" fill="#fff"/><path d="M-10-4.5q-2-4-5-5M-8-5q0-4 2-6" stroke="#3A2A00" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M9 .5l4 1" stroke="#3A2A00" stroke-width="1.4" stroke-linecap="round"/></g></g>
+
+<!-- the butterfly -->
+<g transform="translate(688,330)"><g class="bfly">
+  <g class="wl"><ellipse cx="-8" cy="-5" rx="9" ry="12" fill="#F06FA8" opacity=".92"/><ellipse cx="-7" cy="6" rx="5.5" ry="7" fill="#F8A8CC" opacity=".92"/></g>
+  <g class="wr"><ellipse cx="8" cy="-5" rx="9" ry="12" fill="#C77DFF" opacity=".92"/><ellipse cx="7" cy="6" rx="5.5" ry="7" fill="#DDC2FF" opacity=".92"/></g>
+  <rect x="-1.8" y="-11" width="3.6" height="22" rx="1.8" fill="#5C2563"/>
+  <path d="M-2 -11 Q-6 -18 -9 -19 M2 -11 Q6 -18 9 -19" stroke="#5C2563" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+</g></g>
+
+<!-- sparkles when the fruit is ready -->
+<g id="spk">
+  <g transform="translate(408,246)"><path class="spk2" d="M0-13L3.2-3.2L13 0L3.2 3.2L0 13L-3.2 3.2L-13 0L-3.2-3.2Z" fill="#FFF212" stroke="#E0B800" stroke-width="1.5"/></g>
+  <g transform="translate(606,300)"><path class="spk2" d="M0-11L2.7-2.7L11 0L2.7 2.7L0 11L-2.7 2.7L-11 0L-2.7-2.7Z" fill="#FFF212" stroke="#E0B800" stroke-width="1.5"/></g>
+  <g transform="translate(560,170)"><path class="spk2" d="M0-9L2.2-2.2L9 0L2.2 2.2L0 9L-2.2 2.2L-9 0L-2.2-2.2Z" fill="#FFF212" stroke="#E0B800" stroke-width="1.5"/></g>
+</g>
+<!-- foreground grass -->
+<g fill="#5FA845"><g transform="translate(262,664)"><g class="tuft"><path d="M-8 0l3-18 3 18zM-1 0l3-22 3 22zM6 0l3-15 3 15z"/></g></g><g transform="translate(338,668) scale(.9)"><g class="tuft t2"><path d="M-8 0l3-18 3 18zM-1 0l3-22 3 22zM6 0l3-15 3 15z"/></g></g><g transform="translate(468,670)"><g class="tuft t3"><path d="M-8 0l3-18 3 18zM-1 0l3-22 3 22zM6 0l3-15 3 15z"/></g></g><g transform="translate(588,668) scale(.9)"><g class="tuft"><path d="M-8 0l3-18 3 18zM-1 0l3-22 3 22zM6 0l3-15 3 15z"/></g></g><g transform="translate(760,670)"><g class="tuft t2"><path d="M-8 0l3-18 3 18zM-1 0l3-22 3 22zM6 0l3-15 3 15z"/></g></g><g transform="translate(944,662) scale(.85)"><g class="tuft t3"><path d="M-8 0l3-18 3 18zM-1 0l3-22 3 22zM6 0l3-15 3 15z"/></g></g><g transform="translate(40,660) scale(.8)"><g class="tuft t2"><path d="M-8 0l3-18 3 18zM-1 0l3-22 3 22zM6 0l3-15 3 15z"/></g></g><g transform="translate(880,672) scale(.75)"><g class="tuft"><path d="M-8 0l3-18 3 18zM-1 0l3-22 3 22zM6 0l3-15 3 15z"/></g></g></g>
+</svg>
+        <div class="fx-light" aria-hidden="true"></div>
+        <div class="pstrip" id="pstrip" role="button" tabindex="0" title="Tap to hear the question again" aria-label="The steps so far"></div>
+        <div class="sr-live" id="live" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+  <aside class="col rightcol">
+    <div class="card optcard">
+      <h2 class="card-title" id="optTitle">What comes next?</h2>
+      <div class="opts" id="opts">
+        <button class="opt" data-c="sprout" data-slot="0" aria-label="Sprout"><span class="lens ic sprout"><i>🌱</i></span><b>Sprout</b></button>
+        <button class="opt" data-c="small" data-slot="1" aria-label="Small Plant"><span class="lens ic small"><i>🪴</i></span><b>Small Plant</b></button>
+        <button class="opt" data-c="flower" data-slot="2" aria-label="Flower"><span class="lens ic flower"><i>🌼</i></span><b>Flower</b></button>
+        <button class="opt" data-c="fruit" data-slot="3" aria-label="Fruit"><span class="lens ic fruit"><i>🍅</i></span><b>Fruit</b></button>
+      </div>
+      <div class="legend" id="legend"><span class="rule">Order : Seed - Sprout - Small Plant - Flower - Fruit</span></div>
+      <div class="sig-status" id="sigStatus">A pot full of <b>soil</b> is ready.</div>
+    </div>
+    <div class="card ctrl">
+      <h2 class="card-title">Controls</h2>
+      <div class="conn"><span class="dot" id="dot"></span><span id="connLabel">Simulation mode</span></div>
+      <button class="btn btn-pink attn" id="connBtn" title="Use the real LEDs and IR sensor from your Smart Block kit"><i class="pulse" aria-hidden="true"></i><span id="connTxt">🔌 Connect Arduino</span></button>
+      <div class="control-pair">
+        <button class="btn btn-hear" id="hearBtn" title="Hear the question again"><svg class="spk" viewBox="0 0 32 28" aria-hidden="true"><path d="M3 10.5h6.2L16 4.6v18.8l-6.8-5.9H3z" fill="#E3C8E8" stroke="#C9A8D2" stroke-width="1.2" stroke-linejoin="round"/><path d="M20 9.2a6.2 6.2 0 0 1 0 9.6" fill="none" stroke="#2AA5E6" stroke-width="2.4" stroke-linecap="round"/><path d="M23.6 5.6a11.2 11.2 0 0 1 0 16.8" fill="none" stroke="#2AA5E6" stroke-width="2.4" stroke-linecap="round"/></svg><span>Hear the question</span></button>
+        <button class="btn btn-ir attn" id="irBtn" title="Plant the seed. (With the kit connected, the IR sensor does this.)"><i class="pulse" aria-hidden="true"></i><span class="irdot" aria-hidden="true"></span><span id="irTxt">🌱 Plant the seed</span></button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div class="final" id="final">
+  <div class="final-box">
+    <div class="trophy" id="fi"></div>
+    <h2 id="fh">Well done!</h2>
+    <div class="tally"><span id="fs">0</span><small id="ftotal"> / 5</small></div>
+    <p id="fmsg"></p>
+    <button class="again" id="restart">Play again ↻</button>
+  </div>
+</div>
+
+<div class="ov" id="ov">
+  <div class="ov-box task-in">
+    <div class="ov-icons">
+      <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><ellipse cx="50" cy="89" rx="34" ry="4" fill="#161016" opacity=".16"/><text x="50" y="78" font-size="74" text-anchor="middle">🌰</text></svg>
+      <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><ellipse cx="50" cy="89" rx="34" ry="4" fill="#161016" opacity=".16"/><text x="50" y="78" font-size="74" text-anchor="middle">🌼</text></svg>
+    </div>
+    <h2>Plant <b>Growth</b></h2>
+    <p id="ovSub">Plant the seed and say what happens next</p>
+        <button class="ov-start" id="start"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>Let's Grow!</button>
+  </div>
+</div>
+<script>
+
+/* ===================== SMART BLOCK · PLANT GROWTH =====================
+   Five steps, one real-life sequence the child learns to predict:
+
+        🌰 Seed → 🌱 Sprout → 🪴 Small Plant → 🌼 Flower → 🍅 Fruit
+
+   Step 1 plants the seed (IR sensor sees a hand / the 🌱 Plant the seed
+   button); the seed appears and sinks into the soil. Steps 2–5 ask
+   "what happens next?" and the plant on screen shows what the child chose.
+   Every game grows a different plant (tomato, strawberry, brinjal, chilli,
+   lemon or orange): the stake in the pot names it, the flower and the fruit
+   on screen, on the option tiles and in the strip all match.
+   The kit is optional. Arduino (Uno / Nano, 9600 baud), IR sensor on D2,
+   LEDs on D7 / D8 / D9:
+     board → page : "DETECTED"   (IR sensor sees a hand / object)
+     page → board : P seed=D7 · S sprout=D8 · G small plant=D9 ·
+                    F flower=D7+D8 · T fruit=D7+D9 · O all off          */
+'use strict';
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const motion=matchMedia('(prefers-reduced-motion: reduce)');
+const NS='http://www.w3.org/2000/svg';
+const easeOutCubic=t=>1-Math.pow(1-t,3);
+
+
+const TOTAL=5;
+const CH={off:'O',seed:'P',sprout:'S',small:'G',flower:'F',fruit:'T'};   /* letter → LED combo on the board: P=D7 · S=D8 · G=D9 · F=D7+D8 · T=D7+D9 · O=off */
+const FLOW=['seed','sprout','small','flower','fruit'], ORDER=['sprout','small','flower','fruit'];
+const CYCLE_TEXT='Order : Seed - Sprout - Small Plant - Flower - Fruit';
+const n={stage:$('stage'),banner:$('banner'),status:$('sigStatus'),opts:$('opts'),live:$('live'),strip:$('pstrip'),optTitle:$('optTitle')};
+/* the banner is a flex box on phones (vertical centring) - one inline wrapper keeps the spaces between its words */
+const setBanner=h=>{n.banner.innerHTML='<span class="bt">'+h+'</span>';};
+const optEls=[...document.querySelectorAll('.opt')];
+/* ---------- the order of the four choices ----------
+   The very first game on this device shows them in growing order - a worked example.
+   Every game after that (a refresh, or Play again) deals them out at random, so the
+   child has to know what comes next rather than read it off the tiles.            */
+const GROW_ORDER=['sprout','small','flower','fruit'];
+let optOrder=GROW_ORDER.slice();                  /* which answer sits in slot 0..3 */
+const playedBefore=()=>{try{return localStorage.getItem('pg-played')==='1';}catch(e){return false;}};
+const markPlayed=()=>{try{localStorage.setItem('pg-played','1');}catch(e){}};
+function dealOptions(shuffle){
+  let order=GROW_ORDER.slice();
+  if(shuffle){
+    let last=optOrder.join(',');try{last=localStorage.getItem('pg-order')||last;}catch(e){}   /* last game's order, even across a refresh */
+    let guard=0;
+    do{                                            /* Fisher-Yates; never the textbook order, never the same deal twice running */
+      for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+    }while((order.join(',')===GROW_ORDER.join(',')||order.join(',')===last)&&++guard<40);
+    try{localStorage.setItem('pg-order',order.join(','));}catch(e){}
+  }
+  optOrder=order;
+  order.forEach((c,i)=>{const b=optEls.find(x=>x.dataset.c===c);b.dataset.slot=i;n.opts.appendChild(b);});   /* DOM order = visual order (tab order, screen readers) */
+}
+let round=0,score=0,tries=0,phase='intro',started=false,justDone=-1,epoch=0,timers=[],audio=null,speech=null,light='off',stripDone=0,stripPop=-1;
+let lastSay='A pot full of soil is ready for a seed.';
+function later(fn,ms){const e=epoch;const id=setTimeout(()=>{if(e===epoch)fn();},ms);timers.push(id);return id;}
+function clearTimers(){timers.forEach(clearTimeout);timers=[];}
+/* ---------- sound ---------- */
+function ctx(){
+  try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();
+    if(audio.state==='suspended')audio.resume();}catch(e){audio=null;}
+  return audio;
+}
+function tone(freq,duration=.12,delay=0,type='sine',vol=.06){
+  const a=ctx();if(!a)return;
+  try{
+    const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+delay;
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol,t+.015);
+    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+duration+.03);
+  }catch(e){}
+}
+function sweep(f0,f1,duration,type='sawtooth',vol=.035,delay=0){
+  const a=ctx();if(!a)return;
+  try{
+    const o=a.createOscillator(),g=a.createGain(),lp=a.createBiquadFilter(),t=a.currentTime+delay;
+    o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+duration);
+    lp.type='lowpass';lp.frequency.value=900;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.08);
+    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    o.connect(lp);lp.connect(g);g.connect(a.destination);o.start(t);o.stop(t+duration+.05);
+  }catch(e){}
+}
+const rightSnd=()=>{tone(523,.16,0,'triangle',.1);tone(659,.16,.12,'triangle',.1);tone(784,.3,.24,'triangle',.12);};
+const wrongSnd=()=>{tone(250,.2,0,'sawtooth',.06);tone(220,.3,.2,'sawtooth',.06);};
+const clickSnd=()=>{tone(1500,.03,0,'square',.025);tone(950,.05,.035,'square',.02);};
+const waterSnd=()=>{for(let i=0;i<7;i++)tone(1500+Math.random()*1000,.05,.74+i*.09,'sine',.028);sweep(700,420,.7,'sine',.02,.7);};
+function cheerSnd(){
+  tone(523,.3,0,'triangle',.075);tone(659,.3,.14,'triangle',.075);tone(784,.34,.28,'triangle',.08);
+  tone(1047,.5,.44,'triangle',.085);tone(1319,.44,.6,'sine',.05);
+}
+
+/* ---------- speech: read on arrival; tap the banner (or press H) to hear it again ---------- */
+function stopSpeech(){
+  if(speech){speech.onend=speech.onerror=null;speech=null;}
+  if('speechSynthesis' in window)try{speechSynthesis.cancel();}catch(e){}
+}
+function speak(text){
+  if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window))return;
+  stopSpeech();
+  const u=new SpeechSynthesisUtterance(text);
+  speech=u;u.lang='en';u.rate=.9;u.pitch=1.08;
+  u.onend=u.onerror=()=>{if(speech===u)speech=null;};
+  try{speechSynthesis.resume();speechSynthesis.speak(u);}catch(e){}
+}
+function announce(t){n.live.textContent='';setTimeout(()=>{n.live.textContent=t;},30);}
+
+/* ---------- small animation helpers ---------- */
+function pop(el,frames,dur){
+  if(!el||motion.matches||!el.animate)return;
+  try{el.animate(frames,{duration:dur,easing:'cubic-bezier(.22,1,.36,1)'});}catch(e){}
+}
+function confetti(count){
+  if(motion.matches)return;
+  const shell=document.createElement('div');shell.className='confetti';
+  const colors=['#83358C','#F01A8C','#FFF212','#2FBF6D','#70CDF0'];
+  for(let i=0;i<count;i++){
+    const s=document.createElement('i');
+    s.style.left=Math.random()*100+'vw';
+    s.style.background=colors[i%colors.length];
+    s.style.animation=`cf${i%3} ${1.5+Math.random()*.7}s linear ${Math.random()*.3}s forwards`;
+    shell.appendChild(s);
+  }
+  const st=document.createElement('style');
+  st.textContent='@keyframes cf0{to{transform:translate3d(0,105vh,0) rotate(720deg);opacity:.9}}'+
+    '@keyframes cf1{to{transform:translate3d(0,105vh,0) rotate(-540deg);opacity:.9}}'+
+    '@keyframes cf2{to{transform:translate3d(0,105vh,0) rotate(360deg);opacity:.9}}';
+  shell.appendChild(st);document.body.appendChild(shell);
+  setTimeout(()=>shell.remove(),2400);
+}
+
+const TIC_OK='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#2FBF6D"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const TIC_AGAIN='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#FFC21A"/><circle cx="12" cy="12" r="11" fill="none" stroke="#E0A400" stroke-width="1.2"/><path d="M9.2 9.3a2.9 2.9 0 1 1 3.9 2.7c-.8.4-1.1.9-1.1 1.7v.5" fill="none" stroke="#5C2563" stroke-width="2.3" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.4" fill="#5C2563"/></svg>';
+function toast(kind,title){
+  n.stage.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div');
+  t.className='toast'+(kind==='again'?' again':'');
+  t.innerHTML=`<span class="tic">${kind==='again'?TIC_AGAIN:TIC_OK}</span><b>${title}</b>`;
+  n.stage.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),320);},1100);
+}
+
+
+const SFX={
+  seed:()=>{sweep(600,180,.4,'sine',.05);tone(180,.16,.32,'triangle',.08);},
+  sprout:()=>{tone(392,.14,0,'triangle',.08);tone(523,.2,.12,'triangle',.08);},
+  small:()=>{tone(523,.14,0,'triangle',.08);tone(587,.14,.11,'triangle',.08);tone(659,.22,.22,'triangle',.09);},
+  flower:()=>{tone(880,.16,0,'sine',.07);tone(1175,.16,.12,'sine',.06);tone(1568,.3,.24,'sine',.06);},
+  fruit:()=>{tone(659,.14,0,'triangle',.09);tone(784,.14,.12,'triangle',.09);tone(1047,.34,.24,'triangle',.1);}
+};
+const ASK={
+  seed:    {banner:'Press <b>🌱 Plant the seed</b> to plant the seed',status:'A pot full of <b>soil</b> is ready.',say:'Press the Plant the seed button to plant the seed.'},
+  seedKit: {banner:'Wave your <b>hand</b> over the sensor',status:'A pot full of <b>soil</b> is ready.',say:'Wave your hand over the sensor.'},
+  sprout:  {banner:'We planted a <b>seed</b>. What happens next?',status:'The seed is sleeping <b>in the soil</b>.',say:'We planted a seed. What happens next?'},
+  small:   {banner:'A tiny <b>sprout</b> has appeared. What happens next?',status:'The sprout drinks water and <b>grows</b>.',say:'A tiny sprout has appeared. What happens next?'},
+  flower:  {banner:'The plant has <b>grown bigger</b>. What happens next?',status:'The small plant grows tall <b>green leaves</b>.',say:'The plant has grown bigger. What happens next?'},
+  fruit:   {banner:'The plant has a <b>flower</b>. What might grow next?',status:'The flower is open, <b>bright and yellow</b>.',say:'The plant has a flower. What might grow next?'}
+};
+const HINT={
+  sprout:'Not yet! After the seed is planted, a tiny sprout comes out of the soil. Choose Sprout.',
+  small:'Not yet! After the sprout, the plant grows bigger. Choose Small Plant.',
+  flower:'Not yet! A big plant makes a flower. Choose Flower.',
+  fruit:'Not yet! After the flower, fruit can grow. Choose Fruit.'
+};
+const OK={
+  sprout:{b:'Correct! <b>Sprout</b> — a tiny green shoot!',s:'Yes! A sprout comes next.',t:'The sprout pushes up <b>out of the soil</b>.'},
+  small:{b:'Correct! <b>Small Plant</b> — it keeps growing!',s:'Yes! A small plant comes next.',t:'Leaves grow, the stem gets <b>taller</b>.'},
+  flower:{b:'Correct! <b>Flower</b> — it opens!',s:'Yes! A flower comes next.',t:'The flower is open, <b>bright and yellow</b>.'},
+  fruit:{b:'Great! You predicted the whole plant journey!',s:'Great! Fruit comes next.',t:'Juicy <b>tomatoes</b> grow on the plant!'}
+};
+const CHIPS=['🌰','🌱','🪴','🌼','🍅'];   /* the flower and fruit chips are replaced per variety */
+
+/* ---------- every game grows a different plant ----------
+   One kind is picked when the garden is set up and again on Play again — never the
+   same one twice running — so the flower and the fruit are a small surprise each time.
+   A kind knows its flower (petal shape, count, colours) and its fruit (shape, colours);
+   the stake in the pot tells the child which seed went in.                         */
+const PETAL={
+  star:'M0 -3C-8 -10 -11 -28 0 -46C11 -28 8 -10 0 -3Z',
+  round:'M0 -3C-13 -7 -16 -30 -4 -44Q0 -47 4 -44C16 -30 13 -7 0 -3Z',
+  slim:'M0 -3C-6 -8 -8 -28 0 -42C8 -28 6 -8 0 -3Z'
+};
+const VARIETIES=[
+  {id:'tomato',name:'Tomato',plural:'tomatoes',emoji:'🍅',petal:'star',petals:6,hs:.86,
+   pc:['#FFF9D0','#FFD63A','#F2A900'],ps:'#D99500',cc:['#FFC94A','#E08A00'],cs:'#B36B00',dots:'#8A5200',
+   fc:['#FFD9C9','#FF7A5C','#E5341B','#8E1206'],fs:'#A81410',fruit:'tomato',fk:1,dy:0,
+   word:'bright and yellow',line:'Juicy red <b>tomatoes</b> grow on the plant!',glow:'255,45,45',fglow:'255,196,0',
+   lens:['#FFE3DC','#FF6A5A','#E0281E','#7E0A08']},
+  {id:'strawberry',name:'Strawberry',plural:'strawberries',emoji:'🍓',petal:'round',petals:5,hs:1,
+   pc:['#FFFFFF','#FFF8F0','#F0DCC4'],ps:'#E3C9A2',cc:['#FFE066','#E7A800'],cs:'#C68A00',dots:'#A86D00',
+   fc:['#FFD6D0','#FF6A6A','#E3202C','#8B0A14'],fs:'#A3101C',fruit:'strawberry',fk:1.18,dy:8,
+   word:'white and pretty',line:'Sweet red <b>strawberries</b> grow on the plant!',glow:'227,32,44',fglow:'255,196,0',
+   lens:['#FFE0E0','#FF6A6A','#E3202C','#7A0810']},
+  {id:'brinjal',name:'Brinjal',plural:'brinjals',emoji:'🍆',petal:'star',petals:5,hs:1,
+   pc:['#F1DDFF','#B57BE6','#7B3FB8'],ps:'#6A2FA8',cc:['#FFE066','#E7A800'],cs:'#C68A00',dots:'#8E5A00',
+   fc:['#E6BDFF','#9A4BDD','#4E1B86','#250840'],fs:'#2E0F50',fruit:'brinjal',fk:1.12,dy:10,
+   word:'soft purple',line:'Shiny purple <b>brinjals</b> grow on the plant!',glow:'120,48,190',fglow:'181,123,230',
+   lens:['#EED6FF','#A86AE6','#5E2AA0','#2A0A45']},
+  {id:'chilli',name:'Chilli',plural:'chillies',emoji:'🌶️',petal:'slim',petals:6,hs:.78,
+   pc:['#FFFFFF','#FBFBF2','#E4E4CE'],ps:'#CBCBB2',cc:['#F2F7D8','#A9C45A'],cs:'#7F9B3A',dots:'#6E3FA0',
+   fc:['#FFC9BD','#FF6D4D','#D7261A','#6E0804'],fs:'#8F120B',fruit:'chilli',fk:1.18,dy:10,
+   word:'small and white',line:'Hot red <b>chillies</b> grow on the plant!',glow:'215,38,26',fglow:'255,196,0',
+   lens:['#FFE0D8','#FF6D4D','#D7261A','#6E0804']},
+  {id:'lemon',name:'Lemon',plural:'lemons',emoji:'🍋',petal:'round',petals:5,hs:.94,
+   pc:['#FFFFFF','#FFF9F2','#F1D9CA'],ps:'#E2C2AE',cc:['#FFE97A','#F0B400'],cs:'#C68A00',dots:'#A86D00',
+   fc:['#FFFBD0','#FFEB4D','#F2C300','#8F6E00'],fs:'#A88400',fruit:'lemon',fk:1.12,dy:10,
+   word:'white and sweet-smelling',line:'Sour yellow <b>lemons</b> grow on the plant!',glow:'242,195,0',fglow:'255,196,0',
+   lens:['#FFFBE0','#FFE94A','#F2C300','#8A6A00']},
+  {id:'orange',name:'Orange',plural:'oranges',emoji:'🍊',petal:'round',petals:5,hs:.94,
+   pc:['#FFFFFF','#FFFBF4','#F0E0C4'],ps:'#DFCBA4',cc:['#FFE066','#E7A800'],cs:'#C68A00',dots:'#A86D00',
+   fc:['#FFE6B8','#FFAE3D','#F27A00','#8F4300'],fs:'#B55A00',fruit:'orange',fk:1.06,dy:6,
+   word:'white and sweet-smelling',line:'Juicy <b>oranges</b> grow on the plant!',glow:'242,122,0',fglow:'255,196,0',
+   lens:['#FFEBD0','#FFAE3D','#F27A00','#7E3A00']}
+];
+const FPOS=[[447,398,1],[552,368,.92],[486,318,.82]];   /* where the side blooms open and the fruit hangs */
+const BIG=1.12;   /* the flower heads and the fruit are drawn 12% larger than the base art */
+let V=VARIETIES[0];
+/* a ring of petals; with cls the petals get the opening transition */
+function petalRing(v,N,cls){
+  let s='';
+  for(let i=0;i<N;i++)s+=`<g class="pw" transform="rotate(${(i*360/N).toFixed(1)})"><path${cls?' class="petal"':''} d="${PETAL[v.petal]}" fill="url(#vPetal)" stroke="${v.ps}" stroke-width="1"/></g>`;
+  return s;
+}
+function headMarkup(v){
+  const r=v.petal==='slim'?9:14;
+  return `<g transform="scale(${(v.hs*BIG).toFixed(3)})">${petalRing(v,v.petals,true)}`+
+    `<circle class="fcenter" r="${r}" fill="url(#vCenter)" stroke="${v.cs}" stroke-width="2"/>`+
+    `<g class="fcenter" fill="${v.dots}" opacity=".75"><circle cx="-5" cy="-3" r="1.6"/><circle cx="4" cy="-5" r="1.6"/><circle cx="6" cy="4" r="1.6"/><circle cx="-3" cy="6" r="1.6"/><circle cx="0" cy="0" r="1.6"/></g></g>`;
+}
+function flowerIcon(v){
+  return `<svg viewBox="-50 -50 100 100" aria-hidden="true" focusable="false">${petalRing(v,v.petals,false)}<circle r="${v.petal==='slim'?10:14}" fill="url(#vCenter)" stroke="${v.cs}" stroke-width="2"/></svg>`;
+}
+/* one fruit, drawn around (0,0) with its stalk at the top. Ripe fruit carries a green
+   copy of itself on top that fades away — so it ripens on screen. */
+function fruitMarkup(v,ripe){
+  const G=ripe?'url(#vFruit)':'url(#unripeG)';
+  const body=(tag,attrs)=>`<${tag} ${attrs} fill="${G}" stroke="${v.fs}" stroke-width="1.2"/>`+(ripe?`<${tag} class="unripe" ${attrs} fill="url(#unripeG)"/>`:'');
+  const stalk=(d,w=3,c='#3E8530')=>`<path d="${d}" stroke="${c}" stroke-width="${w}" fill="none" stroke-linecap="round"/>`;
+  const cap='#3E9B3E';
+  switch(v.fruit){
+    case 'strawberry':
+      return stalk('M0 -12V-21')+body('path','d="M0 17C-12 10-16-3-11-10C-6-16-2-13 0-11C2-13 6-16 11-10C16-3 12 10 0 17Z"')+
+        `<g fill="#FFE27A" stroke="#C9A200" stroke-width=".4"><ellipse cx="-5" cy="-2" rx="1.3" ry="1.9"/><ellipse cx="4" cy="-4" rx="1.3" ry="1.9"/><ellipse cx="0" cy="4" rx="1.3" ry="1.9"/><ellipse cx="-6" cy="6" rx="1.2" ry="1.7"/><ellipse cx="6" cy="5" rx="1.2" ry="1.7"/><ellipse cx="-1" cy="11" rx="1.1" ry="1.5"/></g>`+
+        `<ellipse cx="-5" cy="-5" rx="3" ry="2" fill="#fff" opacity=".4"/><path d="M-10 -11L-5 -16 0 -12 5 -16 10 -11 5 -7 0 -9-5 -7Z" fill="${cap}"/>`;
+    case 'brinjal':
+      return stalk('M0 -16V-25',3.4,'#4A9A3E')+body('path','d="M0 -14C9 -14 12 -2 11 8C10 16 5 20 0 20C-5 20 -10 16 -11 8C-12 -2 -9 -14 0 -14Z"')+
+        `<path d="M-6 -6C-8 0 -8 8 -5 13" stroke="#fff" stroke-width="2.6" opacity=".3" fill="none" stroke-linecap="round"/><path d="M-10 -10C-7 -17 -3 -19 0 -15C3 -19 7 -17 10 -10L5 -7 0 -9-5 -7Z" fill="#4A9A3E"/>`;
+    case 'chilli':
+      return stalk('M-1 -14C-1 -19-3 -22-6 -24',2.5)+body('path','d="M-2 -14C8 -12 12 2 7 13C5 18 1 22-3 20C-1 15-4 6-6-2C-7-8-6-13-2-14Z"')+
+        `<path d="M3 -8C7 -2 7 6 4 12" stroke="#fff" stroke-width="2" opacity=".35" fill="none" stroke-linecap="round"/><path d="M-6 -13C-4 -16 2 -16 4 -13L1 -11-3 -11Z" fill="${cap}"/>`;
+    case 'lemon':
+      return stalk('M0 -11V-19',2.6,'#6B4A2B')+`<g transform="rotate(-18)">`+body('circle','cx="16" cy="0" r="3.2"')+body('circle','cx="-16" cy="0" r="2.6"')+body('ellipse','rx="15" ry="11"')+
+        `<g fill="#B88A00" opacity=".25"><circle cx="-6" cy="-3" r="1"/><circle cx="2" cy="-5" r="1"/><circle cx="6" cy="2" r="1"/><circle cx="-3" cy="4" r="1"/><circle cx="0" cy="0" r="1"/></g><ellipse cx="-5" cy="-4" rx="4" ry="2.2" fill="#fff" opacity=".4"/></g>`+
+        `<path d="M0 -12C6 -22 15 -21 13 -12C8 -8 3 -9 0 -12Z" fill="${cap}"/>`;
+    case 'orange':
+      return stalk('M0 -14V-21',2.6,'#6B4A2B')+body('circle','r="15.5"')+
+        `<g fill="#C25C00" opacity=".22"><circle cx="-6" cy="-4" r="1"/><circle cx="3" cy="-7" r="1"/><circle cx="8" cy="1" r="1"/><circle cx="-8" cy="5" r="1"/><circle cx="0" cy="9" r="1"/><circle cx="-1" cy="1" r="1"/></g><circle cx="1" cy="7" r="1.8" fill="#C25C00" opacity=".5"/>`+
+        `<ellipse cx="-5.5" cy="-6" rx="4.6" ry="3" fill="#fff" opacity=".45"/><path d="M1 -14C6 -24 15 -22 13 -13C8 -9 3 -10 1 -14Z" fill="${cap}"/>`;
+    default: /* tomato */
+      return stalk('M0 -22V-15')+body('circle','r="16.5"')+
+        `<ellipse cx="-5.5" cy="-6" rx="4.6" ry="3" fill="#fff" opacity=".5"/><path d="M-9 -13L-3 -17 0 -13 3 -17 9 -13 3 -10-3 -10Z" fill="#2F7D32"/>`;
+  }
+}
+function applyVariety(v){
+  V=v;
+  $('vGrads').innerHTML=
+    `<radialGradient id="vPetal" cx="46%" cy="34%" r="75%"><stop offset="0" stop-color="${v.pc[0]}"/><stop offset=".6" stop-color="${v.pc[1]}"/><stop offset="1" stop-color="${v.pc[2]}"/></radialGradient>`+
+    `<radialGradient id="vCenter" cx="42%" cy="38%" r="70%"><stop offset="0" stop-color="${v.cc[0]}"/><stop offset="1" stop-color="${v.cc[1]}"/></radialGradient>`+
+    `<radialGradient id="vFruit" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="${v.fc[0]}"/><stop offset=".3" stop-color="${v.fc[1]}"/><stop offset=".72" stop-color="${v.fc[2]}"/><stop offset="1" stop-color="${v.fc[3]}"/></radialGradient>`;
+  $('fhead').innerHTML=headMarkup(v);
+  $('sblooms').innerHTML=FPOS.map(([x,y,k],i)=>`<g transform="translate(${x},${y+v.dy-4})"><g class="sbloom s${i+1}"><g transform="scale(${(.4*k*BIG).toFixed(3)})">${petalRing(v,5,false)}<circle r="13" fill="url(#vCenter)" stroke="${v.cs}" stroke-width="2"/></g></g></g>`).join('');
+  $('g-fruit').innerHTML=FPOS.map(([x,y,k],i)=>`<g transform="translate(${x},${y+v.dy})"><g class="frtSw sw${i+1}"><g class="frt f${i+1}"><g transform="scale(${(k*v.fk*BIG).toFixed(3)})">${fruitMarkup(v,!(v.fruit==='chilli'&&i===2))}</g></g></g></g>`).join('');
+  /* the stake, the strip and the two option tiles */
+  const t=$('stakeTxt');t.textContent=v.name;t.setAttribute('font-size',v.name.length>7?12:14.5);
+  CHIPS[3]=flowerIcon(v);CHIPS[4]=v.emoji;
+  const fl=document.querySelector('.lens.flower'),fr=document.querySelector('.lens.fruit');
+  if(fl)fl.innerHTML=flowerIcon(v);
+  if(fr){fr.innerHTML=`<i>${v.emoji}</i>`;fr.style.background=`radial-gradient(circle at 42% 36%,${v.lens[0]} 0%,${v.lens[1]} 38%,${v.lens[2]} 76%,${v.lens[3]} 100%)`;}
+  n.opts.style.setProperty('--fr',v.glow);n.opts.style.setProperty('--fg',v.fglow);
+  /* the words that name the flower and the fruit */
+  OK.flower.t=`The flower is open, <b>${v.word}</b>.`;ASK.fruit.status=OK.flower.t;
+  OK.fruit.t=v.line;OK.fruit.s=`Great! ${v.plural[0].toUpperCase()+v.plural.slice(1)} come next.`;
+}
+function pickVariety(){
+  let last=-1;try{last=parseInt(localStorage.getItem('pg-kind'),10);}catch(e){}
+  const pool=VARIETIES.map((_,i)=>i).filter(i=>i!==last);
+  const i=pool[Math.floor(Math.random()*pool.length)];
+  try{localStorage.setItem('pg-kind',String(i));}catch(e){}
+  applyVariety(VARIETIES[i]);
+}
+/* ---------- little garden moments ---------- */
+/* the watering can hops over, tips, and the sprout gets its drink */
+function waterPlant(){
+  const can=$('can'),scn=$('scene');if(!can||motion.matches)return;
+  can.classList.remove('pour','flow');void can.getBoundingClientRect();
+  can.classList.add('pour');waterSnd();
+  setTimeout(()=>{can.classList.add('flow');scn.classList.add('wet');},720);
+  setTimeout(()=>can.classList.remove('flow'),1420);
+  setTimeout(()=>can.classList.remove('pour'),2000);
+  setTimeout(()=>scn.classList.remove('wet'),5200);
+}
+/* the sun leans in while the small plant grows */
+function sunshine(){
+  const scn=$('scene');scn.classList.remove('shine');void scn.getBoundingClientRect();scn.classList.add('shine');
+  setTimeout(()=>scn.classList.remove('shine'),2500);
+}
+/* a puff of soil where the seed lands */
+function puffSoil(){
+  const p=$('soilPuff');if(!p||motion.matches)return;
+  p.classList.remove('go');void p.getBoundingClientRect();p.classList.add('go');
+  tone(140,.08,0,'triangle',.05);
+  setTimeout(()=>p.classList.remove('go'),900);
+}
+
+/* the plant: one attribute drives every picture and the kit LEDs */
+function setPlant(s){
+  $('scene').dataset.s=s;
+  light = s==='ready' ? 'off' : (s==='planted' ? 'seed' : s);
+  led(light);
+}
+function updateProgress(){
+  $('taskCount').textContent=`STEP ${Math.min(round+1,TOTAL)} / ${TOTAL}`;
+  $('progress').innerHTML=Array.from({length:TOTAL},(_,i)=>{
+    const done=i<round,cur=i===round;
+    return `<span class="dot ${done?'done':cur?'current':''}${i===justDone?' pop':''}" title="Step ${i+1}">${done?'✓':i+1}</span>`;
+  }).join('');
+  justDone=-1;
+}
+function resetOptions(){
+  optEls.forEach(b=>{b.classList.remove('used','right','nope','press');b.disabled=false;});
+  n.opts.classList.remove('solved','live');n.optTitle.textContent='What comes next?';
+}
+function renderStrip(){
+  n.strip.innerHTML=CHIPS.map((c,i)=>`<span class="chip ${i<stripDone?'done':''}${i===stripPop?' pop':''}">${c}</span>`).join('');
+  stripPop=-1;
+}
+function showAsk(k){
+  const a=(k==='seed'&&kitOn)?ASK.seedKit:ASK[k];
+  setBanner(a.banner);
+  pop(n.banner,[{transform:'scale(.96)',opacity:.55},{transform:'scale(1)',opacity:1}],320);
+  n.status.innerHTML=a.status;n.status.classList.remove('fs');void n.status.offsetWidth;n.status.classList.add('fs');
+  lastSay=a.say;later(()=>speak(lastSay),360);
+}
+function beginStep(){
+  epoch++;clearTimers();stopSpeech();
+  const k=FLOW[round];
+  tries=0;updateProgress();resetOptions();renderStrip();
+  $('irBtn').classList.toggle('attn',k==='seed'&&!kitOn);
+  n.opts.classList.remove('idle');
+  if(k==='seed'){phase='seedwait';n.opts.classList.add('idle');setPlant('ready');showAsk('seed');return;}
+  phase='ask';n.opts.classList.add('live');showAsk(k);
+}
+function nextStep(){
+  justDone=round;round++;
+  if(round>=TOTAL){finishGame();return;}
+  phase='between';later(beginStep,220);
+}
+function replayPattern(){stopSpeech();speak(lastSay);announce(lastSay);}
+
+/* seed planted: the IR sensor over the pot, or the 🌱 Plant the seed button / key P.
+   The gardener kid walks up to the pot, leans over and drops the seed into the soil. */
+function seedAnim(done){
+  const drop=$('seedDrop'),g=$('g-seed');
+  if(!drop||motion.matches||!drop.animate){if(g)g.style.opacity=0;done();return;}
+  g.style.opacity=1;                       /* appears at the kid's hand */
+  drop.animate([
+    {transform:'translate(0,0) rotate(0deg)',opacity:1,offset:0},
+    {transform:'translate(-42px,10px) rotate(24deg)',opacity:1,offset:.55},
+    {transform:'translate(-80px,28px) rotate(50deg)',opacity:0}
+  ],{duration:750,delay:800,easing:'cubic-bezier(.5,.05,.8,.6)',fill:'both'});
+  later(puffSoil,1520);                     /* the seed lands: a little puff of soil */
+  later(()=>{g.style.opacity=0;done();},1680);
+}
+function seedDetected(){
+  if(!started||phase!=='seedwait')return;
+  phase='react';stripDone=1;stripPop=0;renderStrip();
+  if(tries===0)score++;
+  $('irBtn').classList.remove('attn');
+  clickSnd();rightSnd();toast('ok','Seed planted!');
+  setBanner('The seed is sinking into the soil…');
+  const scn=$('scene');scn.classList.add('planting');
+  later(()=>scn.classList.remove('planting'),2500);
+  seedAnim(()=>setPlant('planted'));
+  speak('Seed planted.');announce('Seed planted.');
+  later(nextStep,2600);
+}
+function choose(c){
+  if(phase==='seedwait'){toast('again',kitOn?'Wave your hand over the sensor!':'Press 🌱 Plant the seed!');speak(kitOn?'Wave your hand over the sensor first.':'Press the Plant the seed button first.');return;}
+  if(phase!=='ask')return;
+  const btn=optEls.find(b=>b.dataset.c===c);
+  if(!btn||btn.classList.contains('used'))return;
+  const want=FLOW[round];
+  if(c!==want){
+    tries++;btn.classList.add('used','nope');btn.disabled=true;
+    setTimeout(()=>btn.classList.remove('nope'),560);wrongSnd();
+    const msg=ORDER.indexOf(c)<ORDER.indexOf(want)?'That one already happened. What comes after it?':HINT[want];
+    toast('again','Try again!');speak('Try again.');announce(msg);
+    return;
+  }
+  phase='react';
+  n.opts.classList.remove('live');n.opts.classList.add('solved');btn.classList.add('right');
+  stripDone=round+1;stripPop=round;renderStrip();
+  if(tries===0)score++;
+  clickSnd();rightSnd();toast('ok','Correct!');
+  setPlant(want);later(SFX[want],150);
+  if(want==='sprout')later(waterPlant,1150);           /* the can hops over to water the new sprout */
+  else if(want==='small')later(sunshine,500);          /* the sun leans in while it grows */
+  pop($('pot'),[{transform:'translateY(0)'},{transform:'translateY(-9px)'},{transform:'translateY(0)'}],420);
+  pop($('kid'),[{transform:'translateY(0)'},{transform:'translateY(-14px)'},{transform:'translateY(0)'}],420);
+  setBanner(OK[want].b);n.status.innerHTML=OK[want].t;
+  pop(n.banner,[{transform:'scale(.96)',opacity:.55},{transform:'scale(1)',opacity:1}],320);
+  speak(OK[want].s);announce(OK[want].s);
+  later(nextStep,want==='fruit'?4300:want==='small'?3100:2800);   /* fruit needs time to ripen on screen */
+}
+function finishGame(){
+  phase='done';stopSpeech();n.opts.classList.remove('live');
+  updateProgress();renderStrip();
+  $('fs').textContent=score;$('ftotal').textContent=' / '+TOTAL;
+  const perfect=score===TOTAL,great=score>=TOTAL-1;
+  setFinalIcon(perfect?'trophy':great?'medal':'star');
+  $('fh').textContent=perfect?'Perfect!':great?'Brilliant!':'Keep practising!';
+  $('fmsg').textContent=perfect?`Great! You grew a ${V.name.toLowerCase()} plant from a tiny seed!`:'Remember the order: seed, sprout, small plant, flower, then fruit.';
+  $('final').classList.add('show');
+  if(score>=TOTAL-1)confetti(perfect?130:70);
+  cheerSnd();$('restart').focus({preventScroll:true});
+}
+function resetWorld(){
+  round=0;score=0;justDone=-1;stripDone=0;stripPop=-1;
+  pickVariety();                                       /* a different flower and fruit this time */
+  dealOptions(true);                                   /* and the choices land in a new order */
+  $('can').classList.remove('pour','flow');$('scene').classList.remove('wet','shine','planting');
+  const g=$('g-seed');if(g)g.style.opacity=0;
+  setPlant('ready');
+  $('legend').innerHTML=`<span class="rule">${CYCLE_TEXT}</span>`;
+}
+function startGame(){
+  if(started)return;
+  started=true;markPlayed();$('start').disabled=true;$('ov').classList.add('hide');
+  setTimeout(()=>{$('ov').style.display='none';document.documentElement.classList.remove('intro');},380);
+  ctx();requestAnimationFrame(()=>requestAnimationFrame(beginStep));
+}
+function newGame(){
+  stopSpeech();$('final').classList.remove('show');
+  document.querySelectorAll('.confetti').forEach(e=>e.remove());
+  resetWorld();beginStep();
+}
+
+/* ---------- input ---------- */
+optEls.forEach(b=>{
+  b.addEventListener('pointerdown',()=>{if(n.opts.classList.contains('live')&&!b.disabled)b.classList.add('press');});
+  b.addEventListener('click',()=>choose(b.dataset.c));
+});
+const clearPress=()=>optEls.forEach(b=>b.classList.remove('press'));
+window.addEventListener('pointerup',clearPress,true);
+window.addEventListener('pointercancel',clearPress,true);
+n.banner.addEventListener('click',()=>{if(started)replayPattern();});
+n.strip.addEventListener('click',()=>{if(started)replayPattern();});
+$('irBtn').addEventListener('click',seedDetected);
+document.addEventListener('keydown',e=>{
+  if(e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;
+  const k=e.key.toLowerCase();
+  if(!started){if(k==='enter'||k===' '){e.preventDefault();startGame();}return;}
+  if($('final').classList.contains('show'))return;
+  if(k==='p'||k==='i')seedDetected();
+  else if(k>='1'&&k<='4')choose(optOrder[+k-1]);       /* 1-4 = the tile in that position */
+  else if(k==='s')choose('sprout');
+  else if(k==='g')choose('small');
+  else if(k==='f')choose('flower');
+  else if(k==='t')choose('fruit');
+  else if(k==='h'||k===' '){e.preventDefault();replayPattern();}
+});
+$('start').onclick=startGame;
+$('start').addEventListener('pointerdown',()=>{try{if(audio&&audio.state==='suspended')audio.resume();}catch(e){}},{once:true,passive:true});
+setTimeout(()=>{try{speechSynthesis.getVoices();}catch(e){}try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();}catch(e){}},1800);
+$('restart').onclick=newGame;
+const GOLD='<defs><linearGradient id="fGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF3B0"/>'+
+  '<stop offset=".45" stop-color="#FFC92E"/><stop offset="1" stop-color="#E09A00"/></linearGradient></defs>';
+const FIN_IC={
+  trophy:'<path d="M26 16h48v20q0 26-24 30q-24-4-24-30Z" fill="url(#fGold)" stroke="#C88E00" stroke-width="3"/>'+
+    '<path d="M24 18h-9q-5 0-5 6q0 16 14 19M76 18h9q5 0 5 6q0 16-14 19" fill="none" stroke="#C88E00" stroke-width="5" stroke-linecap="round"/>'+
+    '<rect x="43" y="65" width="14" height="12" fill="url(#fGold)" stroke="#C88E00" stroke-width="2.6"/>'+
+    '<rect x="30" y="77" width="40" height="12" rx="5" fill="url(#fGold)" stroke="#C88E00" stroke-width="2.6"/>'+
+    '<ellipse cx="40" cy="28" rx="6" ry="8" fill="#fff" opacity=".45"/>',
+  medal:'<path d="M34 6l13 24M66 6l-13 24" fill="none" stroke="#2F7FEE" stroke-width="9" stroke-linecap="round"/>'+
+    '<circle cx="50" cy="62" r="30" fill="url(#fGold)" stroke="#C88E00" stroke-width="3"/>'+
+    '<circle cx="50" cy="62" r="20" fill="none" stroke="#C88E00" stroke-width="2.4" opacity=".5"/>'+
+    '<path d="M50 50l4.4 9.2l10 1.4l-7.2 7l1.7 10l-8.9-4.7l-8.9 4.7l1.7-10l-7.2-7l10-1.4Z" fill="#fff" opacity=".6"/>',
+  star:'<path d="M50 7L63.5 37L95 40.5L71 62L78.8 93L50 76L21.2 93L29 62L5 40.5L36.5 37Z" fill="url(#fGold)" stroke="#C88E00" stroke-width="3" stroke-linejoin="round"/>'+
+    '<ellipse cx="41" cy="38" rx="7" ry="10" fill="#fff" opacity=".45"/>'
+};
+function setFinalIcon(name){$('fi').innerHTML=`<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">${GOLD}${FIN_IC[name]}</svg>`;}
+let port=null,writer=null,kitOn=false,connecting=false,disconnecting=false,serialToken=0;
+/* same flow as the rest of the series: guarded connect / disconnect, one UI painter */
+function connectionUI(){
+  const dot=$('dot'),lab=$('connLabel'),btn=$('connBtn'),txt=$('connTxt');
+  if(dot)dot.classList.toggle('on',kitOn);
+  if(lab)lab.textContent=connecting?'Connecting…':kitOn?'Arduino mode':'Simulation mode';
+  if(txt)txt.textContent=disconnecting?'Disconnecting…':connecting?'Connecting…':kitOn?'🔌 Disconnect':'🔌 Connect Arduino';
+  if(btn){btn.disabled=connecting||disconnecting;btn.classList.toggle('on',kitOn);}
+  n.opts.classList.toggle('kit',kitOn);
+  document.body.classList.toggle('kitmode',kitOn);          /* real IR sensor is in charge: the on-screen button steps aside */
+  if(typeof phase!=='undefined'&&phase==='seedwait'){
+    $('irBtn').classList.toggle('attn',!kitOn);
+    if(!connecting&&!disconnecting)showAsk('seed');
+  }
+}
+let reader=null;
+/* the board prints one word per line: DETECTED when its IR sensor sees a hand / object. */
+async function listenIR(rd,token){
+  const dec=new TextDecoder();let buf='';
+  try{
+    while(token===serialToken){
+      const {value,done}=await rd.read();
+      if(done)break;
+      if(!value)continue;
+      buf+=dec.decode(value,{stream:true});
+      let i;
+      while((i=buf.search(/[\r\n]/))>=0){
+        const line=buf.slice(0,i).trim().toUpperCase();
+        buf=buf.slice(i+1);
+        if(line.includes('DETECTED')||line==='HAND'||line==='SEED')seedDetected();   /* sketch prints DETECTED */
+      }
+      if(buf.length>64)buf=buf.slice(-16);
+    }
+  }catch(e){}
+}
+async function connectArduino(){
+  if(connecting||disconnecting)return;
+  if(!('serial' in navigator)){
+    alert('Web Serial needs desktop Chrome or Edge. Connect the Arduino and reopen this page there.');
+    return;
+  }
+  connecting=true;const token=++serialToken;connectionUI();
+  let selected=null;
+  try{
+    selected=await navigator.serial.requestPort();
+    await selected.open({baudRate:9600});
+    if(token!==serialToken){await selected.close();return;}
+    port=selected;writer=selected.writable.getWriter();kitOn=true;
+    reader=selected.readable.getReader();listenIR(reader,token);
+    $('connBtn').classList.remove('attn');
+    tone(659,.14,0,'sine',.06);tone(988,.2,.1,'sine',.06);
+    announce('Plant growth kit connected.');
+    connectionUI();
+    led('off');led(light);        /* start clean, then show the state the screen is showing */
+  }catch(e){
+    kitOn=false;port=null;writer=null;reader=null;
+    if(selected)try{await selected.close();}catch(err){}
+    connectionUI();
+  }finally{connecting=false;connectionUI();}
+}
+async function disconnectArduino(){
+  if(disconnecting)return;
+  disconnecting=true;serialToken++;
+  const w=writer,p=port,rd=reader;
+  try{if(w)await w.write(new TextEncoder().encode(CH.off));}catch(e){}   /* all LEDs off */
+  kitOn=false;writer=null;port=null;reader=null;connectionUI();
+  try{if(rd){await rd.cancel();rd.releaseLock();}}catch(e){}
+  try{if(w)w.releaseLock();}catch(e){}
+  try{if(p)await p.close();}catch(e){}
+  disconnecting=false;connectionUI();
+  announce('Arduino disconnected.');
+}
+$('connBtn').onclick=()=>kitOn?disconnectArduino():connectArduino();
+$('hearBtn').onclick=()=>{const b=$('hearBtn');stopSpeech();speak(lastSay);announce(lastSay);
+  b.classList.add('speaking');setTimeout(()=>b.classList.remove('speaking'),2600);};
+/* one letter per state: P seed · S sprout · G small plant · F flower · T fruit · O off */
+function led(c){
+  if(!kitOn||!writer||!CH[c])return;
+  try{ writer.write(new TextEncoder().encode(CH[c])).catch(()=>{}); }catch(e){}
+}
+if('serial' in navigator)navigator.serial.addEventListener?.('disconnect',()=>{if(kitOn)disconnectArduino();});
+
+window.addEventListener('beforeunload',()=>{try{writer&&writer.releaseLock();port&&port.close();}catch(e){}});
+
+
+
+/* ---------- layout mode (laptop vs touch auto-fit) ----------
+   Same auto-fit shell as the rest of the series: touch devices always auto-fit.
+   On top of that, any *small viewport* (resized desktop window, hybrid device,
+   projector split-screen…) also switches to the responsive auto-fit shell, so
+   the activity stays usable on models other than a full-size laptop. */
+const laptop=matchMedia('(any-hover:hover) and (any-pointer:fine)');
+const SCN=document.getElementById('scene'),STG=document.getElementById('stage');
+let fitFrame=null;
+function fitMode(){
+  /* portrait screens are tablet/phone-style use even when a keyboard is attached;
+     small landscape windows can't hold the laptop layout either */
+  const auto=!laptop.matches || innerWidth<980 || innerHeight<520 || innerWidth<innerHeight;
+  document.documentElement.dataset.layoutMode=auto?'auto-fit':'original-laptop';
+  if(auto){
+    /* phones & tablets: show the WHOLE garden (no cropping), centred; the sky / grass
+       backdrop is re-aligned so it always meets the scene's own horizon line */
+    SCN.setAttribute('preserveAspectRatio','xMidYMid meet');
+    const w=Math.max(1,STG.clientWidth),h=Math.max(1,STG.clientHeight);
+    const k=Math.min(w/1000,h/680),sh=680*k,fl=(h-sh)/2+sh*(460/680);
+    STG.style.setProperty('--fl',fl.toFixed(1)+'px');
+    STG.style.background='linear-gradient(#BFE4F8,#E8F5FD var(--fl),#94CC70 var(--fl),#6FA84A)';
+  }else{
+    SCN.setAttribute('preserveAspectRatio','xMidYMid slice');
+    STG.style.removeProperty('--fl');STG.style.background='';
+  }
+}
+function scheduleFit(){if(fitFrame!==null)return;fitFrame=requestAnimationFrame(()=>{fitFrame=null;fitMode();});}
+if(laptop.addEventListener)laptop.addEventListener('change',scheduleFit);else laptop.addListener?.(scheduleFit);
+if('ResizeObserver' in window)new ResizeObserver(scheduleFit).observe(STG);
+window.addEventListener('resize',scheduleFit,{passive:true});
+window.addEventListener('orientationchange',scheduleFit,{passive:true});
+fitMode();
+
+/* ---------- boot: pot of soil, waiting for the seed ---------- */
+pickVariety();dealOptions(playedBefore());updateProgress();renderStrip();setPlant('ready');
+n.status.innerHTML=ASK.seed.status;setBanner(ASK.seed.banner);lastSay=ASK.seed.say;
+
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a49773bbff4c4e87',t:'MTc5MTgyMjIzOA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
