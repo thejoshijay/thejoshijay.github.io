@@ -1,0 +1,1921 @@
+<!doctype html>
+<html class="intro" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fibre to Fabric · Smart Block</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#83358C;--pink:#F01A8C;--yellow:#FFF212;
+  --purple-deep:#5C2563;--pink-dk:#B01268;--yellow-dk:#D6C900;
+  --ink:#161016;--muted:#4A3A4D;--line:#E7D8EA;
+  --ok:#2FBF6D;--ok-deep:#1D7A45;--no:#E0433A;
+  --sig-red:#FF2D2D;--sig-yellow:#FFC400;--sig-green:#22D35A;
+  --font-display:'Fredoka','SB Display',Boulder,sans-serif;
+  --font-text:'Nunito','SB Text',Bariol,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+@supports (height:100dvh){
+  /* Use the visible phone/tablet viewport, not the larger area behind browser chrome.
+     --vvh is updated from visualViewport; 100dvh remains the built-in fallback. */
+  html[data-layout-mode="auto-fit"],html[data-layout-mode="auto-fit"] body{
+    height:100dvh;
+    height:min(100dvh,var(--vvh,100dvh));
+  }
+}
+body{background:#E6DCEB;overflow:hidden;display:flex;flex-direction:column;font-family:var(--font-text);color:var(--ink)}
+button{font:inherit;cursor:pointer}
+
+/* ===================== SHELL (the Distance Detective house layout) ===================== */
+.topbar{flex:0 0 auto;height:clamp(62px,8vh,76px);display:flex;align-items:center;gap:16px;
+  padding:8px clamp(12px,2vw,24px);border-bottom:3px solid var(--purple);background:var(--yellow)}
+.brand-logo{height:34px;width:auto}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(18px,2.8vh,26px);color:#5C2563}
+h1 b{color:var(--pink)}
+.layout{flex:1;min-height:0;display:grid;
+  grid-template-columns:minmax(0,3fr) minmax(340px,1fr);
+  gap:14px;padding:14px clamp(12px,2vw,24px)}
+@media(max-width:940px) and (orientation:portrait){
+  .layout{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+  /* a grid track defaulting to min-content is what held the cards at 418 px in a
+     390 px window: let every item shrink, and let the header row wrap if it must */
+  .col,.rightcol,.card{min-width:0}
+  .rightcol{grid-template-columns:minmax(0,1fr)}
+  .task-header{flex-wrap:wrap;row-gap:5px}
+  .progress{flex-wrap:wrap;justify-content:center}
+}
+.col{display:flex;flex-direction:column;gap:12px;min-height:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;
+  box-shadow:0 12px 25px -20px var(--purple-deep);min-height:0}
+.stage-card{flex:1;display:flex;flex-direction:column;padding:12px;min-height:0}
+.stage{position:relative;flex:1;min-height:200px;border-radius:15px;border:1px solid var(--line);overflow:hidden;
+  background:linear-gradient(#8FC6EC,#DDEFFA 33%,#9BCB72 33.2%,#7AB656)}
+.scene{width:100%;height:100%;display:block;overflow:visible}
+
+/* ---- task header + progress dots ---- */
+.task-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 6px 10px;flex-wrap:wrap;row-gap:6px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.eyebrow{font-family:var(--font-display);font-weight:700;font-size:10.5px;letter-spacing:.11em;color:var(--pink);text-transform:uppercase;white-space:nowrap}
+.progress{display:flex;gap:6px;flex:0 0 auto}
+/* the round dots are little glazed beads — the Pattern and Sequence finish */
+.progress .dot{position:relative;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;
+  color:#AE8FB8;border:1px solid #DCCAE4;font:700 11px var(--font-display);
+  text-shadow:0 1px 0 rgba(255,255,255,.85);
+  background:radial-gradient(115% 100% at 50% 0%,#FFFFFF 0%,#F8F1FC 46%,#E8DAF0 100%);
+  box-shadow:inset 0 2px 1px rgba(255,255,255,.97), inset 0 -2.5px 3px rgba(131,53,140,.13),
+             0 2px 0 rgba(92,37,99,.13), 0 5px 9px -5px rgba(92,37,99,.35);
+  transition:color .25s,border-color .25s,box-shadow .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+.progress .dot::after{content:"";position:absolute;left:17%;right:17%;top:9%;height:44%;border-radius:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,255,255,.10));pointer-events:none}
+.progress .dot.current{color:#fff;border-color:#D81C86;text-shadow:0 1px 1px rgba(150,10,80,.45);
+  background:radial-gradient(115% 105% at 50% 0%,#FF80C5 0%,var(--pink) 52%,#D6167F 100%);
+  box-shadow:inset 0 2px 1px rgba(255,255,255,.78), inset 0 -2.5px 3px rgba(140,8,72,.32),
+             0 3px 0 rgba(176,18,104,.42), 0 8px 13px -6px rgba(240,26,140,.70);
+  transform:scale(1.12)}
+.progress .dot.done{color:#188348;border-color:#79CAA0;text-shadow:0 1px 0 rgba(255,255,255,.9);
+  background:radial-gradient(115% 100% at 50% 0%,#FFFFFF 0%,#E5FAED 46%,#BDECCF 100%);
+  box-shadow:inset 0 2px 1px rgba(255,255,255,.97), inset 0 -2.5px 3px rgba(47,150,90,.17),
+             0 2px 0 rgba(47,150,90,.24), 0 5px 9px -5px rgba(47,150,90,.50)}
+.progress .dot.pop{animation:dotPop .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes dotPop{0%{transform:scale(1)}42%{transform:scale(1.5)}100%{transform:scale(1)}}
+
+/* ---- banner (tap it to hear the question again) ---- */
+.banner{margin:0 auto;flex:0 1 auto;min-width:0;background:#fff;border:3px solid var(--purple);
+  border-radius:18px;padding:4px 18px;font:700 clamp(13px,2.4vh,19px) var(--font-display);color:var(--purple-deep);
+  box-shadow:0 5px 0 rgba(92,37,99,.18);width:max-content;max-width:94%;text-align:center;letter-spacing:.4px;
+  cursor:pointer;user-select:none}
+.banner .target{color:var(--pink)}
+.banner .l-red{color:#D4141C}
+.banner .l-yellow{color:#B57F00}
+.banner .l-green{color:#13873B}
+.banner.pop{animation:bp .4s cubic-bezier(.22,1,.36,1)}
+@keyframes bp{0%{opacity:0;transform:translateY(-10px) scale(.92)}
+  60%{opacity:1;transform:translateY(0) scale(1.035)}100%{transform:scale(1)}}
+
+/* ===================== RIGHT COLUMN ===================== */
+.rightcol{display:flex;flex-direction:column;gap:12px;min-height:0}
+.card-title{font-family:var(--font-display);font-weight:700;font-size:15.5px;color:var(--purple);padding:2px 4px 10px}
+
+/* -- the choices: the prediction throws the light, so the pads sit up here -- */
+.optcard{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;min-height:0;padding:16px;
+  background:linear-gradient(170deg,#F7EFF9,#FFFFFF 60%)}
+.optcard .legend .rule{text-align:center}
+.optcard .sig-status{margin-top:clamp(8px,1.3vh,13px);text-align:center;font-size:clamp(14px,2vh,17px)}
+.sig-status{font:700 clamp(15px,2.2vh,19px) var(--font-display);color:var(--purple-deep);
+  min-height:1.3em;letter-spacing:.2px}
+.sig-status b{font-weight:700}
+.sig-status .c-red{color:#D4141C}.sig-status .c-yellow{color:#B57F00}.sig-status .c-green{color:#13873B}
+.sig-status.fs{animation:fadeSlide .38s cubic-bezier(.22,1,.36,1) both}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* -- choose the signal: where Distance Detective keeps its controls -- */
+/* the three choices travel as one light frosted-pink block */
+.opts{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.2vh,12px);
+  padding:clamp(7px,1vh,10px);border-radius:22px;
+  background:linear-gradient(180deg,#FFFDFE 0%,#FDF1F8 100%);border:2.5px solid #F7A0CD;
+  box-shadow:inset 0 2px 0 #fff,inset 0 -3px 0 rgba(226,120,178,.16),
+             0 7px 0 rgba(240,156,201,.38),0 16px 26px -18px rgba(200,80,140,.7)}
+.opts::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,0) 58%)}
+.opt{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(4px,.8vh,8px);
+  padding:clamp(8px,1.3vh,12px) 4px clamp(7px,1.1vh,10px);border-radius:16px;border:2.5px solid #F7A0CD;
+  background:linear-gradient(180deg,rgba(255,250,254,.96) 0%,rgba(255,224,242,.96) 46%,rgba(255,192,226,.97) 100%);
+  -webkit-backdrop-filter:blur(8px) saturate(1.4);backdrop-filter:blur(8px) saturate(1.4);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.99),inset 0 -3px 0 rgba(226,120,178,.20),
+             0 5px 0 rgba(240,156,201,.46),0 14px 22px -14px rgba(226,120,178,.80);
+  transition:transform .18s cubic-bezier(.22,1,.36,1),box-shadow .18s,border-color .2s,opacity .25s,filter .25s;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.opt::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(168deg,rgba(255,255,255,.88) 0%,rgba(255,255,255,.30) 34%,rgba(255,255,255,0) 58%),
+             radial-gradient(130% 84% at 50% 116%,rgba(255,255,255,.55),rgba(255,255,255,0) 62%)}
+/* the Connect-Arduino wave, rolling across the block one tile after another */
+.opts.live .opt:not(.used)::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  border:3px solid rgba(240,26,140,.55);opacity:0;transform-origin:50% 50%;
+  will-change:transform,opacity;                    /* compositor, not the main thread */
+  animation:optPing 2.2s cubic-bezier(.45,0,.55,1) infinite}
+.opts.live .opt[data-slot="1"]::after{animation-delay:.22s}
+.opts.live .opt[data-slot="2"]::after{animation-delay:.44s}
+@keyframes optPing{0%{opacity:.5;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.17)}}
+.lens{position:relative;z-index:1;width:clamp(46px,7.4vh,68px);height:clamp(46px,7.4vh,68px);border-radius:50%;
+  box-shadow:0 0 0 3.5px rgba(255,255,255,.95),0 0 0 5.5px rgba(247,160,205,.35),0 4px 9px rgba(120,30,80,.28),
+             inset 0 -4px 6px rgba(0,0,0,.25)}
+.lens::after{content:"";position:absolute;left:20%;right:30%;top:10%;height:36%;border-radius:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,0))}
+.lens.red{background:radial-gradient(circle at 42% 36%,#FFB3AD 0%,#FF4A3F 34%,#D9101A 72%,#8E0510 100%)}
+.lens.yellow{background:radial-gradient(circle at 42% 36%,#FFF3B0 0%,#FFD43B 34%,#F5A900 72%,#9C6B00 100%)}
+.lens.green{background:radial-gradient(circle at 42% 36%,#C9FFD6 0%,#4FE07C 34%,#12A844 72%,#066A28 100%)}
+.opt b{position:relative;z-index:1;font:700 clamp(15px,2.2vh,19px) var(--font-display);color:var(--purple-deep);letter-spacing:.3px}
+.opt:hover{transform:translateY(-2px);border-color:#FF74BD;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.99),inset 0 -3px 0 rgba(226,120,178,.22),
+             0 8px 0 rgba(240,140,196,.52),0 18px 26px -14px rgba(226,120,178,.88)}
+.opt.press,.opt:active{transform:translateY(2px) scale(.972);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.99),inset 0 -2px 0 rgba(226,120,178,.22),0 2px 0 rgba(240,156,201,.42)}
+.opt:focus-visible{outline:3px solid var(--purple);outline-offset:3px}
+.opts:not(.live) .opt{cursor:default}
+/* a wrong pick shakes its head and steps aside; the pink only ever means "you can choose this" */
+.opt.used{opacity:.45;filter:grayscale(.85);cursor:default;transform:none}
+.opt.used::after{content:"✕";position:absolute;right:6px;top:4px;z-index:2;font:700 15px var(--font-display);color:#C2342F;
+  animation:none!important;box-shadow:none!important;inset:auto;width:auto;height:auto}
+.opt.nope{animation:optNope .52s cubic-bezier(.36,.07,.19,.97)}
+@keyframes optNope{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+/* the right one lights up in its own colour */
+.opt.right{border-color:#fff;transform:translateY(-2px)}
+.opt.right[data-c="red"]{box-shadow:0 0 0 4px rgba(255,45,45,.35),0 0 24px rgba(255,45,45,.55),0 5px 0 rgba(200,40,40,.35)}
+.opt.right[data-c="yellow"]{box-shadow:0 0 0 4px rgba(255,196,0,.38),0 0 24px rgba(255,196,0,.55),0 5px 0 rgba(190,140,0,.35)}
+.opt.right[data-c="green"]{box-shadow:0 0 0 4px rgba(34,211,90,.35),0 0 24px rgba(34,211,90,.55),0 5px 0 rgba(20,140,60,.35)}
+.opts.solved .opt:not(.right){opacity:.55;filter:saturate(.6)}
+/* the rule, always in view under the choices */
+.legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.2vh,12px);margin-top:9px;padding:0 clamp(7px,1vh,10px);
+  font:700 11.5px var(--font-display);color:var(--muted);text-align:center;line-height:1.25}
+.legend span{display:block}
+.legend .rule{ grid-column:1/-1;font-size:12.5px;color:#7A5B86;letter-spacing:.2px }
+@media (hover:none){
+  .opt:hover{transform:none;border-color:#F7A0CD;
+    box-shadow:inset 0 3px 0 rgba(255,255,255,.99),inset 0 -3px 0 rgba(226,120,178,.20),
+               0 5px 0 rgba(240,156,201,.46),0 14px 22px -14px rgba(226,120,178,.80)}
+  .opt.right:hover{transform:translateY(-2px)}
+}
+
+/* ---- the feedback badge floats in the scene's lower-right corner, clear of the road ---- */
+.toast{position:absolute;right:clamp(8px,1.2vw,14px);bottom:clamp(8px,1.2vh,14px);z-index:30;
+  display:flex;align-items:center;gap:clamp(5px,.6vw,8px);
+  padding:clamp(4px,.6vh,7px) clamp(10px,1.2vw,15px);border-radius:999px;
+  background:#fff;border:2.5px solid #7FCB95;box-shadow:0 8px 18px rgba(92,37,99,.25);
+  font:700 clamp(13px,2vh,17px) var(--font-display);color:#1B7A45;
+  pointer-events:none;white-space:nowrap;animation:toastIn .3s cubic-bezier(.22,1,.36,1) both}
+.toast .tic{width:1.35em;height:1.35em;flex:0 0 auto;display:grid;place-items:center}
+.toast .tic svg{width:100%;height:100%;display:block}
+.toast.again{border-color:var(--pink);color:var(--pink-dk);box-shadow:0 10px 24px rgba(240,26,140,.22)}
+.toast.out{animation:toastOut .32s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px) scale(.94)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(7px) scale(.96)}}
+.sr-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ===================== OVERLAYS ===================== */
+.ov{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px}
+.ov.hide{opacity:0;pointer-events:none;transition:opacity .35s}
+.ov-box{background:var(--yellow);border:5px solid var(--purple);border-radius:28px;padding:30px 42px;text-align:center;
+  max-width:560px;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.ov.hide .ov-box{transform:scale(.9) translateY(10px)}
+.ov-box h2{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,4.6vh,40px);color:var(--purple-deep)}
+.ov-box h2 b{color:inherit}
+.ov-box p{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--pink);margin:16px 0 24px;
+  line-height:1.45;letter-spacing:.4px}
+.ov-icons{display:flex;gap:20px;justify-content:center;margin:6px 0 16px}
+.ov-icons svg{width:clamp(84px,12vh,112px);height:clamp(84px,12vh,112px);filter:drop-shadow(0 6px 10px rgba(92,37,99,.3));
+  animation:iconIn2 .6s cubic-bezier(.34,1.56,.64,1) both, iconFloat 3.4s ease-in-out infinite}
+.ov-icons svg:nth-child(1){animation-delay:.05s,1.0s}
+.ov-icons svg:nth-child(2){animation-delay:.18s,1.5s}
+/* the second symbol floats a beat after the first — the detective-series stagger */
+.ov-icons svg:nth-child(3){animation-delay:.30s,2.0s}
+.ov-icons svg:nth-child(4){animation-delay:.42s,2.4s}
+@keyframes iconIn2{from{opacity:0;transform:translateY(16px) scale(.45)}to{opacity:1;transform:none}}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+/* The single glossy railway-crossing emblem floats gently above the instructions. */
+.ov-box.task-in h2{animation:ovRise .5s cubic-bezier(.22,1,.36,1) backwards}
+.ov-box.task-in p{animation:ovRise .5s .1s cubic-bezier(.22,1,.36,1) backwards}
+.ov-box.task-in .ov-start{animation:ovRise .5s .2s cubic-bezier(.22,1,.36,1) backwards}
+@keyframes ovRise{from{opacity:0;transform:translateY(14px)}}
+.ov-start{background:var(--pink);color:#fff;border:none;border-radius:18px;padding:13px 36px;
+  font:700 21px var(--font-display);box-shadow:0 7px 0 var(--pink-dk);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.ov-start:hover{transform:translateY(-3px);box-shadow:0 10px 0 var(--pink-dk)}
+.ov-start .bi{width:1.05em;height:1.05em;vertical-align:-.17em;margin-right:.42em}
+.ov-start:active{transform:translateY(4px);box-shadow:0 3px 0 var(--pink-dk)}
+.ov-start{position:relative;overflow:hidden;-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3)}
+.ov-start::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10) 40%,rgba(255,255,255,0) 60%)}
+.ov-start::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.12)}
+
+.final{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;
+  background:rgba(22,16,22,.45);backdrop-filter:blur(4px)}
+.final.show{display:flex}
+.final-box{background:#fff;border:5px solid var(--purple);border-radius:28px;padding:32px 42px;text-align:center;max-width:440px;
+  margin:16px;animation:finIn .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes finIn{from{opacity:0;transform:scale(.82) translateY(16px)}to{opacity:1;transform:none}}
+.trophy{font-size:66px;line-height:0;display:grid;place-items:center;animation:tp .7s cubic-bezier(.3,1.6,.4,1)}
+.trophy svg{width:1em;height:1em;filter:drop-shadow(0 6px 8px rgba(160,110,0,.35))}
+@keyframes tp{0%{transform:scale(.3) rotate(-20deg)}100%{transform:scale(1)}}
+
+.final-box h2{font-family:var(--font-display);color:var(--purple);font-size:30px;margin:6px 0}
+.tally{font:800 52px var(--font-display);color:var(--pink);line-height:1}
+.tally small{font-size:22px;color:var(--purple-deep)}
+.final-box p{margin:10px 0 16px;color:var(--muted);font-weight:700}
+.again{background:var(--pink);color:#fff;border:none;border-radius:16px;padding:12px 28px;font:700 18px var(--font-display);
+  box-shadow:0 6px 0 var(--pink-dk);transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.again:hover{transform:translateY(-3px);box-shadow:0 9px 0 var(--pink-dk)}
+.again:active{transform:translateY(4px);box-shadow:0 2px 0 var(--pink-dk)}
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden;contain:layout paint}
+.confetti i{position:absolute;top:-14px;width:10px;height:14px;border-radius:2px;
+  will-change:transform,opacity;backface-visibility:hidden}
+
+/* ===================== THE SCENE ===================== */
+.scene{font-family:var(--font-display)}
+.scene text{user-select:none}
+.veh{will-change:transform}
+.veh .brk{opacity:0;transition:opacity .25s ease}
+.veh.braking .brk{opacity:1}
+.veh .hl{opacity:.9}
+/* the sky is alive: clouds drift, birds flap, the sun glows */
+.drift{animation:drift 38s ease-in-out infinite alternate}
+.drift.d2{animation-duration:46s;animation-delay:-17s}
+.drift.d3{animation-duration:54s;animation-delay:-31s}
+@keyframes drift{from{transform:translateX(-14px)}to{transform:translateX(14px)}}
+/* trees breathe in the breeze */
+.tree .cnp{transform-box:fill-box;transform-origin:50% 100%;animation:sway 5.6s ease-in-out infinite}
+.tree:nth-of-type(2n) .cnp{animation-duration:6.4s;animation-delay:-2.1s}
+.tree:nth-of-type(3n) .cnp{animation-duration:7.1s;animation-delay:-3.7s}
+@keyframes sway{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}
+/* the signal lamps */
+.slamp .on,.slamp .halo{opacity:0;transition:opacity .28s ease}
+.slamp.lit .on,.slamp.lit .halo{opacity:1}
+.slamp.lit .halo{animation:haloPulse 1.6s ease-in-out infinite}
+@keyframes haloPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.slamp .halo{transform-box:fill-box;transform-origin:50% 50%}
+.spill{opacity:0;transition:opacity .4s ease}
+.spill.lit{opacity:.42}
+/* horns */
+.honk{transform-box:fill-box;transform-origin:50% 100%;animation:honkPop 1.25s cubic-bezier(.22,1,.36,1) both}
+@keyframes honkPop{0%{opacity:0;transform:scale(.3) translateY(6px)}18%{opacity:1;transform:scale(1.08)}
+  30%{transform:scale(1)}78%{opacity:1;transform:translateY(-6px)}100%{opacity:0;transform:translateY(-12px)}}
+/* little puffs from the exhausts */
+.puff{animation:puff 1.4s ease-out both}
+@keyframes puff{0%{opacity:.55;transform:translate(0,0) scale(.5)}100%{opacity:0;transform:translate(var(--dx,4px),18px) scale(1.6)}}
+
+.opt,.banner,.ov-start,.again{touch-action:manipulation}
+@media (prefers-reduced-motion:reduce){
+  .btn.attn .pulse{animation:none}
+  .tree .cnp,.slamp.lit .halo,.ov-icons svg,.ov-icons .ovl,.opts.live .opt::after,
+  .drift{animation:none!important}
+  .ov-icons .ovl.l2,.ov-icons .ovl.l3{opacity:0}
+  /* the two mission symbols: no float when motion is reduced, but never hidden —
+     their little light pulses rest at a steady brightness */
+  .ov-icons svg{animation:none!important;opacity:1!important}
+  .ov-icons .rcA{animation:none!important;opacity:.5}
+  .confetti{display:none}
+}
+
+/* ===================== AUTO-FIT SHELL (touch devices) =====================
+   The laptop build keeps the authored sizes; every other device compacts the
+   shell so the whole activity fits one screen, exactly like the detective series. */
+html[data-layout-mode="auto-fit"] .topbar{height:clamp(50px,7vh,62px);gap:12px;padding:6px clamp(10px,1.6vw,18px)}
+html[data-layout-mode="auto-fit"] h1{font-size:clamp(17px,2.4vh,22px)}
+html[data-layout-mode="auto-fit"] .brand-logo{height:clamp(26px,3.6vh,31px)}
+html[data-layout-mode="auto-fit"] .layout{padding:12px;gap:12px}
+html[data-layout-mode="auto-fit"] .card{border-radius:18px}
+html[data-layout-mode="auto-fit"] .stage-card{padding:10px}
+html[data-layout-mode="auto-fit"] .task-header{padding-bottom:8px}
+html[data-layout-mode="auto-fit"] .eyebrow{font-size:10px}
+html[data-layout-mode="auto-fit"] .progress .dot{width:22px;height:22px;font-size:10.5px}
+html[data-layout-mode="auto-fit"] .progress{gap:5px}
+html[data-layout-mode="auto-fit"] .banner{font-size:clamp(14px,2vh,17px);padding:5px 14px}
+html[data-layout-mode="auto-fit"] .optcard{padding:13px}
+html[data-layout-mode="auto-fit"] .ctrl{padding:11px 13px 13px}
+html[data-layout-mode="auto-fit"] .conn{font-size:12px;padding:5px 10px}
+html[data-layout-mode="auto-fit"] .ctrl .btn{padding:8px;font-size:13px}
+html[data-layout-mode="auto-fit"] .card-title{font-size:14px;padding-bottom:7px}
+html[data-layout-mode="auto-fit"] .ov-box{padding:24px 30px}
+html[data-layout-mode="auto-fit"] .ov-box h2{font-size:clamp(22px,4vh,32px)}
+html[data-layout-mode="auto-fit"] .ov-box p{font-size:19px;margin:14px 0 20px}
+html[data-layout-mode="auto-fit"] .ov-icons svg{width:88px;height:88px}
+html[data-layout-mode="auto-fit"] .ov-start{padding:11px 30px;font-size:19px}
+html[data-layout-mode="auto-fit"] .final-box{padding:22px 26px}
+html[data-layout-mode="auto-fit"] .tally{font-size:44px}
+/* narrow portrait windows (any device): the two cards sit side by side under the
+   scene, so the scene keeps its height; only very narrow windows stack them */
+@media(max-width:940px) and (orientation:portrait){
+  .rightcol{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;align-items:stretch}
+}
+@media(max-width:600px) and (orientation:portrait){
+  .rightcol{grid-template-columns:minmax(0,1fr)}
+}
+/* portrait tablets: the scene over the two cards, side by side */
+@media(max-width:940px) and (orientation:portrait){
+  /* the scene row takes every spare pixel, but it can never be crushed: minmax(min-content,1fr)
+     will not shrink below the picture's own height, and when the activity really does not fit
+     (short phones) the whole card scrolls as one surface — nothing is ever cut off */
+  html[data-layout-mode="auto-fit"] .layout{grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(min-content,1fr) max-content;gap:10px;padding:10px;
+    overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  html[data-layout-mode="auto-fit"] .rightcol{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:10px;align-items:stretch}
+  html[data-layout-mode="auto-fit"] .layout>.col:not(.rightcol){min-height:0}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(186px,33vh,340px)}
+}
+@media(max-width:760px) and (orientation:portrait){
+  /* phones: the console folds into one row and sits on top of the choices */
+  html[data-layout-mode="auto-fit"] .rightcol{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;gap:8px;align-content:start}
+  html[data-layout-mode="auto-fit"] .optcard{padding:9px 10px 9px}
+  html[data-layout-mode="auto-fit"] .optcard .card-title{display:none}
+  html[data-layout-mode="auto-fit"] .sig-status{margin:6px 0 0;font-size:13.5px}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:8px 10px 9px}
+  html[data-layout-mode="auto-fit"] .ctrl .card-title{display:none}
+  html[data-layout-mode="auto-fit"] .conn{margin:0 0 6px;padding:5px 10px;font-size:11.5px}
+  html[data-layout-mode="auto-fit"] .ctrl .btn{padding:7px;font-size:12.5px}
+  html[data-layout-mode="auto-fit"] .lens{width:44px;height:44px}
+  html[data-layout-mode="auto-fit"] .opt b{font-size:15px}
+  html[data-layout-mode="auto-fit"] .legend{margin-top:7px;font-size:11px}
+}
+/* the round dots drop under the question on narrow screens — centred, never stranded on the left */
+@media(max-width:560px){ .task-header{justify-content:center} }
+@media(max-width:411px){ .task-header .eyebrow{display:none} }
+@media(max-width:480px) and (orientation:portrait){
+  /* small phones: everything shrinks one more notch so nothing scrolls */
+  html[data-layout-mode="auto-fit"] .layout{gap:8px;padding:8px 8px 6px}
+  html[data-layout-mode="auto-fit"] .stage-card{padding:8px}
+  html[data-layout-mode="auto-fit"] .task-header{padding:0 2px 7px;gap:6px}
+  html[data-layout-mode="auto-fit"] .progress{gap:4px}
+  html[data-layout-mode="auto-fit"] .progress .dot{width:19px;height:19px;font-size:9.5px}
+  html[data-layout-mode="auto-fit"] .banner{font-size:13px;padding:4px 11px;border-width:2.5px}
+  html[data-layout-mode="auto-fit"] .sig-status{font-size:12.5px}
+  html[data-layout-mode="auto-fit"] .lens{width:40px;height:40px}
+  html[data-layout-mode="auto-fit"] .opt{padding:7px 3px 6px}
+  html[data-layout-mode="auto-fit"] .opt b{font-size:14px}
+  html[data-layout-mode="auto-fit"] .legend{font-size:10.4px}
+}
+@media(max-width:760px) and (max-height:720px) and (orientation:portrait){
+  /* short phones: one more notch so the scene, the console and the choices share one screen */
+  html[data-layout-mode="auto-fit"] .layout{gap:7px;padding:7px 7px 5px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .lens{width:36px;height:36px}
+  html[data-layout-mode="auto-fit"] .opt{gap:3px;padding:5px 3px 4px}
+  html[data-layout-mode="auto-fit"] .opt b{font-size:13px}
+  html[data-layout-mode="auto-fit"] .legend{margin-top:3px;font-size:10px}
+  /* the picture no longer folds itself up to make room, so every band of chrome pays a little */
+  html[data-layout-mode="auto-fit"] .topbar{height:clamp(44px,6.6vh,52px)}
+  html[data-layout-mode="auto-fit"] .stage-card{padding:6px}
+  html[data-layout-mode="auto-fit"] .task-header{padding:0 2px 6px}
+  html[data-layout-mode="auto-fit"] .optcard{padding:7px 8px}
+  html[data-layout-mode="auto-fit"] .sig-status{margin:3px 0 0;font-size:12.5px}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:6px 8px 7px}
+  html[data-layout-mode="auto-fit"] .ctrl .btn{padding:6px}
+  html[data-layout-mode="auto-fit"] .conn{padding:3px 9px}
+}
+/* the smallest phones in use (320 pt class) */
+@media(max-width:360px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(172px,31vh,340px)}
+}
+/* landscape phones and short windows: keep the scene big — two columns, a slim right column */
+@media(orientation:landscape) and (max-height:540px){
+  .topbar{height:44px;padding:4px 14px}
+  .brand-logo{height:24px}
+  h1{font-size:17px}
+  .layout{grid-template-columns:minmax(0,1fr) minmax(200px,29%);gap:8px;padding:8px}
+  .stage-card{padding:7px}
+  .task-header{padding:0 4px 6px;gap:8px}
+  .eyebrow{font-size:9.5px}
+  .banner{font-size:13px;padding:3px 12px;border-width:2.5px}
+  .progress{gap:4px}
+  .progress .dot{width:18px;height:18px;font-size:9px}
+  /* short landscape: the scene keeps a real height, the side column is the one that scrolls */
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(140px,28vh,210px)}
+  .rightcol{gap:8px}
+  .sig-status{font-size:12.5px;margin-top:5px}
+  .ctrl{padding:7px 8px 8px}
+  .ctrl .card-title{display:none}
+  .conn{margin:0 0 6px;padding:4px 9px;font-size:11px}
+  .ctrl .btn{padding:6px;font-size:12px}
+  .optcard{flex:1 1 auto;justify-content:center;padding:8px}
+  .optcard .card-title{display:none}
+  .opts{gap:6px;padding:6px}
+  .opt{gap:3px;padding:6px 2px 5px;border-radius:13px}
+  .lens{width:32px;height:32px}
+  .opt b{font-size:12.5px}
+  .legend{font-size:9.6px;margin-top:5px;gap:6px;padding:0 6px}
+}
+
+
+/* ===================== PATTERN & SEQUENCE 8.0 =====================
+   The strip of lights the child is watching, the "you are the signal" pads,
+   the optional Arduino bridge.                                          */
+
+/* the level chip in the topbar */
+.topbar .lv{ margin-left:auto;font-family:var(--font-display);font-weight:700;
+  font-size:clamp(11px,1.5vh,14px);color:#fff;background:var(--purple);border-radius:999px;
+  padding:5px 14px;white-space:nowrap;letter-spacing:.3px }
+
+/* ---- the light strip: every light the cycle has shown, then "?" ---- */
+.pstrip{ position:absolute;left:50%;bottom:clamp(8px,1.5vh,15px);transform:translateX(-50%);z-index:6;
+  display:flex;align-items:center;gap:clamp(4px,.85vh,8px);
+  padding:clamp(6px,.9vh,9px) clamp(10px,1.4vh,16px);border-radius:999px;max-width:94%;
+  border:2.5px solid rgba(131,53,140,.42);
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,239,252,.95));
+  box-shadow:0 10px 24px -12px rgba(60,20,70,.62),inset 0 2px 0 #fff;
+  /* no backdrop blur here: the strip sits over the moving scene, so blurring it
+     would make the browser re-blur the traffic on every single frame        */
+  cursor:pointer;transition:transform .18s cubic-bezier(.34,1.56,.64,1) }
+.pstrip:hover{ transform:translateX(-50%) translateY(-2px) }
+.pstrip:focus-visible{ outline:3px solid var(--purple);outline-offset:3px }
+.pstrip .bead{ flex:0 0 auto;width:clamp(15px,2.5vh,25px);height:clamp(15px,2.5vh,25px);border-radius:50%;
+  background:radial-gradient(circle at 42% 36%,#E9E0EE 0%,#CFC2D8 58%,#B2A2BE 100%);
+  box-shadow:inset 0 -2px 3px rgba(0,0,0,.16),inset 0 1px 1px rgba(255,255,255,.7);
+  transition:background .28s ease,box-shadow .28s ease,transform .28s cubic-bezier(.34,1.56,.64,1) }
+.pstrip .bead.lit{ transform:scale(1.08) }
+.pstrip .bead.red{ background:radial-gradient(circle at 42% 36%,#FFE3E0 0%,#FF5A4E 32%,#E5121B 72%,#9E0610 100%);
+  box-shadow:0 0 15px 4px rgba(255,45,45,.62),inset 0 -2px 3px rgba(120,0,0,.4) }
+.pstrip .bead.yellow{ background:radial-gradient(circle at 42% 36%,#FFFBE0 0%,#FFD84A 32%,#FFB300 72%,#A87400 100%);
+  box-shadow:0 0 15px 4px rgba(255,196,0,.62),inset 0 -2px 3px rgba(130,80,0,.38) }
+.pstrip .bead.green{ background:radial-gradient(circle at 42% 36%,#E6FFEC 0%,#5BEA86 32%,#14B94A 72%,#07752C 100%);
+  box-shadow:0 0 15px 4px rgba(34,211,90,.58),inset 0 -2px 3px rgba(0,80,30,.38) }
+.pstrip .sep{ flex:0 0 auto;width:clamp(8px,1.3vh,13px);height:2px;border-radius:2px;background:#C9B6D4;opacity:.7 }
+.pstrip .bead.q{ width:clamp(23px,3.5vh,33px);height:clamp(23px,3.5vh,33px);display:grid;place-items:center;
+  font:700 clamp(13px,2vh,18px) var(--font-display);color:#B01268;
+  background:linear-gradient(180deg,#FFF,#FFE9F5);border:2.5px dashed #F06BAE;
+  box-shadow:0 0 12px -2px rgba(240,26,140,.45) }
+.pstrip .bead.hint{ animation:beadHint 1.5s ease-in-out infinite;border-color:#F01A8C;color:#8C0F55 }
+.pstrip .scan{ flex:0 0 auto;width:clamp(9px,1.4vh,13px);height:clamp(9px,1.4vh,13px);border-radius:50%;
+  background:var(--pink);box-shadow:0 0 0 0 rgba(240,26,140,.5);animation:scanPing 1.4s ease-out infinite }
+@keyframes beadHint{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.14) } }
+@keyframes scanPing{ 0%{ opacity:.55;transform:scale(1) } 100%{ opacity:0;transform:scale(1.5) } }
+
+/* ---- the kit: the Distance Detective status line + Connect button ---- */
+.ctrl{flex:0 0 auto;display:flex;flex-direction:column;padding:14px 16px 16px}
+.conn{display:flex;align-items:center;gap:8px;background:#F7F2F8;border-radius:10px;padding:6px 12px;
+  font:700 12.5px var(--font-display);color:var(--muted);margin:0 0 8px;border:1px solid #EBE2EE}
+.conn .dot{width:10px;height:10px;flex:0 0 auto;border-radius:50%;background:#C9C2D6;
+  box-shadow:inset 0 -2px 3px rgba(0,0,0,.15);transition:background .25s,box-shadow .25s}
+.conn .dot.on{background:var(--ok);box-shadow:0 0 9px rgba(47,191,109,.85)}
+.btn{width:100%;border:none;border-radius:12px;padding:9px 12px;font:700 14px var(--font-display);cursor:pointer;
+  transition:transform .16s cubic-bezier(.22,1,.36,1),filter .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1)}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn:active{transform:translateY(2px)}
+.btn:disabled{cursor:default;filter:grayscale(.5) brightness(.92);transform:none}
+.btn-pink{background:var(--pink);color:#fff;box-shadow:0 4px 0 var(--pink-dk)}
+.btn-pink:active{box-shadow:0 1px 0 var(--pink-dk)}
+.ctrl .btn{position:relative}
+.ctrl .btn::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.10) 40%,rgba(255,255,255,0) 60%)}
+.ctrl .btn::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.12)}
+/* the "look at me" pulses travel as a ring: only transform and opacity change,
+   so the button itself is never repainted (this one pulses all session) */
+.ctrl .btn>.pulse{position:absolute;inset:-3px;border-radius:inherit;border:3px solid transparent;opacity:0;pointer-events:none;z-index:0}
+#connBtn.attn .pulse{border-color:rgba(240,26,140,.55);animation:ringPulse 2.2s cubic-bezier(.45,0,.55,1) infinite}
+.ctrl .btn-ir.attn .pulse{border-color:rgba(255,210,63,.72);animation:ringPulse 1.6s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes ringPulse{0%{opacity:.55;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.08)}}
+
+/* when the kit is on, the pads say so */
+.opts.kit .opt::before{ box-shadow:inset 0 0 0 2px rgba(47,191,109,.35) }
+
+/* ---- auto-fit trims ---- */
+html[data-layout-mode="auto-fit"] .topbar .lv{ font-size:10.5px;padding:4px 10px }
+html[data-layout-mode="auto-fit"] .pstrip{ bottom:6px;gap:4px;padding:5px 9px }
+html[data-layout-mode="auto-fit"] .pstrip .bead{ width:13px;height:13px }
+html[data-layout-mode="auto-fit"] .pstrip .bead.q{ width:20px;height:20px;font-size:11.5px }
+@media (max-width:520px){ .topbar .lv{ display:none } }
+
+
+/* ===== ultra-smooth pass ===== */
+:root{--ease-out:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.4,.64,1)}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;scroll-behavior:smooth}
+*{-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.scene{contain:layout paint;transform:translateZ(0);backface-visibility:hidden;shape-rendering:geometricPrecision}
+/* blur behind moving traffic / buttons is the costliest thing on the page: the surfaces are near-opaque, so drop it */
+.opt,.banner{-webkit-backdrop-filter:none;backdrop-filter:none}
+.opt{transition:transform .32s var(--spring),box-shadow .3s var(--ease-out),opacity .35s var(--ease-out),filter .35s var(--ease-out),background-color .3s}
+.btn,.ov-start,.again{transition:transform .28s var(--spring),box-shadow .28s var(--ease-out),filter .25s var(--ease-out)}
+.card{transition:box-shadow .35s var(--ease-out),transform .35s var(--ease-out)}
+.ov-box,.final-box{animation:boxIn .55s var(--spring) both}
+@keyframes boxIn{from{opacity:0;transform:translateY(16px) scale(.94)}to{opacity:1;transform:none}}
+.ov{transition:opacity .4s var(--ease-out)}
+.ov-box{transition:transform .4s var(--ease-out)}
+@media (prefers-reduced-motion:reduce){.ov-box,.final-box{animation:none!important}}
+
+/* ===== requested sizing / layout ===== */
+.eyebrow{font-size:12.1px}                                   /* STEP n / 5: +15% */
+html[data-layout-mode="auto-fit"] .eyebrow{font-size:11.5px}
+#optTitle{font-size:17.8px;padding:2px 4px 0}                /* What comes next?: +15% */
+html[data-layout-mode="auto-fit"] #optTitle{font-size:16.1px}
+.optcard{justify-content:flex-start}                         /* title rides at the top of the block */
+.optcard .opts{margin-top:clamp(8px,1.4vh,14px)}
+.optcard .sig-status{margin-bottom:0;font-size:clamp(16.5px,2.36vh,20.1px)}   /* status line: +18% */
+html[data-layout-mode="auto-fit"] .sig-status{font-size:15.9px}
+@media(max-width:480px) and (orientation:portrait){html[data-layout-mode="auto-fit"] .sig-status{font-size:14.8px}}
+@media(orientation:landscape) and (max-height:540px){.eyebrow{font-size:10.9px}.optcard .sig-status{font-size:14.8px}}
+
+/* ===== options block compact, controls block bigger ===== */
+.optcard{flex:0 0 auto;justify-content:flex-start;padding:14px 16px 16px}
+.ctrl{flex:1 1 auto;justify-content:flex-start;gap:clamp(10px,1.8vh,16px);padding:18px 20px 20px}
+.ctrl .card-title{font-size:19.5px;padding:2px 4px 2px}
+.ctrl .conn{font-size:18px;padding:clamp(14px,2.4vh,20px) 18px;gap:14px;margin:auto 0 0;border-radius:16px}
+.ctrl .conn .dot{width:18px;height:18px}
+.ctrl .btn{margin:0}
+.ctrl #hearBtn{margin-bottom:auto}
+.btn-purple{background:var(--purple);color:#fff;box-shadow:0 4px 0 var(--purple-deep)}
+.btn-purple:active{box-shadow:0 1px 0 var(--purple-deep)}
+.btn-purple .ear{display:inline-block;transition:transform .3s var(--spring)}
+.btn-purple:hover .ear{transform:scale(1.18) rotate(-8deg)}
+html[data-layout-mode="auto-fit"] .ctrl{padding:11px 13px 13px}
+html[data-layout-mode="auto-fit"] .ctrl .conn{font-size:13px;padding:7px 11px;margin:0}
+html[data-layout-mode="auto-fit"] .ctrl #hearBtn{margin-bottom:0}
+@media(max-width:760px) and (orientation:portrait){
+  .ctrl{padding:8px 10px 9px;gap:6px}
+  .ctrl .conn{font-size:12px;padding:5px 10px;margin:0}
+  .ctrl #hearBtn{margin-bottom:0}
+}
+@media(orientation:landscape) and (max-height:540px){
+  .ctrl{padding:7px 8px 8px;gap:6px}.ctrl .conn{font-size:11px;padding:4px 9px;margin:0}.ctrl .btn{padding:6px;font-size:12px}.ctrl #hearBtn{margin-bottom:0}
+}
+/* small screens: status on top, the two buttons side by side so the scene keeps its height */
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  .ctrl,html[data-layout-mode="auto-fit"] .ctrl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .ctrl .card-title{display:none}
+  .ctrl .conn,html[data-layout-mode="auto-fit"] .ctrl .conn{grid-column:1/-1;margin:0}
+  .ctrl #hearBtn,html[data-layout-mode="auto-fit"] .ctrl #hearBtn{margin:0}
+  .ctrl .btn-hear,html[data-layout-mode="auto-fit"] .ctrl .btn-hear{padding:8px 6px;font-size:12.5px;border-radius:12px}
+  .ctrl .btn-hear .spk{width:17px;height:15px}
+}
+
+/* Connect Arduino: exactly the original glass-pink button and press feel */
+#connBtn{
+  transition:transform .16s cubic-bezier(.22,1,.36,1),filter .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1)}
+/* Hear the question: bright yellow slab with a darker lip, black rounded type */
+.ctrl .btn-hear{display:flex;align-items:center;justify-content:center;gap:12px;background:#FFF012;color:#141414;
+  font:700 clamp(19px,2.9vh,25px) var(--font-display);letter-spacing:.2px;border-radius:22px;
+  padding:clamp(18px,3vh,26px) 16px;box-shadow:0 7px 0 #D8C800,0 10px 18px rgba(120,100,0,.14);
+  transition:transform .16s cubic-bezier(.22,1,.36,1),filter .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1)}
+.ctrl .btn-hear:hover{filter:brightness(1.04);transform:translateY(-1px)}
+.ctrl .btn-hear:active{transform:translateY(5px);box-shadow:0 2px 0 #D8C800}
+.ctrl .btn-hear:focus-visible{outline:3px solid var(--purple);outline-offset:3px}
+.btn-hear .spk{width:32px;height:28px;flex:0 0 auto}
+.btn-hear.speaking .spk path:nth-of-type(n+2){animation:waveP .7s ease-in-out infinite alternate}
+@keyframes waveP{from{opacity:.35}to{opacity:1}}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  html .ctrl .btn-hear{padding:8px 6px;font-size:13.5px;border-radius:13px;gap:7px;white-space:nowrap;box-shadow:0 4px 0 #D8C800}
+  html .ctrl .btn-hear:active{box-shadow:0 1px 0 #D8C800}
+  html .ctrl .btn-hear .spk{width:20px;height:17px}
+  html .ctrl{align-items:stretch}
+}
+
+/* ===== railway crossing ===== */
+#opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#opts .opt{min-width:0;width:auto}
+.lens.barlens{background:none!important;box-shadow:none!important;border:0!important}
+.lens.barlens::before,.lens.barlens::after{display:none!important}
+.lens.barlens svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}
+.ctrl .btn-ir{display:flex;align-items:center;justify-content:center;gap:10px;position:relative;background:#2F7FEE;color:#fff;
+  font:700 clamp(16px,2.3vh,20px) var(--font-display);border-radius:18px;padding:clamp(12px,2vh,17px) 14px;box-shadow:0 6px 0 #1B54B5}
+.ctrl .btn-ir:active{transform:translateY(4px);box-shadow:0 2px 0 #1B54B5}
+.ctrl .btn-ir .irdot{display:none}
+@keyframes irPing{0%{transform:scale(.96);opacity:.95}100%{transform:scale(1.07);opacity:0}}
+#irBeam{animation:beamFlow .9s linear infinite}
+@keyframes beamFlow{to{stroke-dashoffset:-18}}
+#irBeam.hit{stroke:#FFE45C;stroke-width:5;opacity:1;animation:beamFlow .25s linear infinite}
+.irglow{animation:irBlink 1s ease-in-out infinite}
+@keyframes irBlink{50%{opacity:.25}}
+#irHint{transform-box:fill-box;transform-origin:center;animation:irHintP 1.2s ease-out infinite;opacity:0}
+#irHint.on{opacity:1}
+@keyframes irHintP{0%{transform:scale(.7);opacity:.95}100%{transform:scale(1.5);opacity:0}}
+.chip{display:inline-flex;font-size:0;line-height:0;margin:0 3px;opacity:.38;filter:grayscale(.7);transition:opacity .3s,transform .3s var(--spring)}
+.chip.done{opacity:1;filter:none}.chip.cur{opacity:1;filter:none;transform:scale(1.28)}
+.ctrl #irBtn{margin-bottom:auto}
+.ctrl{gap:clamp(8px,1.4vh,12px);padding:14px 18px 16px}
+.ctrl .btn{flex:0 0 auto}
+.ctrl .conn{padding:clamp(9px,1.5vh,13px) 16px;font-size:17px}
+.ctrl .btn-hear{padding:clamp(12px,2vh,17px) 14px;font-size:clamp(18px,2.6vh,23px)}
+.ctrl .btn-ir{padding:clamp(10px,1.7vh,14px) 14px}
+.opts.idle .opt{opacity:.55;filter:saturate(.7)}
+.ctrl #hearBtn{margin-bottom:0}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  .ctrl #irBtn{grid-column:1/-1;padding:7px;font-size:12.5px;border-radius:12px;margin:0;box-shadow:0 4px 0 #1B54B5}
+}
+
+/* ===== controls card: every control stays inside the card, at any height ===== */
+body.kitmode #irBtn{display:none}
+#opts .opt{padding:clamp(5px,1.1vh,12px) 6px}
+#opts .lens{width:clamp(34px,6.4vh,58px)!important;height:clamp(34px,6.4vh,58px)!important}
+#opts .opt b{font-size:clamp(12px,1.9vh,17px)}
+#opts{gap:clamp(6px,1.2vh,10px)}
+.optcard{padding:clamp(8px,1.5vh,14px) 16px clamp(8px,1.5vh,16px)}
+.optcard .sig-status{font-size:clamp(14px,2.2vh,19px)}
+.ctrl{display:flex;flex-direction:column;justify-content:flex-start;gap:clamp(7px,1.3vh,12px);padding:clamp(9px,1.7vh,16px) 18px clamp(14px,2.2vh,20px);overflow:hidden}
+.ctrl .card-title{font-size:clamp(15px,2.3vh,19.5px);margin:0;padding:0 4px}
+.ctrl .conn{margin:0;padding:clamp(6px,1.1vh,11px) 14px;font-size:clamp(13px,2vh,17px);gap:10px}
+.ctrl .conn .dot{width:clamp(12px,1.9vh,17px);height:clamp(12px,1.9vh,17px)}
+.ctrl #connBtn{margin:0;padding:clamp(8px,1.5vh,11px) 12px;font-size:clamp(13px,1.9vh,15px)}
+.ctrl #hearBtn{margin:0;padding:clamp(8px,1.7vh,15px) 14px;font-size:clamp(15px,2.4vh,22px);box-shadow:0 clamp(4px,.7vh,6px) 0 #D8C800}
+.ctrl #irBtn{margin:0;padding:clamp(8px,1.5vh,13px) 14px;font-size:clamp(14px,2.1vh,19px);box-shadow:0 clamp(4px,.7vh,6px) 0 #1B54B5}
+.ctrl .btn-hear .spk{width:clamp(22px,3.4vh,30px);height:clamp(19px,3vh,26px)}
+
+/* Slightly deeper glossy-town facades; original scene palette and geometry retained. */
+#town .bld{filter:brightness(.89) saturate(1.04)}
+
+/* Requested signal/barrier pairing: RED + DOWN, then GREEN + UP. */
+#opts{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"red down" "green up"}
+#opts .opt[data-c="red"]{grid-area:red}
+#opts .opt[data-c="down"]{grid-area:down}
+#opts .opt[data-c="green"]{grid-area:green}
+#opts .opt[data-c="up"]{grid-area:up}
+
+/* Hear the question + Train approaching: one row at the bottom of the Controls card,
+   two equal buttons side by side — the same place and layout as Undo / Reset in Distance Explorer */
+html[data-layout-mode] .ctrl{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:clamp(8px,1.4vh,12px)}
+.ctrl .control-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;width:100%}
+html .ctrl .control-pair>#hearBtn,html .ctrl .control-pair>#irBtn{
+  grid-column:auto;width:100%;height:auto;aspect-ratio:auto;min-width:0;min-height:44px;margin:0;padding:11px 8px;
+  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;
+  border-radius:14px;white-space:normal;overflow-wrap:anywhere;text-align:center;line-height:1.2;
+  font-size:clamp(13px,1.15vw,16px);
+}
+html .ctrl .control-pair>#hearBtn{box-shadow:0 5px 0 #D8C800}
+html .ctrl .control-pair>#hearBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #D8C800}
+html .ctrl .control-pair>#hearBtn .spk{width:20px;height:17px;flex:0 0 auto;margin:0}
+html .ctrl .control-pair>#irBtn{box-shadow:0 5px 0 #1B54B5}
+html .ctrl .control-pair>#irBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #1B54B5}
+html .ctrl .control-pair>#irBtn #irTxt{display:block;max-width:100%;font-size:inherit;line-height:1.2;text-align:center;white-space:normal}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  html .ctrl .control-pair>#hearBtn,html .ctrl .control-pair>#irBtn{min-height:40px;padding:8px 6px;font-size:12.5px;border-radius:12px}
+  html .ctrl .control-pair>#hearBtn .spk{width:17px;height:15px}
+}
+
+@media(orientation:landscape) and (max-height:540px){
+  /* short landscape phones: nothing is squashed — the side column scrolls so the buttons are always reachable */
+  aside.col{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  aside.col>.card{flex:0 0 auto}
+  html[data-layout-mode] .ctrl{overflow:visible}
+}
+
+/* glass layers: keep the labels and icons above the gloss */
+.ctrl .btn>*{position:relative;z-index:1}
+.ctrl .btn-hear::before,.ctrl .btn-ir::before{background:linear-gradient(180deg,rgba(255,255,255,.46),rgba(255,255,255,.14) 42%,rgba(255,255,255,0) 62%)}
+.chip svg{width:clamp(20px,3.4vh,28px);height:clamp(20px,3.4vh,28px);display:block;overflow:visible;filter:drop-shadow(0 2px 2px rgba(40,10,60,.28))}
+html[data-layout-mode="auto-fit"] .chip svg{width:19px;height:19px}
+.train{will-change:auto;pointer-events:none}
+.chip.pop{animation:chipPop .55s var(--spring)}
+@keyframes chipPop{0%{transform:scale(.5)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+/* ===== button sizes: Connect Arduino +10%, Hear the question / Train approaching -10% ===== */
+html[data-layout-mode] .ctrl #connBtn{font-size:14.63px;padding:11.55px 13.2px;border-radius:13.2px}
+html[data-layout-mode] .ctrl .control-pair{gap:7px;width:90%;margin-left:auto;margin-right:auto}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{font-size:13.46px;min-height:39.6px;padding:9.9px 7.2px;border-radius:12.6px;gap:5.4px}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{width:18px;height:15.3px}
+html[data-layout-mode="auto-fit"] .ctrl #connBtn{font-size:16.5px;padding:12.1px 13.2px}
+html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{font-size:11.7px}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{font-size:11.25px;min-height:36px;padding:7.2px 5.4px;border-radius:10.8px}
+  html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{width:15.3px;height:13.5px}
+}
+@media(max-width:760px) and (orientation:portrait){html[data-layout-mode] .ctrl #connBtn{font-size:16.5px;padding:12.1px 13.2px}}
+@media(orientation:landscape) and (max-height:540px){html[data-layout-mode] .ctrl #connBtn{font-size:14.3px;padding:8.8px 13.2px}}
+/* ===== order line: 5% bigger, bold and dark ===== */
+.legend .rule,.optcard .legend .rule{font-size:13.13px;font-weight:800;color:#2A1640;letter-spacing:.2px}
+html[data-layout-mode="auto-fit"] .legend .rule{font-size:11.55px}
+@media(max-width:760px) and (orientation:portrait),(orientation:landscape) and (max-height:540px){html[data-layout-mode] .legend .rule{font-size:10.1px}}
+
+/* ===== ultra-smooth pass ===== */
+.ov-start{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.ov{will-change:opacity}.ov-box{will-change:transform}
+html.intro .scene *,html.intro .stage *{animation-play-state:paused!important}
+.fx-light{position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:1;
+  background:
+    radial-gradient(ellipse 78% 88% at 50% 47%,rgba(11,14,46,0) 56%,rgba(11,14,46,.34) 100%),
+    linear-gradient(205deg,rgba(255,160,80,.24) 0%,rgba(255,160,80,.07) 38%,rgba(255,160,80,0) 62%),
+    linear-gradient(180deg,rgba(255,255,255,.07) 32%,rgba(255,255,255,0) 58%)}
+.xveh,.train{contain:layout style}
+.lite .drift,.lite .tree .cnp,.lite .irglow{animation:none!important}
+.lite .opt,.lite .banner,.lite .ctrl .btn{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+
+@media (orientation:landscape) and (max-height:400px){
+  html[data-layout-mode="auto-fit"] .rightcol{gap:4px!important}
+  html[data-layout-mode="auto-fit"] #opts{gap:3px!important}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:2px 3px!important;gap:1px!important}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:21px!important;height:21px!important}
+  html[data-layout-mode="auto-fit"] #sigStatus{font-size:10.5px!important;line-height:1.1!important}
+  html[data-layout-mode="auto-fit"] .optcard{padding:3px 7px!important;gap:2px!important}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:4px 7px!important;gap:3px!important}
+}
+/* ===== CONTROLS: one clean layout =====
+   Simulation toggle on top · Connect Arduino alone on its own row ·
+   Hear the question + Train side by side (equal width, equal height, one line each).
+   Everything is sized from variables so nothing is cut, wrapped or overlapped. */
+html[data-layout-mode] .ctrl{
+  --cg:clamp(8px,1.5vh,13px);          /* gap between rows            */
+  --tg:clamp(11px,1.9vh,15px);         /* toggle text                 */
+  --cb:clamp(14px,2.1vh,16.5px);       /* Connect Arduino text        */
+  --bh:clamp(40px,6vh,48px);           /* height of the pair buttons  */
+  display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;
+  gap:var(--cg);padding:clamp(10px,1.8vh,16px) clamp(12px,1.6vw,18px) clamp(14px,2.2vh,20px);overflow:visible;
+}
+html[data-layout-mode] .ctrl .card-title{margin:0;padding:0 4px;font-size:clamp(15px,2.3vh,19.5px);flex:0 0 auto}
+/* the toggle */
+html[data-layout-mode] .ctrl .conn{margin:0;flex:0 0 auto;width:100%;box-sizing:border-box;
+  padding:clamp(7px,1.2vh,11px) 14px;gap:10px;font-size:var(--tg);line-height:1.2;border-radius:12px;align-self:stretch}
+html[data-layout-mode] .ctrl .conn .dot{width:clamp(11px,1.7vh,15px);height:clamp(11px,1.7vh,15px)}
+/* Connect Arduino — alone on its row */
+html[data-layout-mode] .ctrl #connBtn{margin:0;flex:0 0 auto;width:100%;box-sizing:border-box;min-height:var(--bh);
+  padding:0 14px;display:flex;align-items:center;justify-content:center;font-size:var(--cb);line-height:1.2;
+  white-space:nowrap;border-radius:14px}
+/* older-Chrome fallback: vh-only button sizes; container-query cqw sizes below override where supported */
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{font-size:clamp(10px,1.75vh,13px);line-height:1.2}
+@media (orientation:portrait),(min-height:541px){
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{font-size:clamp(11px,2vh,14.5px)}
+}
+/* the pair: two equal buttons in one row, pinned to the bottom of the card */
+html[data-layout-mode] .ctrl .control-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(7px,1.2vw,10px);
+  width:100%;margin:auto 0 0;padding:0;align-items:stretch;container-type:inline-size;flex:0 0 auto}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{
+  grid-column:auto;width:100%;min-width:0;max-width:none;margin:0;box-sizing:border-box;height:auto;min-height:var(--bh);aspect-ratio:auto;
+  padding:0 6px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;
+  font-size:clamp(9.5px,3.55cqw,12.8px);line-height:1.25;white-space:nowrap;text-align:center;border-radius:14px}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{
+  display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:clip;text-align:center}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{width:1.2em;height:1.06em;flex:0 0 auto;margin:0}
+@container (max-width:250px){html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{display:none}}
+@container (max-width:200px){html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{padding:0 4px;line-height:1.05}html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{white-space:normal;overflow:visible}}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn{box-shadow:0 5px 0 #D8C800}
+html[data-layout-mode] .ctrl .control-pair>#irBtn{box-shadow:0 5px 0 #1B54B5}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn:active,html[data-layout-mode] .ctrl .control-pair>#irBtn:active{transform:translateY(3px)}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn:active{box-shadow:0 2px 0 #D8C800}
+html[data-layout-mode] .ctrl .control-pair>#irBtn:active{box-shadow:0 2px 0 #1B54B5}
+/* room for the coloured lip under the buttons */
+html[data-layout-mode] .ctrl .control-pair{padding-bottom:5px}
+/* short landscape phones: tighter, and the column may scroll instead of squashing */
+@media(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode] .ctrl{--cg:6px;--tg:11px;--cb:13px;--bh:34px;padding:8px 10px 10px}
+  html[data-layout-mode] .ctrl .card-title{display:none}
+  html[data-layout-mode] .ctrl .conn{padding:5px 10px}
+  html[data-layout-mode] .ctrl .control-pair{margin-top:0}
+  html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{padding:0 5px;border-radius:11px;box-shadow:0 4px 0 var(--lip)}
+  html[data-layout-mode] .ctrl .control-pair>#hearBtn{--lip:#D8C800}html[data-layout-mode] .ctrl .control-pair>#irBtn{--lip:#1B54B5}
+  aside.col{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  aside.col>.card{flex:0 0 auto}
+}
+/* phones in portrait */
+@media(max-width:760px) and (orientation:portrait){
+  html[data-layout-mode] .ctrl{--cg:9px;--tg:12.5px;--cb:16px;--bh:44px;padding:11px 13px 15px}
+  html[data-layout-mode] .ctrl .card-title{display:none}
+  html[data-layout-mode] .ctrl .control-pair{margin-top:0}
+}
+
+@media(orientation:landscape) and (max-height:540px){html[data-layout-mode] .ctrl{--bh:36px}}
+
+/* ===== fibre to fabric ===== */
+/* the four cells are positional: the script deals the choices into slots 0-3
+   (process order for the very first game, a fresh shuffle for every game after) */
+#opts{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"s0 s1" "s2 s3"}
+#opts .opt[data-slot="0"]{grid-area:s0}#opts .opt[data-slot="1"]{grid-area:s1}
+#opts .opt[data-slot="2"]{grid-area:s2}#opts .opt[data-slot="3"]{grid-area:s3}
+.lens.ic{display:grid;place-items:center;font-size:clamp(18px,3.3vh,30px);line-height:1}
+.lens.ic>i{font-style:normal;position:relative;z-index:1}
+.lens.wash{background:radial-gradient(circle at 42% 36%,#E3F6FF 0%,#5CC8F5 38%,#1E90D8 76%,#0B5A93 100%)}
+.lens.rinse{background:radial-gradient(circle at 42% 36%,#DFFFFB 0%,#43DCD2 38%,#0EA9B4 76%,#07646C 100%)}
+.lens.spin{background:radial-gradient(circle at 42% 36%,#F3DDF7 0%,#B466C2 38%,#83358C 76%,#4A1A52 100%)}
+.lens.done{background:radial-gradient(circle at 42% 36%,#C9FFD6 0%,#4FE07C 34%,#12A844 72%,#066A28 100%)}
+.opt.right[data-c="wash"]{box-shadow:0 0 0 4px rgba(46,155,234,.35),0 0 24px rgba(46,155,234,.55),0 5px 0 rgba(20,100,170,.35)}
+.opt.right[data-c="rinse"]{box-shadow:0 0 0 4px rgba(20,194,201,.35),0 0 24px rgba(20,194,201,.55),0 5px 0 rgba(10,120,125,.35)}
+.opt.right[data-c="spin"]{box-shadow:0 0 0 4px rgba(131,53,140,.32),0 0 24px rgba(131,53,140,.5),0 5px 0 rgba(80,30,90,.35)}
+.opt.right[data-c="done"]{box-shadow:0 0 0 4px rgba(34,211,90,.35),0 0 24px rgba(34,211,90,.55),0 5px 0 rgba(20,140,60,.35)}
+.chip{font-size:clamp(18px,3.2vh,26px);line-height:1}
+html[data-layout-mode="auto-fit"] .chip{font-size:18px}
+.pstrip{gap:clamp(6px,1.2vh,12px)}
+.pstrip .chip{margin:0}
+/* the scene: one data-s attribute (empty · plant · fibre · yarn · fabric · clothes) drives every picture */
+.st{opacity:0;transition:opacity .55s ease}
+#scene[data-s="empty"] #g-plant,#scene[data-s="plant"] #g-plant,#scene[data-s="fibre"] #g-fibre,#scene[data-s="yarn"] #g-yarn,#scene[data-s="fabric"] #g-fabric,#scene[data-s="clothes"] #g-clothes{opacity:1}
+.grow{transform-box:fill-box;transform-origin:50% 100%;transition:transform 1.5s var(--spring)}
+#scene[data-s="empty"] .grow{transform:scale(.1)}
+.bo{transform-box:fill-box;transform-origin:50% 50%;transition:transform .7s var(--spring) 1.2s}
+#scene[data-s="empty"] .bo{transform:scale(0);transition:none}
+.cl{animation:cdrift 44s linear infinite alternate}@keyframes cdrift{to{transform:translateX(70px)}}
+.tuft{animation:tfl 4s ease-in-out infinite alternate}@keyframes tfl{to{transform:translateY(-14px)}}
+.whl{transform-box:view-box;transform-origin:345px 430px}
+#scene[data-s="yarn"] .whl{animation:rot 4.5s linear infinite}@keyframes rot{to{transform:rotate(360deg)}}
+.belt,.strand{stroke-dasharray:7 6}.strand{stroke-dasharray:none}
+#scene[data-s="yarn"] .belt{animation:flowd .45s linear infinite}@keyframes flowd{to{stroke-dashoffset:-13}}
+#scene[data-s="fabric"] .shut{animation:shut 1.5s ease-in-out infinite alternate}@keyframes shut{from{transform:translateX(-168px)}to{transform:translateX(168px)}}
+@keyframes twk{50%{opacity:.2;transform:scale(.5)}}
+/* the four choices: cloud-blue · rose · gold · violet */
+.lens.fibre{background:radial-gradient(circle at 42% 36%,#EAF7FF 0%,#7FC9F2 38%,#2C8FD0 76%,#0F5A8F 100%)}
+.lens.yarn{background:radial-gradient(circle at 42% 36%,#FFE0F1 0%,#FF7CC0 38%,#F01A8C 76%,#8F0D55 100%)}
+.lens.fabric{background:radial-gradient(circle at 42% 36%,#FFF8C2 0%,#FFD84A 38%,#F5A300 76%,#9A6000 100%)}
+.lens.clothes{background:radial-gradient(circle at 42% 36%,#F3DDF7 0%,#B466C2 38%,#83358C 76%,#4A1A52 100%)}
+.opt.right[data-c="fibre"]{box-shadow:0 0 0 4px rgba(46,155,234,.35),0 0 24px rgba(46,155,234,.55),0 5px 0 rgba(20,100,170,.35)}
+.opt.right[data-c="yarn"]{box-shadow:0 0 0 4px rgba(240,26,140,.3),0 0 24px rgba(240,26,140,.5),0 5px 0 rgba(150,10,90,.35)}
+.opt.right[data-c="fabric"]{box-shadow:0 0 0 4px rgba(255,179,0,.4),0 0 24px rgba(255,179,0,.55),0 5px 0 rgba(160,100,0,.35)}
+.opt.right[data-c="clothes"]{box-shadow:0 0 0 4px rgba(131,53,140,.32),0 0 24px rgba(131,53,140,.5),0 5px 0 rgba(80,30,90,.35)}
+/* the instruction card */
+.ov-box{max-width:430px;padding:22px 30px}
+.ov-box h2{font-size:clamp(24px,4vh,32px)}
+.ov-box p{font-size:18px;margin:8px 0 12px;line-height:1.35}
+.ov-seq{font-size:22px;letter-spacing:0;white-space:nowrap;margin:0 0 16px;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.ov-icons{margin:0 0 6px}
+.ov-icons svg{width:clamp(64px,10vh,84px);height:clamp(64px,10vh,84px)}
+.ov-start{font-size:19px;padding:11px 30px}
+/* Laptop: the instruction card measures the same as the rest of the series (Railway, Traffic
+   light, Pattern, Hand Washing) - the 30px 42px pad, the clamp(26px,4.6vh,40px) title, the
+   clamp(84px,12vh,112px) symbols with the 6px/16px spacing, the 16px/24px line margins, the
+   31.9px line box and the 13px 36px button. The one-line sentence is set at the size where
+   it measures about 325px, the width the series' sentences lay out at, so the card is the
+   same ~420 x 349px. Phones and tablets keep today's compact card, rule for rule. */
+html[data-layout-mode="original-laptop"] .ov-box{max-width:560px;padding:30px 42px}
+html[data-layout-mode="original-laptop"] .ov-box h2{font-size:clamp(26px,4.6vh,40px)}
+html[data-layout-mode="original-laptop"] .ov-box p{font-size:15.63px;letter-spacing:.298px;line-height:31.9px;margin:16px 0 24px;white-space:nowrap}
+html[data-layout-mode="original-laptop"] .ov-icons{margin:6px 0 16px}
+html[data-layout-mode="original-laptop"] .ov-icons svg{width:clamp(84px,12vh,112px);height:clamp(84px,12vh,112px)}
+html[data-layout-mode="original-laptop"] .ov-start{font-size:21px;padding:13px 36px}
+@media (prefers-reduced-motion:reduce){
+  #scene *{animation:none!important}
+  .st,.grow,.bo{transition:none}
+}
+
+/* No-scroll shell: fit the activity to the visible viewport and disable the short-landscape
+   sidebar scrollers. Laptop styles remain untouched because these rules are auto-fit-only. */
+html[data-layout-mode="auto-fit"],
+html[data-layout-mode="auto-fit"] body,
+html[data-layout-mode="auto-fit"] aside.col{
+  overflow:hidden !important;
+  overscroll-behavior:none;
+}
+html[data-layout-mode="auto-fit"] .layout,
+html[data-layout-mode="auto-fit"] aside.col,
+html[data-layout-mode="auto-fit"] aside.col>.card{
+  min-height:0;
+}
+
+/* Short landscape screens: let the two side cards flex into the available height instead of
+   scrolling. The four choices stay compact and the two control buttons remain side by side. */
+@media(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] aside.col{
+    display:flex;
+    flex-direction:column;
+    gap:clamp(2px,.9vh,5px) !important;
+  }
+  html[data-layout-mode="auto-fit"] aside.col>.optcard{
+    flex:1.45 1 0% !important;
+    min-height:0;
+    padding:clamp(3px,1.1vh,7px) 6px !important;
+  }
+  html[data-layout-mode="auto-fit"] aside.col>.ctrl{
+    flex:1 1 0% !important;
+    min-height:0;
+    padding:clamp(3px,1vh,6px) 6px !important;
+    gap:clamp(2px,.7vh,4px) !important;
+    --bh:clamp(28px,7vh,34px) !important;
+  }
+  html[data-layout-mode="auto-fit"] .optcard .opts{
+    min-height:0;
+    margin-top:clamp(2px,.7vh,4px) !important;
+    padding:3px !important;
+    gap:clamp(2px,.7vh,4px) !important;
+  }
+  html[data-layout-mode="auto-fit"] #opts .opt{
+    min-height:0;
+    padding:clamp(2px,.6vh,4px) 2px !important;
+    gap:1px !important;
+  }
+  html[data-layout-mode="auto-fit"] #opts .lens{
+    width:clamp(20px,5.6vh,30px) !important;
+    height:clamp(20px,5.6vh,30px) !important;
+  }
+  html[data-layout-mode="auto-fit"] #opts .opt b{
+    font-size:clamp(9.5px,2.8vh,12px) !important;
+    line-height:1.05;
+  }
+  html[data-layout-mode="auto-fit"] .optcard .legend{
+    margin-top:clamp(1px,.45vh,3px) !important;
+    font-size:clamp(8.5px,2.5vh,10px) !important;
+    line-height:1.1;
+  }
+  html[data-layout-mode="auto-fit"] .optcard .legend .rule{
+    font-size:clamp(8px,2.4vh,10px) !important;
+    line-height:1.05;
+  }
+  html[data-layout-mode="auto-fit"] .optcard .sig-status{
+    margin-top:clamp(1px,.45vh,3px) !important;
+    font-size:clamp(9px,2.5vh,11px) !important;
+    line-height:1.1;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .conn{
+    padding:clamp(2px,.6vh,4px) 6px !important;
+    gap:4px !important;
+    font-size:clamp(9px,2.4vh,10.5px) !important;
+    line-height:1.1;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{
+    min-height:var(--bh) !important;
+    padding:1px 4px !important;
+    font-size:clamp(10px,2.7vh,12px) !important;
+    line-height:1.1;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{
+    margin-top:0 !important;
+    padding-bottom:2px !important;
+    gap:3px !important;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{
+    min-height:calc(var(--bh) + 2px) !important;
+    padding:1px 3px !important;
+    gap:3px !important;
+    font-size:clamp(8.5px,2.5vh,11px) !important;
+    line-height:1.05;
+  }
+}
+
+/* Compact portrait phones: reserve enough height for the stage while keeping all controls
+   visible at once—no document or panel scrolling. */
+@media(max-width:600px) and (max-height:560px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .topbar{height:clamp(42px,8vh,49px);padding:4px 10px}
+  html[data-layout-mode="auto-fit"] .layout{gap:4px;padding:4px 6px}
+  html[data-layout-mode="auto-fit"] .stage-card{padding:5px}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(70px,16vh,100px)}
+  html[data-layout-mode="auto-fit"] .task-header{padding:0 2px 4px;gap:4px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:4px;min-height:0}
+  html[data-layout-mode="auto-fit"] .optcard{padding:4px 7px 5px}
+  html[data-layout-mode="auto-fit"] .optcard .opts{margin-top:3px}
+  html[data-layout-mode="auto-fit"] #opts{gap:3px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:3px 2px;gap:2px}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:24px !important;height:24px !important}
+  html[data-layout-mode="auto-fit"] #opts .opt b{font-size:11px}
+  html[data-layout-mode="auto-fit"] .optcard .legend{margin-top:2px;font-size:9px;line-height:1.05}
+  html[data-layout-mode="auto-fit"] .optcard .legend .rule{font-size:9px;white-space:nowrap}
+  html[data-layout-mode="auto-fit"] .optcard .sig-status{margin-top:2px;font-size:10.5px;line-height:1.05}
+  html[data-layout-mode="auto-fit"] .ctrl{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:4px !important;
+    padding:5px 7px !important;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .card-title{display:none}
+  html[data-layout-mode="auto-fit"] .ctrl .conn,
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn,
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{grid-column:1/-1}
+  html[data-layout-mode="auto-fit"] .ctrl .conn{margin:0;padding:3px 6px;font-size:10.5px}
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{min-height:32px;padding:3px 5px;font-size:12px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    width:100%;margin:0;padding-bottom:2px;gap:4px;
+  }
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{
+    min-height:34px;padding:3px 2px;font-size:10px;line-height:1.05;
+  }
+}
+
+
+
+/* ===== phone portrait auto-fit: give the scene the height, compact the choices ===== */
+@media(max-width:760px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] #opts{gap:6px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:5px 4px;gap:2px;min-height:0}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:34px!important;height:34px!important}
+  html[data-layout-mode="auto-fit"] #opts .opt b{font-size:13.5px}
+  html[data-layout-mode="auto-fit"] .optcard{padding:6px 8px}
+  html[data-layout-mode="auto-fit"] .ctrl{padding:7px 10px 9px;gap:6px}
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{font-size:14.5px;padding:8px 12px}
+  html[data-layout-mode="auto-fit"] .sig-status{font-size:13px;margin:4px 0 0}
+  html[data-layout-mode="auto-fit"] .legend .rule{font-size:10.5px}
+}
+
+/* ===================== AUTO-FIT SHELL v2 (ported from Hand Washing) =====================
+   The scene keeps its own height; spare pixels come out of padding and gaps first, and if a
+   very short phone still cannot fit everything the whole card scrolls instead of cutting off. */
+@media(max-width:940px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .layout{overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain}
+}
+@media(max-width:760px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .optcard{padding:8px 12px 9px}
+  html[data-layout-mode="auto-fit"] .optcard .opts{margin-top:7px}
+  html[data-layout-mode="auto-fit"] #opts{gap:7px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:5px 6px}
+}
+/* tall, thin phones: the picture yields the extra centimetres, the choices keep room */
+@media(max-width:600px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(150px,19vh,340px)}
+  /* the picture keeps its box but stops dictating the row's height */
+  html[data-layout-mode="auto-fit"] .scene{position:absolute;inset:0;width:100%;height:100%}
+}
+@media(max-width:760px) and (max-height:720px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .layout{padding:6px 6px 5px}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .topbar{height:clamp(44px,6.6vh,52px)}
+  html[data-layout-mode="auto-fit"] .stage-card{padding:6px}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(140px,23vh,200px);max-height:clamp(146px,24vh,220px)}
+  html[data-layout-mode="auto-fit"] .banner{padding:2px 10px;line-height:1.12;margin:0}
+  html[data-layout-mode="auto-fit"] .optcard{padding:4px 10px 5px}
+  html[data-layout-mode="auto-fit"] .optcard .opts{margin-top:4px}
+  html[data-layout-mode="auto-fit"] #opts{gap:4px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:3px 6px}
+  html[data-layout-mode="auto-fit"] .optcard .legend{margin-top:0}
+  html[data-layout-mode="auto-fit"] .sig-status{margin:3px 0 0}
+  html[data-layout-mode="auto-fit"] .ctrl{--cg:5px;padding:4px 11px 5px}
+  html[data-layout-mode="auto-fit"] .ctrl .conn{padding:2px 11px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{padding-bottom:4px}
+}
+/* the smallest phones (320 pt class) */
+@media(max-width:360px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(172px,31vh,340px)}
+}
+@media(max-width:340px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .scene{position:absolute;inset:0;width:100%;height:100%}
+  html[data-layout-mode="auto-fit"] .ctrl{--cg:7px;padding:5px 10px 6px}
+  html[data-layout-mode="auto-fit"] .ctrl .conn{padding:2px 10px}
+  html[data-layout-mode="auto-fit"] #opts{gap:5px}
+}
+/* Hear / Train buttons never clip (portrait and roomy windows; short landscape keeps its tuned sizes) */
+@media (orientation:portrait),(min-height:541px){
+html[data-layout-mode] .ctrl .control-pair{padding-bottom:7px;overflow:visible}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{
+  overflow:visible;min-height:calc(var(--bh) + 4px);padding:8px 10px;gap:7px;line-height:1.2;
+  font-size:clamp(12.5px,4.3cqw,15.5px)}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{
+  overflow:visible;text-overflow:clip;white-space:nowrap;line-height:1.2;padding:1px 0}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{width:1.5em;height:1.3em}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn::before,html[data-layout-mode] .ctrl .control-pair>#irBtn::before{border-radius:inherit}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk){white-space:normal;text-wrap:balance;overflow-wrap:normal;text-align:left;flex:1 1 auto;min-width:0}
+html[data-layout-mode] .ctrl .control-pair>#hearBtn{justify-content:center}
+@container (max-width:250px){html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{display:block;width:1.3em;height:1.15em}}
+@container (max-width:200px){html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{white-space:normal;overflow:visible}html[data-layout-mode] .ctrl .control-pair>#hearBtn .spk{display:none}}
+}
+@media(max-width:760px) and (orientation:portrait){html[data-layout-mode] .ctrl{--bh:46px}}
+/* a steady picture: the header may not change height when the message does */
+@media(max-width:760px) and (orientation:portrait), (orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] .task-header{display:flex;flex-direction:column;align-items:center;
+    flex-wrap:nowrap;gap:4px;padding:0 2px 6px}
+  html[data-layout-mode="auto-fit"] .task-header>.banner{display:flex;align-items:center;justify-content:center;
+    text-align:center;max-width:100%}
+  html[data-layout-mode="auto-fit"] .task-header>.progress{justify-content:center;flex-wrap:nowrap}
+}
+@media(max-width:760px) and (orientation:portrait), (orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] .task-header>.eyebrow{display:none}
+}
+@media(max-width:760px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .task-header>.banner{min-height:44px}
+}
+@media(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] .task-header>.banner{min-height:48px}
+}
+
+/* the IR button label wraps inside the blue pad instead of spilling out of it */
+html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{white-space:normal;overflow:visible;text-overflow:clip;text-wrap:balance;line-height:1.12}
+html[data-layout-mode] .ctrl .control-pair>#irBtn{padding:6px 6px}
+html .ctrl .control-pair>#irBtn #irTxt{white-space:normal;overflow:visible}
+@media (orientation:landscape) and (max-height:540px){
+  html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{font-size:11px;line-height:1.1}
+}
+/* keep the two-word option label inside its pad at every size */
+#opts .opt b{white-space:normal;text-align:center;line-height:1.1}
+
+/* bullet-proof guard: the Hear / Plant pair can never leave the Controls card,
+   whatever the viewport, zoom, font fallback or layout mode */
+html .ctrl .control-pair,html[data-layout-mode] .ctrl .control-pair{max-width:100%;min-width:0}
+html .ctrl .control-pair>#hearBtn,html .ctrl .control-pair>#irBtn,
+html[data-layout-mode] .ctrl .control-pair>#hearBtn,html[data-layout-mode] .ctrl .control-pair>#irBtn{
+  max-width:100%;min-width:0;overflow:hidden}
+html .ctrl .control-pair>#hearBtn>span:not(.spk),html .ctrl .control-pair>#irBtn #irTxt,
+html[data-layout-mode] .ctrl .control-pair>#hearBtn>span:not(.spk),html[data-layout-mode] .ctrl .control-pair>#irBtn #irTxt{
+  white-space:normal;overflow-wrap:anywhere;min-width:0;flex:0 1 auto}
+
+/* CSS-only safety net: portrait screens stack like a tablet even without JS,
+   mirroring the <=940px rule so no device ever gets a squashed laptop layout */
+@media (orientation:portrait) and (min-width:941px){
+  .layout{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+  .col,.rightcol,.card{min-width:0}
+  .rightcol{grid-template-columns:minmax(0,1fr)}
+  .task-header{flex-wrap:wrap;row-gap:5px}
+  .progress{flex-wrap:wrap;justify-content:center}
+}
+
+/* ===================== AUTO-FIT PASS 3 — fit check =====================
+   Measured on 360×640, 375×667, 375×553, 412×732 and 320×568 phones, 768×954 /
+   768×1024 tablets and 667×375 / 844×390 landscape phones. Earlier passes left
+   two floors under the picture (31vh on ≤360 px phones, 140 px on short phones)
+   that pushed the Controls card below the screen edge; on portrait tablets the
+   picture's own aspect ratio set the row height. The picture now takes whatever
+   is left after the choices and the two buttons — which keep finger-sized pads. */
+
+/* portrait tablets (601–940 px): the picture keeps its box but stops dictating the row's height */
+@media(min-width:601px) and (max-width:940px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .scene{position:absolute;inset:0;width:100%;height:100%}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(220px,34vh,560px)}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:clamp(44px,6vh,56px);height:clamp(44px,6vh,56px)}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:8px 6px 7px}
+  html[data-layout-mode="auto-fit"] .ctrl{--bh:clamp(42px,5.4vh,48px)}
+}
+/* portrait phones (≤600 px, up to 760 px tall): one coherent compact scale */
+@media(max-width:600px) and (max-height:760px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .topbar{height:clamp(40px,6.4vh,48px)}
+  html[data-layout-mode="auto-fit"] .layout{gap:6px;padding:6px 6px 5px}
+  html[data-layout-mode="auto-fit"] .stage-card{padding:6px}
+  html[data-layout-mode="auto-fit"] .task-header{gap:3px;padding:0 2px 5px}
+  html[data-layout-mode="auto-fit"] .task-header>.banner{min-height:36px;font-size:clamp(12px,1.9vh,13px);padding:2px 10px}
+  html[data-layout-mode="auto-fit"] .progress .dot{width:18px;height:18px;font-size:9px}
+  /* a floor that scales with the screen and no ceiling: the 1fr row hands the picture every spare pixel */
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(100px,18vh,260px);max-height:none}
+  html[data-layout-mode="auto-fit"] .rightcol{gap:6px}
+  html[data-layout-mode="auto-fit"] .optcard{padding:5px 8px 5px}
+  html[data-layout-mode="auto-fit"] .optcard .opts{margin-top:4px;padding:5px}
+  html[data-layout-mode="auto-fit"] #opts{gap:5px}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:4px 4px 3px;gap:2px;min-height:46px}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:32px!important;height:32px!important}
+  html[data-layout-mode="auto-fit"] #opts .opt b{font-size:12.5px;line-height:1.05}
+  html[data-layout-mode="auto-fit"] .optcard .legend{margin-top:3px;font-size:9.8px}
+  html[data-layout-mode="auto-fit"] .optcard .sig-status{margin:3px 0 0;font-size:12px}
+  html[data-layout-mode="auto-fit"] .ctrl{--cg:5px;--bh:40px;--cb:14px;padding:5px 10px 5px}
+  html[data-layout-mode="auto-fit"] .ctrl .conn{margin:0;padding:3px 10px;font-size:11px}
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{min-height:38px;padding:4px 12px;font-size:14px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair{padding-bottom:4px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{min-height:44px;padding:5px 8px}
+}
+/* the shortest portrait screens (phones with the browser bars showing) */
+@media(max-width:600px) and (max-height:580px) and (orientation:portrait){
+  html[data-layout-mode="auto-fit"] .topbar{height:40px}
+  html[data-layout-mode="auto-fit"] .stage{min-height:clamp(80px,15vh,200px)}
+  html[data-layout-mode="auto-fit"] .task-header>.banner{min-height:32px;font-size:12px}
+  html[data-layout-mode="auto-fit"] #opts .lens{width:26px!important;height:26px!important}
+  html[data-layout-mode="auto-fit"] #opts .opt{padding:3px 3px 2px;min-height:42px}
+  html[data-layout-mode="auto-fit"] #opts .opt b{font-size:11.5px}
+  html[data-layout-mode="auto-fit"] .ctrl{--bh:36px}
+  html[data-layout-mode="auto-fit"] .ctrl #connBtn{min-height:34px;font-size:13px}
+  html[data-layout-mode="auto-fit"] .ctrl .control-pair>#hearBtn,html[data-layout-mode="auto-fit"] .ctrl .control-pair>#irBtn{min-height:40px;padding:3px 6px}
+}
+/* landscape phones: the Connect pad and the four choices reach a finger-sized height */
+@media(orientation:landscape) and (max-height:540px){
+  html[data-layout-mode="auto-fit"] aside.col>.ctrl{--bh:clamp(30px,7.5vh,34px) !important}
+  html[data-layout-mode="auto-fit"] #opts .opt{min-height:44px}
+}
+
+/* ===================== THE LOOM AT WORK & THE TAILOR'S STALL =====================
+   Fabric: the cloth grows one weft row at a time while the shuttle flies, the beater
+   packs each row and a weaver throws the shuttle. Clothes: a tailor stitches the fabric
+   on a sewing machine, hands the finished clothes to two kids, and the kids cheer. Every
+   figure's end pose is the base style; the keyframes only describe how it gets there,
+   so a reduced-motion device simply shows the finished picture.                        */
+.aR,.aL,.wArm,.tArmR,.kArmR,.kArmL{transform-box:fill-box;transform-origin:50% 6%}
+.mO{display:none}
+/* --- the loom --- */
+.row.late{opacity:1}
+#scene[data-s="fabric"] .row.late{animation:rowIn .35s ease both}
+@keyframes rowIn{from{opacity:0}}
+#scene[data-s="fabric"] .fell{animation:fellRise 5s linear .3s both}
+@keyframes fellRise{from{transform:translateY(118px)}}
+.beater{transform-box:fill-box;transform-origin:50% 50%}
+#scene[data-s="fabric"] .beater{animation:beat 1.5s ease-in-out infinite}
+@keyframes beat{0%,30%,100%{transform:translateY(0)}12%{transform:translateY(14px)}}
+.wArm{transform:rotate(-80deg)}
+#scene[data-s="fabric"] .wArm{animation:throwArm 1.5s ease-in-out infinite alternate}
+@keyframes throwArm{from{transform:rotate(-66deg)}to{transform:rotate(-100deg)}}
+/* --- the sewing machine --- */
+.needle,.feed,.tHand,.giftIn,.tw2,.kidJ{transform-box:fill-box}
+.hw{transform-box:fill-box;transform-origin:50% 50%}
+#scene[data-s="clothes"] .needle{animation:stitch .22s linear 12}
+@keyframes stitch{50%{transform:translateY(10px)}}
+#scene[data-s="clothes"] .hw{animation:rot .5s linear 5.3}
+#scene[data-s="clothes"] .feed{animation:feed 2.64s linear both}
+@keyframes feed{from{transform:translateX(-14px)}}
+#scene[data-s="clothes"] .tHand{animation:nudge .44s ease-in-out 6 alternate}
+@keyframes nudge{to{transform:translateX(-5px)}}
+/* --- the hand-over --- */
+#scene[data-s="clothes"] .tArmR{transform:rotate(-100deg);animation:armGive .6s var(--spring) 2.45s both}
+@keyframes armGive{from{transform:rotate(0)}}
+.giftIn{transform-origin:50% 0}
+#scene[data-s="clothes"] .giftIn{animation:give 1.1s var(--ease-out) both}
+@keyframes give{0%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.25)}25%{opacity:1;transform:translate(var(--dx),var(--dy)) scale(.9)}100%{opacity:1;transform:none}}
+/* --- the kids cheer --- */
+#scene[data-s="clothes"] .kArmR{transform:rotate(-160deg);animation:armUpR .5s var(--spring) both}
+#scene[data-s="clothes"] .kArmL{transform:rotate(160deg);animation:armUpL .5s var(--spring) both}
+@keyframes armUpR{from{transform:rotate(0)}}
+@keyframes armUpL{from{transform:rotate(0)}}
+#scene[data-s="clothes"] .cheer .mO{display:block;animation:appear .2s ease both}
+#scene[data-s="clothes"] .cheer .mS{opacity:0;animation:vanish .2s ease both}
+@keyframes appear{from{opacity:0}}
+@keyframes vanish{from{opacity:1}}
+#scene[data-s="clothes"] .boy .kArmR,#scene[data-s="clothes"] .boy .kArmL,#scene[data-s="clothes"] .boy .mO,#scene[data-s="clothes"] .boy .mS{animation-delay:3.6s}
+#scene[data-s="clothes"] .girl .kArmR,#scene[data-s="clothes"] .girl .kArmL,#scene[data-s="clothes"] .girl .mO,#scene[data-s="clothes"] .girl .mS{animation-delay:4.1s}
+#scene[data-s="clothes"] .boy .kidJ{animation:kjump .5s ease-in-out 3.9s infinite alternate}
+#scene[data-s="clothes"] .girl .kidJ{animation:kjump .5s ease-in-out 4.35s infinite alternate}
+@keyframes kjump{to{transform:translateY(-14px)}}
+.tw2{transform-origin:50% 50%}
+#scene[data-s="clothes"] .tw2{animation:appear .3s ease both,twk 1.8s ease-in-out infinite}
+.lite .beater,.lite .kidJ{animation:none!important}
+</style>
+<script>
+/* Keep the auto-fit shell inside the actually visible viewport when mobile browser chrome moves. */
+(function(){
+  const el=document.documentElement;
+  function sizeToViewport(){
+    try{
+      const vv=window.visualViewport;
+      const h=Math.round(vv?(vv.height*(vv.scale||1)):window.innerHeight);
+      if(h>0)el.style.setProperty('--vvh',h+'px');
+    }catch(e){}
+  }
+  sizeToViewport();
+  addEventListener('resize',sizeToViewport,{passive:true});
+  addEventListener('orientationchange',sizeToViewport,{passive:true});
+  if(window.visualViewport){
+    visualViewport.addEventListener('resize',sizeToViewport,{passive:true});
+    visualViewport.addEventListener('scroll',sizeToViewport,{passive:true});
+  }
+})();
+</script>
+<script>
+/* The layout mode is decided before the first paint — the same query the
+   detective series uses — so a phone or tablet never flashes the laptop
+   layout on the way in, and the laptop page never flickers into auto-fit. */
+try{
+  const layoutQuery=matchMedia('(any-hover:hover) and (any-pointer:fine)');
+  const small=innerWidth<980||innerHeight<520||innerWidth<innerHeight;
+  document.documentElement.dataset.layoutMode=(layoutQuery.matches&&!small)?'original-laptop':'auto-fit';
+}catch(e){document.documentElement.dataset.layoutMode='auto-fit';}
+</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <radialGradient id="gcRed" cx="40%" cy="32%" r="75%"><stop offset="0" stop-color="#FFD9D4"/><stop offset=".3" stop-color="#FF5A4E"/><stop offset=".72" stop-color="#E5121B"/><stop offset="1" stop-color="#8E0510"/></radialGradient>
+  <radialGradient id="gcGreen" cx="40%" cy="32%" r="75%"><stop offset="0" stop-color="#E3FFEA"/><stop offset=".3" stop-color="#5BEA86"/><stop offset=".72" stop-color="#14B94A"/><stop offset="1" stop-color="#06702A"/></radialGradient>
+  <linearGradient id="gcBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7DBBFF"/><stop offset=".5" stop-color="#2F7FEE"/><stop offset="1" stop-color="#1B54B5"/></linearGradient>
+  <linearGradient id="gcGrey" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6F2FA"/><stop offset=".55" stop-color="#C5B7D2"/><stop offset="1" stop-color="#9886A8"/></linearGradient>
+  <radialGradient id="gcLens" cx="38%" cy="30%" r="80%"><stop offset="0" stop-color="#9CD0FF"/><stop offset=".45" stop-color="#2F7FEE"/><stop offset="1" stop-color="#0E2F73"/></radialGradient>
+  <linearGradient id="gcGloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient>
+</defs></svg>
+<header class="topbar">
+  <img class="brand-logo" src="data:image/png;base64,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" alt="Smart Block">
+  <div><h1>Fibre to <b>Fabric</b></h1></div>
+</header>
+
+<main class="layout">
+  <section class="col">
+    <div class="card stage-card">
+      <div class="task-header">
+        <div class="eyebrow" id="taskCount">STEP 1 / 5</div>
+        <div class="banner" id="banner" role="button" tabindex="0" title="Tap to hear the question again"><span class="bt">Press <b>+ Cotton</b> to grow the cotton plant</span></div>
+        <div class="progress" id="progress" aria-label="Five steps"></div>
+      </div>
+      <div class="stage" id="stage">
+        <svg class="scene" id="scene" viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid slice" data-s="empty" role="img" aria-label="Cotton becoming cloth, step by step">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A9DFF4"/><stop offset="1" stop-color="#FFF1CE"/></linearGradient>
+<linearGradient id="gnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EBCB92"/><stop offset="1" stop-color="#C79A5B"/></linearGradient>
+<linearGradient id="fld" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9BD470"/><stop offset="1" stop-color="#6CAF4A"/></linearGradient>
+<linearGradient id="bsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6B467"/><stop offset="1" stop-color="#C58B44"/></linearGradient>
+<pattern id="awn" width="28" height="40" patternUnits="userSpaceOnUse"><rect width="28" height="40" fill="#F7A0CD"/><rect width="14" height="40" fill="#fff"/></pattern>
+<pattern id="chk" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="#4C8DE0"/><rect width="12" height="24" fill="#fff" fill-opacity=".38"/><rect width="24" height="12" fill="#fff" fill-opacity=".38"/></pattern>
+</defs>
+<rect width="1000" height="470" fill="url(#sky)"/>
+<circle cx="850" cy="115" r="96" fill="#FFE27A" opacity=".35"/><circle cx="850" cy="115" r="58" fill="#FFD84A"/>
+<g class="cl" fill="#fff" opacity=".9"><ellipse cx="190" cy="105" rx="70" ry="22"/><ellipse cx="235" cy="92" rx="44" ry="22"/><ellipse cx="560" cy="70" rx="60" ry="18"/><ellipse cx="600" cy="60" rx="36" ry="18"/></g>
+<path d="M0 440C140 380 260 400 380 430C520 380 700 390 1000 430V480H0Z" fill="#CFE9B6"/>
+<path d="M0 470C200 430 420 450 600 465C760 440 900 450 1000 462V560H0Z" fill="#B5DC93"/>
+<rect y="455" width="1000" height="110" fill="url(#fld)"/>
+<path d="M0 500H1000M0 530H1000" stroke="#5E9E40" stroke-opacity=".35" stroke-width="3"/>
+<rect y="560" width="1000" height="120" fill="url(#gnd)"/>
+<g id="g-plant" class="st"><g transform="translate(170 512) scale(0.72)"><g class="grow"><path d="M0 0C-8-70 8-140 0-205" fill="none" stroke="#4F9A3A" stroke-width="9" stroke-linecap="round"/><path d="M0-62C28-80 50-100 68-118" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><path d="M0-112C-26-130-48-150-66-166" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><g transform="translate(2 -30) rotate(-38)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -44) rotate(-142)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(3 -84) rotate(-32)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -96) rotate(-148)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(2 -150) rotate(-40)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -160) rotate(-140)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g class="bo"><g transform="translate(0 -210) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(70 -124) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-68 -172) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(20 -96) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-22 -136) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g></g></g><g transform="translate(830 512) scale(0.72)"><g class="grow"><path d="M0 0C-8-70 8-140 0-205" fill="none" stroke="#4F9A3A" stroke-width="9" stroke-linecap="round"/><path d="M0-62C28-80 50-100 68-118" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><path d="M0-112C-26-130-48-150-66-166" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><g transform="translate(2 -30) rotate(-38)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -44) rotate(-142)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(3 -84) rotate(-32)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -96) rotate(-148)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(2 -150) rotate(-40)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -160) rotate(-140)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g class="bo"><g transform="translate(0 -210) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(70 -124) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-68 -172) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(20 -96) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-22 -136) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g></g></g><g transform="translate(300 548) scale(1)"><g class="grow"><path d="M0 0C-8-70 8-140 0-205" fill="none" stroke="#4F9A3A" stroke-width="9" stroke-linecap="round"/><path d="M0-62C28-80 50-100 68-118" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><path d="M0-112C-26-130-48-150-66-166" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><g transform="translate(2 -30) rotate(-38)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -44) rotate(-142)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(3 -84) rotate(-32)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -96) rotate(-148)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(2 -150) rotate(-40)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -160) rotate(-140)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g class="bo"><g transform="translate(0 -210) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(70 -124) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-68 -172) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(20 -96) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-22 -136) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g></g></g><g transform="translate(700 548) scale(1)"><g class="grow"><path d="M0 0C-8-70 8-140 0-205" fill="none" stroke="#4F9A3A" stroke-width="9" stroke-linecap="round"/><path d="M0-62C28-80 50-100 68-118" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><path d="M0-112C-26-130-48-150-66-166" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><g transform="translate(2 -30) rotate(-38)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -44) rotate(-142)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(3 -84) rotate(-32)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -96) rotate(-148)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(2 -150) rotate(-40)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -160) rotate(-140)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g class="bo"><g transform="translate(0 -210) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(70 -124) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-68 -172) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(20 -96) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-22 -136) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g></g></g><g transform="translate(500 556) scale(1.16)"><g class="grow"><path d="M0 0C-8-70 8-140 0-205" fill="none" stroke="#4F9A3A" stroke-width="9" stroke-linecap="round"/><path d="M0-62C28-80 50-100 68-118" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><path d="M0-112C-26-130-48-150-66-166" fill="none" stroke="#4F9A3A" stroke-width="6" stroke-linecap="round"/><g transform="translate(2 -30) rotate(-38)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -44) rotate(-142)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(3 -84) rotate(-32)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -96) rotate(-148)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(2 -150) rotate(-40)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g transform="translate(-2 -160) rotate(-140)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g><g class="bo"><g transform="translate(0 -210) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(70 -124) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-68 -172) scale(1.1)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(20 -96) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g><g class="bo"><g transform="translate(-22 -136) scale(0.9)"><path d="M-17 10L-11-6L-4 6L0-9L4 6L11-6L17 10Q0 20-17 10Z" fill="#8A5A34"/><g fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle cx="-9" cy="-6" r="10"/><circle cx="9" cy="-6" r="10"/><circle cx="0" cy="-17" r="11"/><circle cx="0" cy="-4" r="10"/></g></g></g></g></g></g>
+<g id="g-fibre" class="st">
+ <g transform="translate(200 600) rotate(-18)"><path d="M-70 0C-30-10 20-8 70 0" fill="none" stroke="#4F9A3A" stroke-width="7" stroke-linecap="round"/><g transform="translate(-40 -4) rotate(-150)"><path d="M0 0C14-18 38-20 54 0C38 20 14 18 0 0Z" fill="#5FAE45"/><path d="M4 0H48" stroke="#3E8A31" stroke-width="2" fill="none"/></g></g>
+ <g fill="#fff" stroke="#D5E1EC" stroke-width="2"><circle cx="500" cy="440" r="62"/><circle cx="440" cy="468" r="52"/><circle cx="560" cy="468" r="52"/><circle cx="398" cy="498" r="40"/><circle cx="602" cy="498" r="40"/><circle cx="500" cy="486" r="56"/><circle cx="468" cy="418" r="40"/><circle cx="536" cy="414" r="38"/></g>
+ <g fill="#9FB4C9" opacity=".16"><ellipse cx="520" cy="500" rx="90" ry="28"/><ellipse cx="450" cy="470" rx="30" ry="20"/></g>
+ <path d="M360 505L640 505L610 622Q500 642 390 622Z" fill="url(#bsk)" stroke="#9C6528" stroke-width="3"/>
+ <path d="M372 540H628M381 572H619M389 604H611M430 505L418 628M500 505V638M570 505L582 628" fill="none" stroke="#A8702E" stroke-width="3" opacity=".7"/>
+ <ellipse cx="500" cy="505" rx="140" ry="13" fill="none" stroke="#9C6528" stroke-width="7"/>
+ <g class="tuft" style="animation-delay:0s" transform="translate(330 390)" fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle r="15"/><circle cx="15" cy="4" r="11"/><circle cx="-14" cy="5" r="10"/></g><g class="tuft" style="animation-delay:1.2s" transform="translate(690 360)" fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle r="15"/><circle cx="15" cy="4" r="11"/><circle cx="-14" cy="5" r="10"/></g><g class="tuft" style="animation-delay:2.2s" transform="translate(610 290)" fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle r="15"/><circle cx="15" cy="4" r="11"/><circle cx="-14" cy="5" r="10"/></g><g class="tuft" style="animation-delay:0.6s" transform="translate(400 300)" fill="#fff" stroke="#D5E1EC" stroke-width="1.5"><circle r="15"/><circle cx="15" cy="4" r="11"/><circle cx="-14" cy="5" r="10"/></g>
+ <ellipse cx="795" cy="608" rx="66" ry="17" fill="#CDA67E" stroke="#8C6238" stroke-width="3"/><g fill="#6B4423"><ellipse cx="765" cy="600" rx="7" ry="4.5" transform="rotate(20 765 600)"/><ellipse cx="785" cy="605" rx="7" ry="4.5" transform="rotate(-15 785 605)"/><ellipse cx="805" cy="598" rx="7" ry="4.5" transform="rotate(30 805 598)"/><ellipse cx="825" cy="604" rx="7" ry="4.5" transform="rotate(0 825 604)"/><ellipse cx="775" cy="614" rx="7" ry="4.5" transform="rotate(-30 775 614)"/><ellipse cx="800" cy="613" rx="7" ry="4.5" transform="rotate(10 800 613)"/><ellipse cx="820" cy="616" rx="7" ry="4.5" transform="rotate(40 820 616)"/></g>
+</g>
+<g id="g-yarn" class="st">
+ <rect x="215" y="585" width="560" height="30" rx="8" fill="#9A6330" stroke="#6B4423" stroke-width="3"/>
+ <rect x="333" y="430" width="24" height="158" fill="#8B5A2B" stroke="#6B4423" stroke-width="3"/>
+ <rect x="646" y="474" width="22" height="114" fill="#8B5A2B" stroke="#6B4423" stroke-width="3"/>
+ <g class="belt" fill="none" stroke="#EBDDBF" stroke-width="3.5"><path d="M345 295L648 458"/><path d="M345 565L648 486"/></g>
+ <g class="whl"><circle cx="345" cy="430" r="135" fill="#FFF8E8" fill-opacity=".25" stroke="#7C4A22" stroke-width="14"/><circle cx="345" cy="430" r="118" fill="none" stroke="#B07A3A" stroke-width="3"/><g stroke="#8B5A2B" stroke-width="5" stroke-linecap="round"><line x1="345" y1="430" x2="463.0" y2="430.0"/><line x1="345" y1="430" x2="447.2" y2="489.0"/><line x1="345" y1="430" x2="404.0" y2="532.2"/><line x1="345" y1="430" x2="345.0" y2="548.0"/><line x1="345" y1="430" x2="286.0" y2="532.2"/><line x1="345" y1="430" x2="242.8" y2="489.0"/><line x1="345" y1="430" x2="227.0" y2="430.0"/><line x1="345" y1="430" x2="242.8" y2="371.0"/><line x1="345" y1="430" x2="286.0" y2="327.8"/><line x1="345" y1="430" x2="345.0" y2="312.0"/><line x1="345" y1="430" x2="404.0" y2="327.8"/><line x1="345" y1="430" x2="447.2" y2="371.0"/></g><circle cx="345" cy="430" r="17" fill="#5A3516"/><circle cx="345" cy="295" r="7" fill="#E9C46A"/></g>
+ <path d="M657 472H765" stroke="#6B4423" stroke-width="7" stroke-linecap="round"/><circle cx="657" cy="472" r="15" fill="#C58B44" stroke="#6B4423" stroke-width="3"/>
+ <g fill="#fff" stroke="#D5E1EC" stroke-width="2"><circle cx="788" cy="470" r="22"/><circle cx="806" cy="480" r="15"/><circle cx="800" cy="458" r="14"/></g>
+ <path class="strand" d="M766 472C760 520 810 530 846 566" fill="none" stroke="#C5D0DA" stroke-width="7" stroke-linecap="round"/><path class="strand" d="M766 472C760 520 810 530 846 566" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+ <g><rect x="826" y="556" width="46" height="56" rx="5" fill="#F5C04A" stroke="#B9801A" stroke-width="3"/><path d="M830 570H868M830 582H868M830 594H868" stroke="#fff" stroke-opacity=".7" stroke-width="3"/><rect x="820" y="548" width="58" height="10" rx="4" fill="#9A6330"/><rect x="820" y="610" width="58" height="10" rx="4" fill="#9A6330"/></g>
+ <g><circle cx="120" cy="594" r="26" fill="#F0617E"/><path d="M98 586Q120 572 142 586M95 598Q120 584 145 598M100 608Q120 594 140 608" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.5"/></g><g><circle cx="172" cy="602" r="26" fill="#4F8FE0"/><path d="M150 594Q172 580 194 594M147 606Q172 592 197 606M152 616Q172 602 192 616" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.5"/></g><g><circle cx="146" cy="566" r="26" fill="#F5B83A"/><path d="M124 558Q146 544 168 558M121 570Q146 556 171 570M126 580Q146 566 166 580" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.5"/></g>
+</g>
+<g id="g-fabric" class="st">
+ <!-- yarn comes in: a cone of yarn on the floor feeds the loom -->
+ <path d="M98 548Q130 420 258 250" fill="none" stroke="#F4EAD6" stroke-width="2.4"/>
+ <g transform="translate(98 604)"><path d="M-15 0L-23 -56H23L15 0Z" fill="#F4EAD6" stroke="#C9B6A4" stroke-width="2"/><path d="M-21 -46H21M-20 -36H20M-19 -26H19M-18 -16H18" stroke="#E2D4BC" stroke-width="2"/><ellipse cx="0" cy="0" rx="17" ry="5" fill="#C9B6A4"/></g>
+ <!-- the frame and the warp -->
+ <g fill="#8B5A2B" stroke="#6B4423" stroke-width="3"><rect x="246" y="236" width="28" height="376" rx="4"/><rect x="726" y="236" width="28" height="376" rx="4"/><rect x="246" y="236" width="508" height="28" rx="4"/><rect x="246" y="584" width="508" height="28" rx="4"/></g>
+ <path d="M290 266V560 M304 266V560 M318 266V560 M332 266V560 M346 266V560 M360 266V560 M374 266V560 M388 266V560 M402 266V560 M416 266V560 M430 266V560 M444 266V560 M458 266V560 M472 266V560 M486 266V560 M500 266V560 M514 266V560 M528 266V560 M542 266V560 M556 266V560 M570 266V560 M584 266V560 M598 266V560 M612 266V560 M626 266V560 M640 266V560 M654 266V560 M668 266V560 M682 266V560 M696 266V560 M710 266V560" fill="none" stroke="#F4EAD6" stroke-width="3.2"/>
+ <!-- the cloth grows one weft row at a time, from the bottom up -->
+ <g class="cloth"><rect class="row" x="288" y="545.2" width="424" height="15.3" fill="url(#chk)"/><rect class="row" x="288" y="530.4" width="424" height="15.3" fill="url(#chk)"/><rect class="row late" x="288" y="515.6" width="424" height="15.3" fill="url(#chk)" style="animation-delay:0.60s"/><rect class="row late" x="288" y="500.8" width="424" height="15.3" fill="url(#chk)" style="animation-delay:1.22s"/><rect class="row late" x="288" y="486.0" width="424" height="15.3" fill="url(#chk)" style="animation-delay:1.84s"/><rect class="row late" x="288" y="471.2" width="424" height="15.3" fill="url(#chk)" style="animation-delay:2.46s"/><rect class="row late" x="288" y="456.4" width="424" height="15.3" fill="url(#chk)" style="animation-delay:3.08s"/><rect class="row late" x="288" y="441.6" width="424" height="15.3" fill="url(#chk)" style="animation-delay:3.70s"/><rect class="row late" x="288" y="426.8" width="424" height="15.3" fill="url(#chk)" style="animation-delay:4.32s"/><rect class="row late" x="288" y="412.0" width="424" height="15.3" fill="url(#chk)" style="animation-delay:4.94s"/><rect class="row late" x="288" y="412" width="424" height="148" fill="none" stroke="#2F6BB8" stroke-width="3" style="animation-delay:5.3s"/></g>
+ <!-- the beater and the shuttle ride the fell line upward as the cloth grows -->
+ <g class="fell">
+  <g class="beater"><rect x="280" y="358" width="440" height="16" rx="5" fill="#A8702E" stroke="#6B4423" stroke-width="3"/></g>
+  <g class="shut"><rect x="458" y="388" width="84" height="20" rx="10" fill="#B9801A" stroke="#6B4423" stroke-width="3"/><path d="M470 398H530" stroke="#FFF" stroke-width="4" stroke-linecap="round"/></g>
+ </g>
+ <!-- finished cloth: a roll and a folded stack -->
+ <g><rect x="790" y="552" width="108" height="56" fill="url(#chk)" stroke="#2F6BB8" stroke-width="3"/><ellipse cx="790" cy="580" rx="14" ry="28" fill="#2F6BB8"/><ellipse cx="898" cy="580" rx="14" ry="28" fill="#4C8DE0" stroke="#2F6BB8" stroke-width="3"/></g>
+ <g stroke="#6B4423" stroke-width="2.5"><rect x="916" y="588" width="76" height="20" rx="6" fill="#F0689C"/><rect x="920" y="568" width="68" height="20" rx="6" fill="url(#chk)"/><rect x="924" y="548" width="60" height="20" rx="6" fill="#F6B93B"/></g>
+ <!-- the weaver throws the shuttle (drawn by the script) -->
+ <g id="weaverSlot"></g>
+</g>
+<g id="g-clothes" class="st">
+ <!-- the tailor's stall: two posts, a striped awning and a sign -->
+ <g fill="#8A6A4A" stroke="#5E4630" stroke-width="3"><rect x="248" y="296" width="12" height="312" rx="4"/><rect x="592" y="296" width="12" height="312" rx="4"/></g>
+ <path id="awning" fill="url(#awn)" stroke="#B83A72" stroke-width="3" stroke-linejoin="round"/>
+ <rect x="376" y="286" width="100" height="26" rx="8" fill="#fff" stroke="#83358C" stroke-width="2.5"/><text x="426" y="305" text-anchor="middle" font-size="17" font-weight="700" font-family="Fredoka,'SB Display',Boulder,sans-serif" fill="#5C2563" letter-spacing="1">TAILOR</text>
+ <!-- the tailor behind the table (drawn by the script) -->
+ <g id="tailorSlot"></g>
+
+ <!-- the work table -->
+ <g fill="#C8955A" stroke="#8B5A2B" stroke-width="3"><rect x="274" y="540" width="12" height="66"/><rect x="564" y="540" width="12" height="66"/><rect x="262" y="524" width="326" height="16" rx="4"/></g>
+ <!-- the sewing machine: bed, pillar, arm, needle head; the fabric slides under the needle, from the harp side out past the tailor's hand -->
+ <rect x="300" y="500" width="170" height="26" rx="6" fill="#2F3A4A" stroke="#1C2430" stroke-width="2.5"/><rect x="306" y="502" width="158" height="5" rx="2" fill="#56657A"/>
+ <g class="feed"><rect x="326" y="490" width="156" height="12" fill="url(#chk)" stroke="#2F6BB8" stroke-width="1.5"/></g>
+ <rect x="300" y="400" width="38" height="104" rx="8" fill="#2F3A4A" stroke="#1C2430" stroke-width="2.5"/>
+ <rect x="300" y="400" width="150" height="32" rx="12" fill="#2F3A4A" stroke="#1C2430" stroke-width="2.5"/><path d="M314 408H430" stroke="#56657A" stroke-width="4" stroke-linecap="round"/>
+ <rect x="416" y="400" width="42" height="62" rx="9" fill="#2F3A4A" stroke="#1C2430" stroke-width="2.5"/>
+ <rect x="306" y="382" width="28" height="20" rx="3" fill="#F0689C" stroke="#B83A72" stroke-width="2"/><path d="M320 382L436 400M436 462V482" fill="none" stroke="#F0689C" stroke-width="1.6"/>
+ <g class="needle"><path d="M436 462V492" stroke="#E6ECF0" stroke-width="3" stroke-linecap="round"/></g>
+ <rect x="426" y="490" width="20" height="7" rx="2" fill="#B8C2CC" stroke="#7A8794" stroke-width="1.5"/>
+ <g transform="translate(288 436)"><g class="hw"><circle r="22" fill="#B8C2CC" stroke="#1C2430" stroke-width="2.5"/><path d="M-22 0H22M0 -22V22M-15.5 -15.5L15.5 15.5M-15.5 15.5L15.5 -15.5" stroke="#7A8794" stroke-width="2.5"/><circle r="6" fill="#2F3A4A"/></g></g>
+ <!-- the tailor's guiding hand rests on the stitched fabric, in front of the machine (drawn by the script) -->
+ <g id="tailorHandSlot"></g>
+ <!-- scissors and a tape measure on the table -->
+ <g transform="translate(556 520) rotate(-18)"><path d="M-14 -3L14 3M-14 3L14 -3" stroke="#8A8F98" stroke-width="2.6" stroke-linecap="round"/><circle cx="-17" cy="-5" r="4" fill="none" stroke="#E0433A" stroke-width="2.2"/><circle cx="-17" cy="5" r="4" fill="none" stroke="#E0433A" stroke-width="2.2"/></g>
+ <circle cx="578" cy="516" r="8" fill="#FFE27A" stroke="#B9801A" stroke-width="2"/><circle cx="578" cy="516" r="2.5" fill="#B9801A"/>
+ <!-- the kids waiting for their new clothes (drawn by the script) -->
+ <g id="kidsSlot"></g>
+ <!-- the finished clothes fly from the tailor's hand to the kids -->
+ <g transform="translate(722 358)"><g class="giftIn" style="--dx:-132px;--dy:110px;animation-delay:2.7s"><g transform="scale(.5)"><path d="M-62 30L-28 0Q0 18 28 0L62 30L44 58L30 48V150H-30V48L-44 58Z" fill="url(#chk)" stroke="#1F5FA8" stroke-width="4" stroke-linejoin="round"/><path d="M-28 0Q0 18 28 0" fill="none" stroke="#1F5FA8" stroke-width="6"/><path d="M-30 142H30M-30 56V142M30 56V142M-55 34L-40 52M55 34L40 52" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="6 5"/></g></g></g>
+ <g transform="translate(815 350)"><g class="giftIn" style="--dx:-225px;--dy:118px;animation-delay:3.2s"><g transform="scale(.48)"><path d="M-34 0Q0 14 34 0L50 40L30 52L68 170H-68L-30 52L-50 40Z" fill="#F0689C" stroke="#B83A72" stroke-width="4" stroke-linejoin="round"/><path d="M-30 56H30M-62 160H62" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="6 5"/><circle cx="0" cy="40" r="6" fill="#fff"/><circle cx="0" cy="92" r="6" fill="#fff"/><circle cx="0" cy="130" r="6" fill="#fff"/></g></g></g>
+ <g transform="translate(672 372)"><g class="tw2" style="animation-delay:4.1s,4.4s"><path d="M0-14L4-4L14 0L4 4L0 14L-4 4L-14 0L-4-4Z" fill="#FFD84A" stroke="#E0A800"/></g></g><g transform="translate(770 322)"><g class="tw2" style="animation-delay:4.4s,4.9s"><path d="M0-14L4-4L14 0L4 4L0 14L-4 4L-14 0L-4-4Z" fill="#FFD84A" stroke="#E0A800"/></g></g><g transform="translate(882 352)"><g class="tw2" style="animation-delay:4.7s,5.3s"><path d="M0-14L4-4L14 0L4 4L0 14L-4 4L-14 0L-4-4Z" fill="#FFD84A" stroke="#E0A800"/></g></g><g transform="translate(640 470)"><g class="tw2" style="animation-delay:5s,5.6s"><path d="M0-14L4-4L14 0L4 4L0 14L-4 4L-14 0L-4-4Z" fill="#FFD84A" stroke="#E0A800"/></g></g>
+</g>
+</svg>
+        <div class="fx-light" aria-hidden="true"></div>
+        <div class="pstrip" id="pstrip" role="button" tabindex="0" title="Tap to hear the question again" aria-label="The steps so far"></div>
+        <div class="sr-live" id="live" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+  <aside class="col rightcol">
+    <div class="card optcard">
+      <h2 class="card-title" id="optTitle">What comes next?</h2>
+      <div class="opts" id="opts">
+        <button class="opt" data-c="fibre" data-slot="0" aria-label="Cotton Fibre"><span class="lens ic fibre"><i>☁️</i></span><b>Fibre</b></button>
+        <button class="opt" data-c="yarn" data-slot="1" aria-label="Yarn"><span class="lens ic yarn"><i>🧵</i></span><b>Yarn</b></button>
+        <button class="opt" data-c="fabric" data-slot="2" aria-label="Fabric"><span class="lens ic fabric"><i>🪡</i></span><b>Fabric</b></button>
+        <button class="opt" data-c="clothes" data-slot="3" aria-label="Clothes"><span class="lens ic clothes"><i>👕</i></span><b>Clothes</b></button>
+      </div>
+      <div class="legend" id="legend"><span class="rule">Order : Cotton Plant - Cotton Fibre - Yarn - Fabric - Clothes</span></div>
+      <div class="sig-status" id="sigStatus">The cotton field is empty.</div>
+    </div>
+    <div class="card ctrl">
+      <h2 class="card-title">Controls</h2>
+      <div class="conn"><span class="dot" id="dot"></span><span id="connLabel">Simulation mode</span></div>
+      <button class="btn btn-pink attn" id="connBtn" title="Use the real LEDs and IR sensor from your Smart Block kit"><i class="pulse" aria-hidden="true"></i><span id="connTxt">🔌 Connect Arduino</span></button>
+      <div class="control-pair">
+        <button class="btn btn-hear" id="hearBtn" title="Hear the question again"><svg class="spk" viewBox="0 0 32 28" aria-hidden="true"><path d="M3 10.5h6.2L16 4.6v18.8l-6.8-5.9H3z" fill="#E3C8E8" stroke="#C9A8D2" stroke-width="1.2" stroke-linejoin="round"/><path d="M20 9.2a6.2 6.2 0 0 1 0 9.6" fill="none" stroke="#2AA5E6" stroke-width="2.4" stroke-linecap="round"/><path d="M23.6 5.6a11.2 11.2 0 0 1 0 16.8" fill="none" stroke="#2AA5E6" stroke-width="2.4" stroke-linecap="round"/></svg><span>Hear the question</span></button>
+        <button class="btn btn-ir attn" id="irBtn" title="Grow the cotton plant. (With the kit connected, the IR sensor does this.)"><i class="pulse" aria-hidden="true"></i><span class="irdot" aria-hidden="true"></span><span id="irTxt">+ Cotton</span></button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div class="final" id="final">
+  <div class="final-box">
+    <div class="trophy" id="fi"></div>
+    <h2 id="fh">Well done!</h2>
+    <div class="tally"><span id="fs">0</span><small id="ftotal"> / 5</small></div>
+    <p id="fmsg"></p>
+    <button class="again" id="restart">Play again ↻</button>
+  </div>
+</div>
+
+<div class="ov" id="ov">
+  <div class="ov-box task-in">
+    <div class="ov-icons">
+      <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><ellipse cx="50" cy="89" rx="34" ry="4" fill="#161016" opacity=".16"/><text x="50" y="78" font-size="74" text-anchor="middle">🌱</text></svg>
+      <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><ellipse cx="50" cy="89" rx="34" ry="4" fill="#161016" opacity=".16"/><text x="50" y="78" font-size="74" text-anchor="middle">👕</text></svg>
+    </div>
+    <h2>Fibre to <b>Fabric</b></h2>
+    <p id="ovSub">Watch the cotton and say what happens next</p>
+        <button class="ov-start" id="start"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>Let's Start</button>
+  </div>
+</div>
+<script>
+/* ===================== SMART BLOCK · FIBRE TO FABRIC =====================
+   Five steps, one real-life sequence the child learns to predict:
+
+        🌱 Cotton Plant → ☁️ Cotton Fibre → 🧵 Yarn → 🪡 Fabric → 👕 Clothes
+
+   Step 1 grows the cotton plant (IR sensor or the + Cotton button); steps 2–5 ask
+   "what comes next?" and the scene shows what the child chose.
+   The kit is optional. Arduino (Uno / Nano, 9600 baud):
+     board → page : "DETECTED"  (IR sensor saw the cotton card / the start card)
+     page → board : F fibre LED · Y yarn LED · A fabric LED · C clothes LED · O all off  */
+'use strict';
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const motion=matchMedia('(prefers-reduced-motion: reduce)');
+const NS='http://www.w3.org/2000/svg';
+const easeOutCubic=t=>1-Math.pow(1-t,3);
+
+
+const TOTAL=5;
+const CH={off:'O',fibre:'F',yarn:'Y',fabric:'A',clothes:'C'};
+const FLOW=['load','fibre','yarn','fabric','clothes'], ORDER=['fibre','yarn','fabric','clothes'];
+const CYCLE_TEXT='Order : Cotton Plant - Cotton Fibre - Yarn - Fabric - Clothes';
+const n={stage:$('stage'),banner:$('banner'),status:$('sigStatus'),opts:$('opts'),live:$('live'),strip:$('pstrip'),optTitle:$('optTitle')};
+const optEls=[...document.querySelectorAll('.opt')];
+/* the banner is a flex box on phones (vertical centring) - one inline wrapper keeps the spaces between its words */
+const setBanner=h=>{n.banner.innerHTML='<span class="bt">'+h+'</span>';};
+/* ---------- the order of the four choices ----------
+   The very first game on this device shows them in process order - a worked example.
+   Every game after that (a refresh, or Play again) deals them out at random, so the
+   child has to know what comes next rather than read it off the tiles.            */
+const GROW_ORDER=['fibre','yarn','fabric','clothes'];
+let optOrder=GROW_ORDER.slice();                  /* which answer sits in slot 0..3 */
+const playedBefore=()=>{try{return localStorage.getItem('ftf-played')==='1';}catch(e){return false;}};
+const markPlayed=()=>{try{localStorage.setItem('ftf-played','1');}catch(e){}};
+function dealOptions(shuffle){
+  let order=GROW_ORDER.slice();
+  if(shuffle){
+    let last=optOrder.join(',');try{last=localStorage.getItem('ftf-order')||last;}catch(e){}   /* last game's order, even across a refresh */
+    let guard=0;
+    do{                                            /* Fisher-Yates; never the textbook order, never the same deal twice running */
+      for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+    }while((order.join(',')===GROW_ORDER.join(',')||order.join(',')===last)&&++guard<40);
+    try{localStorage.setItem('ftf-order',order.join(','));}catch(e){}
+  }
+  optOrder=order;
+  order.forEach((c,i)=>{const b=optEls.find(x=>x.dataset.c===c);b.dataset.slot=i;n.opts.appendChild(b);});   /* DOM order = visual order (tab order, screen readers) */
+}
+let round=0,score=0,tries=0,phase='intro',started=false,justDone=-1,epoch=0,timers=[],audio=null,speech=null,light='off',stripDone=0,stripPop=-1;
+let lastSay='Watch the cotton. Say what comes next.';
+function later(fn,ms){const e=epoch;const id=setTimeout(()=>{if(e===epoch)fn();},ms);timers.push(id);return id;}
+function clearTimers(){timers.forEach(clearTimeout);timers=[];}
+/* ---------- sound ---------- */
+function ctx(){
+  try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();
+    if(audio.state==='suspended')audio.resume();}catch(e){audio=null;}
+  return audio;
+}
+function tone(freq,duration=.12,delay=0,type='sine',vol=.06){
+  const a=ctx();if(!a)return;
+  try{
+    const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+delay;
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol,t+.015);
+    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+duration+.03);
+  }catch(e){}
+}
+function sweep(f0,f1,duration,type='sawtooth',vol=.035,delay=0){
+  const a=ctx();if(!a)return;
+  try{
+    const o=a.createOscillator(),g=a.createGain(),lp=a.createBiquadFilter(),t=a.currentTime+delay;
+    o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+duration);
+    lp.type='lowpass';lp.frequency.value=900;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.08);
+    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    o.connect(lp);lp.connect(g);g.connect(a.destination);o.start(t);o.stop(t+duration+.05);
+  }catch(e){}
+}
+const rightSnd=()=>{tone(523,.16,0,'triangle',.1);tone(659,.16,.12,'triangle',.1);tone(784,.3,.24,'triangle',.12);};
+const wrongSnd=()=>{tone(250,.2,0,'sawtooth',.06);tone(220,.3,.2,'sawtooth',.06);};
+const clickSnd=()=>{tone(1500,.03,0,'square',.025);tone(950,.05,.035,'square',.02);};    /* the signal's relay */
+const hornSnd=()=>{tone(415,.08,0,'square',.018);tone(415,.11,.13,'square',.018);};
+const vroomSnd=()=>{sweep(60,180,.95,'sawtooth',.03);};
+function cheerSnd(){
+  tone(523,.3,0,'triangle',.075);tone(659,.3,.14,'triangle',.075);tone(784,.34,.28,'triangle',.08);
+  tone(1047,.5,.44,'triangle',.085);tone(1319,.44,.6,'sine',.05);
+}
+
+/* ---------- speech: read on arrival; tap the banner (or press H) to hear it again ---------- */
+function stopSpeech(){
+  if(speech){speech.onend=speech.onerror=null;speech=null;}
+  if('speechSynthesis' in window)try{speechSynthesis.cancel();}catch(e){}
+}
+function speak(text){
+  if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window))return;
+  stopSpeech();
+  const u=new SpeechSynthesisUtterance(text);
+  speech=u;u.lang='en';u.rate=.9;u.pitch=1.08;
+  u.onend=u.onerror=()=>{if(speech===u)speech=null;};
+  try{speechSynthesis.resume();speechSynthesis.speak(u);}catch(e){}
+}
+function announce(t){n.live.textContent='';setTimeout(()=>{n.live.textContent=t;},30);}
+
+/* ---------- small animation helpers ---------- */
+function pop(el,frames,dur){
+  if(!el||motion.matches||!el.animate)return;
+  try{el.animate(frames,{duration:dur,easing:'cubic-bezier(.22,1,.36,1)'});}catch(e){}
+}
+function confetti(count){
+  if(motion.matches)return;
+  const shell=document.createElement('div');shell.className='confetti';
+  const colors=['#83358C','#F01A8C','#FFF212','#2FBF6D','#70CDF0'];
+  for(let i=0;i<count;i++){
+    const s=document.createElement('i');
+    s.style.left=Math.random()*100+'vw';
+    s.style.background=colors[i%colors.length];
+    s.style.animation=`cf${i%3} ${1.5+Math.random()*.7}s linear ${Math.random()*.3}s forwards`;
+    shell.appendChild(s);
+  }
+  const st=document.createElement('style');
+  st.textContent='@keyframes cf0{to{transform:translate3d(0,105vh,0) rotate(720deg);opacity:.9}}'+
+    '@keyframes cf1{to{transform:translate3d(0,105vh,0) rotate(-540deg);opacity:.9}}'+
+    '@keyframes cf2{to{transform:translate3d(0,105vh,0) rotate(360deg);opacity:.9}}';
+  shell.appendChild(st);document.body.appendChild(shell);
+  setTimeout(()=>shell.remove(),2400);
+}
+
+const TIC_OK='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#2FBF6D"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const TIC_AGAIN='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#FFC21A"/><circle cx="12" cy="12" r="11" fill="none" stroke="#E0A400" stroke-width="1.2"/><path d="M9.2 9.3a2.9 2.9 0 1 1 3.9 2.7c-.8.4-1.1.9-1.1 1.7v.5" fill="none" stroke="#5C2563" stroke-width="2.3" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.4" fill="#5C2563"/></svg>';
+function toast(kind,title){
+  n.stage.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div');
+  t.className='toast'+(kind==='again'?' again':'');
+  t.innerHTML=`<span class="tic">${kind==='again'?TIC_AGAIN:TIC_OK}</span><b>${title}</b>`;
+  n.stage.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),320);},1100);
+}
+
+
+const SFX={
+  fibre:()=>[0,.1,.2,.3].forEach((d,i)=>tone(880+i*110,.09,d,'sine',.045)),
+  yarn:()=>sweep(220,760,1.3,'sine',.04),
+  fabric:()=>[0,.18,.36,.54,.72].forEach((d,i)=>tone(i%2?260:340,.07,d,'square',.03)),
+  clothes:()=>{for(let i=0;i<12;i++){tone(1400,.025,i*.22,'square',.02);tone(700,.03,i*.22+.05,'square',.014);}   /* the machine stitches… */
+    tone(1319,.4,2.75,'sine',.07);tone(1760,.5,2.95,'sine',.06);                                               /* …the clothes are ready… */
+    tone(1047,.3,3.75,'triangle',.06);tone(1319,.45,3.9,'triangle',.07);tone(1568,.5,4.3,'triangle',.06);}         /* …and the kids cheer */
+};
+const ASK={
+  load:   {banner:'Press <b>+ Cotton</b> to grow the cotton plant',status:'The cotton field is <b>empty</b>.',say:'Press the Cotton button to grow the cotton plant.'},
+  loadKit:{banner:'Show the <b>cotton card</b> to the sensor',status:'The cotton field is <b>empty</b>.',say:'Show the cotton card to the sensor.'},
+  fibre:  {banner:'The cotton plant is ready. What comes next?',status:'White cotton bolls on the <b>plant</b>.',say:'The cotton plant is ready. What comes next?'},
+  yarn:   {banner:'The cotton fibre is clean. What comes next?',status:'Soft, fluffy <b>cotton fibre</b>.',say:'The cotton fibre is clean. What comes next?'},
+  fabric: {banner:'The yarn is ready. What comes next?',status:'Thin <b>yarn</b> wound on a spool.',say:'The yarn is ready. What comes next?'},
+  clothes:{banner:'The fabric is ready. What comes next?',status:'A flat piece of <b>fabric</b>.',say:'The fabric is ready. What comes next?'}
+};
+const HINT={
+  fibre:'Not yet! First the cotton is picked from the bolls and cleaned. Choose Fibre.',
+  yarn:'Not yet! The fibres are spun together to make yarn. Choose Yarn.',
+  fabric:'Not yet! The yarn is woven or knitted into fabric. Choose Fabric.',
+  clothes:'Not yet! The fabric is cut and stitched into clothes. Choose Clothes.'
+};
+const OK={
+  fibre:{b:'Correct! <b>Cotton fibre</b> — picked and cleaned!',s:'Yes! Cotton fibre comes next.',t:'Cotton is <b>picked from the bolls</b> and cleaned.'},
+  yarn:{b:'Correct! <b>Yarn</b> — fibres spun together!',s:'Yes! Yarn comes next.',t:'The fibres are <b>spun together</b> into thread.'},
+  fabric:{b:'Correct! <b>Fabric</b> — yarn woven into cloth!',s:'Yes! Fabric comes next.',t:'The yarn is <b>woven</b> into fabric.'},
+  clothes:{b:'Great! You followed cotton from plant to clothes!',s:'Great! You followed cotton from plant to clothes!',t:'The <b>tailor</b> stitches the fabric into clothes for the kids.'}
+};
+const CHIPS=['🌱','☁️','🧵','🪡','👕'];
+/* ---------- the people: one front-facing Smart Block figure, feet at (0,0) ----------
+   o: x y scale · skin skin2 · hair hairStyle(cap|side|bun|pigtails) · shirt stripe · bottoms(shorts|trousers|skirt)
+      bottomsColor bottomsDk · lace · armR armL (class names) armLMarkup (a drawn pose) armDelay · glasses moustache tape cheer · cls bodyCls */
+function figure(o){
+  const sk=o.skin||'#F6C79B',sk2=o.skin2||'#F0B88A',sh=o.shirt||'#F01A8C',hc=o.hair||'#3A2418';
+  const legs=`<rect x="-16" y="-51" width="14" height="42" rx="6" fill="${sk}"/><rect x="3" y="-51" width="14" height="42" rx="6" fill="${sk2}"/>`;
+  const shoes=`<ellipse cx="-12" cy="-6" rx="15" ry="7" fill="#fff" stroke="#C9B6D4"/><ellipse cx="10" cy="-6" rx="15" ry="7" fill="#fff" stroke="#C9B6D4"/><path d="M-26 -3h30M-4 -3h30" stroke="${o.lace||'#F01A8C'}" stroke-width="3"/>`;
+  const bottoms=o.bottoms==='skirt'?`<path d="M-24 -78H24L36 -34H-36Z" fill="${o.bottomsColor}" stroke="${o.bottomsDk}" stroke-width="1.5" stroke-linejoin="round"/>`
+    :o.bottoms==='trousers'?`<path d="M-22 -73H22L23 -12H4L0 -40L-4 -12H-23Z" fill="${o.bottomsColor}" stroke="${o.bottomsDk}" stroke-width="1.5" stroke-linejoin="round"/>`
+    :`<path d="M-21 -73H21L23 -39H4L0 -51L-4 -39H-23Z" fill="${o.bottomsColor}" stroke="${o.bottomsDk}" stroke-width="1.5" stroke-linejoin="round"/>`;
+  const tape=o.tape?`<path d="M-13 -136L-19 -84M13 -136L19 -84" stroke="#FFE27A" stroke-width="6"/><path d="M-14 -126l-5 1M-15 -116l-5 1M-16 -106l-5 1M-17 -96l-5 1M14 -126l5 1M15 -116l5 1M16 -106l5 1M17 -96l5 1" stroke="#5C4A1E" stroke-width="1.2"/>`:'';
+  const torso=`<rect x="-24" y="-137" width="48" height="70" rx="16" fill="${sh}"/>`+(o.stripe?`<rect x="-24" y="-113" width="48" height="9" fill="${o.stripe}"/>`:'')+`<path d="M-9 -136Q0 -125 9 -136" fill="${sk}"/>`+tape;
+  const dl=o.armDelay?` style="animation-delay:${o.armDelay}"`:'';
+  const arm=(side,cls)=>{const d=side==='r'?1:-1,c=side==='r'?sk2:sk;
+    return `<g transform="translate(${d*22} -121)"><g class="${cls}"${dl}><path d="M0 0L${d*3} 16" stroke="${sh}" stroke-width="14" stroke-linecap="round"/><path d="M${d*3} 16L${d*8} 46" stroke="${c}" stroke-width="10" stroke-linecap="round"/><circle cx="${d*8}" cy="48" r="6" fill="${c}"/></g></g>`;};
+  const armL=o.armLMarkup?`<g transform="translate(-22 -121)">${o.armLMarkup.replace(/SH/g,sh).replace(/SK/g,sk)}</g>`:arm('l',o.armL||'aL');
+  const cap=`<path d="M-32 2Q-36-34-2-34Q34-34 31 2Q27-16 8-18Q-12-12-27-16Z" fill="${hc}"/>`;
+  const hair=o.hairStyle==='pigtails'?`<circle cx="-38" cy="4" r="10" fill="${hc}"/><circle cx="34" cy="4" r="10" fill="${hc}"/>${cap}<circle cx="-35" cy="-5" r="4.5" fill="${o.bow||'#F01A8C'}"/><circle cx="32" cy="-5" r="4.5" fill="${o.bow||'#F01A8C'}"/>`
+    :o.hairStyle==='side'?`<path d="M-32 2Q-36-34-2-34Q34-34 31 2Q25-21 6-22Q-12-11-27-16Z" fill="${hc}"/>`
+    :o.hairStyle==='bun'?`<circle cx="-2" cy="-33" r="10" fill="${hc}"/>${cap}`:cap;
+  const head=`<g transform="translate(-2 -169)"><circle cx="30" cy="4" r="6" fill="${sk2}"/><circle r="31" fill="${sk}"/>${hair}`+
+    `<g class="eyes"><ellipse cx="-14" cy="3" rx="6" ry="7" fill="#fff"/><ellipse cx="4" cy="3" rx="6" ry="7" fill="#fff"/><circle cx="-17" cy="4" r="3.4" fill="#2B1B12"/><circle cx="1" cy="4" r="3.4" fill="#2B1B12"/></g>`+
+    (o.glasses?`<g fill="none" stroke="#3B3B4F" stroke-width="2.2"><circle cx="-14" cy="3" r="8.5"/><circle cx="4" cy="3" r="8.5"/><path d="M-5.5 3H-4.5M-22.5 2L-30 0M12.5 2L22 0"/></g>`:'')+
+    `<path d="M-21-7Q-14-11-8-7M-3-7Q4-11 10-7" stroke="${hc}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`+
+    `<circle cx="-21" cy="16" r="5" fill="#F58AA8" opacity=".45"/><circle cx="11" cy="16" r="5" fill="#F58AA8" opacity=".45"/>`+
+    (o.moustache?`<path d="M-20 13Q-14 7 -8 13Q-2 7 4 13" fill="none" stroke="${hc}" stroke-width="3" stroke-linecap="round"/>`:'')+
+    `<path class="mS" d="M-17 17Q-8 24 1 17" stroke="#B5453A" stroke-width="2.6" fill="none" stroke-linecap="round"/>`+
+    (o.cheer?`<path class="mO" d="M-17 15Q-8 31 1 15Z" fill="#B5453A"/>`:'')+`</g>`;
+  return `<g class="fig ${o.cls||''}" transform="translate(${o.x} ${o.y}) scale(${o.scale||1})"><g class="${o.bodyCls||''}"><ellipse cy="0" rx="38" ry="7" fill="#2a1030" opacity=".22"/>${legs}${shoes}${bottoms}${torso}${arm('r',o.armR||'aR')}${armL}${head}</g></g>`;
+}
+function drawPeople(){
+  /* the weaver, left of the loom, throwing the shuttle */
+  $('weaverSlot').innerHTML=figure({x:178,y:608,scale:.9,shirt:'#2FBF6D',stripe:'#FFF212',bottoms:'trousers',bottomsColor:'#6B4423',bottomsDk:'#4A2F18',lace:'#2FBF6D',hairStyle:'bun',armR:'wArm'});
+  /* the tailor behind the table: glasses, a tape measure, one hand guiding the fabric into the machine */
+  $('tailorSlot').innerHTML=figure({x:520,y:604,scale:.98,shirt:'#2F7FEE',bottoms:'trousers',bottomsColor:'#3B4A8C',bottomsDk:'#2A356B',lace:'#2F7FEE',hairStyle:'side',hair:'#4A3222',glasses:true,moustache:true,tape:true,armR:'tArmR',
+    armLMarkup:'<path d="M0 0L-16 14" stroke="SH" stroke-width="14" stroke-linecap="round"/>'});
+  /* …and his guiding hand, in front of the machine so it rests on the fabric: the forearm starts where the sleeve ends */
+  $('tailorHandSlot').innerHTML='<g transform="translate(482.3 498.9) scale(.98)"><g class="tHand"><path d="M0 0L-21 -7" stroke="#F6C79B" stroke-width="10" stroke-linecap="round"/><circle cx="-23" cy="-7" r="6" fill="#F6C79B"/></g></g>';
+  /* the kids, waiting on the right; they cheer when the clothes arrive */
+  $('kidsSlot').innerHTML=figure({x:720,y:608,scale:.8,cls:'boy',bodyCls:'kidJ',shirt:'#F01A8C',stripe:'#FFF212',bottoms:'shorts',bottomsColor:'#3B4A8C',bottomsDk:'#2A356B',armR:'kArmR',armL:'kArmL',cheer:true})+
+    figure({x:815,y:608,scale:.8,cls:'girl',bodyCls:'kidJ',shirt:'#FFC400',bottoms:'skirt',bottomsColor:'#83358C',bottomsDk:'#5C2563',lace:'#83358C',hairStyle:'pigtails',hair:'#2B1B12',bow:'#F01A8C',skin:'#E9B98C',skin2:'#DDA97C',armR:'kArmR',armL:'kArmL',cheer:true});
+  /* the awning: a scalloped striped canopy over the stall */
+  let d='M236 282H616V312';for(let x=616;x>236;x-=38)d+=`Q${x-19} 332 ${x-38} 312`;d+='Z';
+  $('awning').setAttribute('d',d);
+}
+drawPeople();
+
+/* the scene: one attribute drives every picture, and the kit */
+function setMachine(s){
+  $('scene').dataset.s=s;
+  light=(s==='fibre'||s==='yarn'||s==='fabric'||s==='clothes')?s:'off';
+  led(light);
+}
+function updateProgress(){
+  $('taskCount').textContent=`STEP ${Math.min(round+1,TOTAL)} / ${TOTAL}`;
+  $('progress').innerHTML=Array.from({length:TOTAL},(_,i)=>{
+    const done=i<round,cur=i===round;
+    return `<span class="dot ${done?'done':cur?'current':''}${i===justDone?' pop':''}" title="Step ${i+1}">${done?'✓':i+1}</span>`;
+  }).join('');
+  justDone=-1;
+}
+function resetOptions(){
+  optEls.forEach(b=>{b.classList.remove('used','right','nope','press');b.disabled=false;});
+  n.opts.classList.remove('solved','live');n.optTitle.textContent='What comes next?';
+}
+function renderStrip(){
+  n.strip.innerHTML=CHIPS.map((c,i)=>`<span class="chip ${i<stripDone?'done':''}${i===stripPop?' pop':''}">${c}</span>`).join('');
+  stripPop=-1;
+}
+function showAsk(k){
+  const a=(k==='load'&&kitOn)?ASK.loadKit:ASK[k];
+  setBanner(a.banner);
+  pop(n.banner,[{transform:'scale(.96)',opacity:.55},{transform:'scale(1)',opacity:1}],320);
+  n.status.innerHTML=a.status;n.status.classList.remove('fs');void n.status.offsetWidth;n.status.classList.add('fs');
+  lastSay=a.say;later(()=>speak(lastSay),360);
+}
+function beginStep(){
+  epoch++;clearTimers();stopSpeech();
+  const k=FLOW[round];
+  tries=0;updateProgress();resetOptions();renderStrip();
+  $('irBtn').classList.toggle('attn',k==='load'&&!kitOn);
+  n.opts.classList.remove('idle');
+  if(k==='load'){phase='loadwait';n.opts.classList.add('idle');setMachine('empty');showAsk('load');return;}
+  phase='ask';n.opts.classList.add('live');showAsk(k);
+}
+function nextStep(){
+  justDone=round;round++;
+  if(round>=TOTAL){finishGame();return;}
+  phase='between';later(beginStep,220);
+}
+function replayPattern(){stopSpeech();speak(lastSay);announce(lastSay);}
+
+/* cotton plant grown: the IR sensor over the cable, or the + Cotton button / key C */
+function loadAnim(done){done();}
+function clothesDetected(){
+  if(!started||phase!=='loadwait')return;
+  phase='react';stripDone=1;stripPop=0;renderStrip();
+  if(tries===0)score++;
+  $('irBtn').classList.remove('attn');
+  clickSnd();rightSnd();toast('ok','The cotton plant grew!');
+  setBanner('The cotton plant is growing…');
+  loadAnim(()=>setMachine('plant'));
+  speak('The cotton plant is growing.');announce('The cotton plant is growing.');
+  later(nextStep,2600);
+}
+function choose(c){
+  if(phase==='loadwait'){toast('again',kitOn?'Show the cotton card!':'Press + Cotton!');speak(kitOn?'Show the cotton card to the sensor first.':'Press the Cotton button first.');return;}
+  if(phase!=='ask')return;
+  const btn=optEls.find(b=>b.dataset.c===c);
+  if(!btn||btn.classList.contains('used'))return;
+  const want=FLOW[round];
+  if(c!==want){
+    tries++;btn.classList.add('used','nope');btn.disabled=true;
+    setTimeout(()=>btn.classList.remove('nope'),560);wrongSnd();
+    const msg=ORDER.indexOf(c)<ORDER.indexOf(want)?'That one already happened. What comes after it?':HINT[want];
+    toast('again','Try again!');speak('Try again.');announce(msg);
+    return;
+  }
+  phase='react';
+  n.opts.classList.remove('live');n.opts.classList.add('solved');btn.classList.add('right');
+  stripDone=round+1;stripPop=round;renderStrip();
+  if(tries===0)score++;
+  clickSnd();rightSnd();toast('ok','Correct!');
+  setMachine(want);later(SFX[want],150);
+  setBanner(OK[want].b);n.status.innerHTML=OK[want].t;
+  pop(n.banner,[{transform:'scale(.96)',opacity:.55},{transform:'scale(1)',opacity:1}],320);
+  speak(OK[want].s);announce(OK[want].s);
+  later(nextStep,want==='clothes'?5600:2800);          /* the tailor stitches, hands over the clothes, the kids cheer - then the card */
+}
+function finishGame(){
+  phase='done';stopSpeech();n.opts.classList.remove('live');
+  updateProgress();renderStrip();
+  $('fs').textContent=score;$('ftotal').textContent=' / '+TOTAL;
+  const perfect=score===TOTAL,great=score>=TOTAL-1;
+  setFinalIcon(perfect?'trophy':great?'medal':'star');
+  $('fh').textContent=perfect?'Perfect!':great?'Brilliant!':'Keep practising!';
+  $('fmsg').textContent=perfect?'Great! You followed cotton from plant to clothes!':'Remember the order: plant, fibre, yarn, fabric, then clothes.';
+  $('final').classList.add('show');
+  if(score>=TOTAL-1)confetti(perfect?130:70);
+  cheerSnd();$('restart').focus({preventScroll:true});
+}
+function resetWorld(){
+  round=0;score=0;justDone=-1;stripDone=0;stripPop=-1;
+  setMachine('empty');
+  dealOptions(true);                                   /* the choices land in a new order */
+  $('legend').innerHTML=`<span class="rule">${CYCLE_TEXT}</span>`;
+}
+function startGame(){
+  if(started)return;
+  started=true;markPlayed();$('start').disabled=true;$('ov').classList.add('hide');
+  setTimeout(()=>{$('ov').style.display='none';document.documentElement.classList.remove('intro');},380);
+  ctx();requestAnimationFrame(()=>requestAnimationFrame(beginStep));
+}
+function newGame(){
+  stopSpeech();$('final').classList.remove('show');
+  document.querySelectorAll('.confetti').forEach(e=>e.remove());
+  resetWorld();beginStep();
+}
+
+/* ---------- input ---------- */
+optEls.forEach(b=>{
+  b.addEventListener('pointerdown',()=>{if(n.opts.classList.contains('live')&&!b.disabled)b.classList.add('press');});
+  b.addEventListener('click',()=>choose(b.dataset.c));
+});
+const clearPress=()=>optEls.forEach(b=>b.classList.remove('press'));
+window.addEventListener('pointerup',clearPress,true);
+window.addEventListener('pointercancel',clearPress,true);
+n.banner.addEventListener('click',()=>{if(started)replayPattern();});
+n.strip.addEventListener('click',()=>{if(started)replayPattern();});
+$('irBtn').addEventListener('click',clothesDetected);
+document.addEventListener('keydown',e=>{
+  if(e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;
+  const k=e.key.toLowerCase();
+  if(!started){if(k==='enter'||k===' '){e.preventDefault();startGame();}return;}
+  if($('final').classList.contains('show'))return;
+  if(k==='c'||k==='i'||k==='p')clothesDetected();
+  else if(k>='1'&&k<='4')choose(optOrder[+k-1]);       /* 1-4 = the tile in that position */
+  else if(k==='f')choose('fibre');
+  else if(k==='y')choose('yarn');
+  else if(k==='a')choose('fabric');
+  else if(k==='l')choose('clothes');
+  else if(k==='h'||k===' '){e.preventDefault();replayPattern();}
+});
+$('start').onclick=startGame;
+$('start').addEventListener('pointerdown',()=>{try{if(audio&&audio.state==='suspended')audio.resume();}catch(e){}},{once:true,passive:true});
+setTimeout(()=>{try{speechSynthesis.getVoices();}catch(e){}try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();}catch(e){}},1800);
+$('restart').onclick=newGame;
+const GOLD='<defs><linearGradient id="fGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF3B0"/>'+
+  '<stop offset=".45" stop-color="#FFC92E"/><stop offset="1" stop-color="#E09A00"/></linearGradient></defs>';
+const FIN_IC={
+  trophy:'<path d="M26 16h48v20q0 26-24 30q-24-4-24-30Z" fill="url(#fGold)" stroke="#C88E00" stroke-width="3"/>'+
+    '<path d="M24 18h-9q-5 0-5 6q0 16 14 19M76 18h9q5 0 5 6q0 16-14 19" fill="none" stroke="#C88E00" stroke-width="5" stroke-linecap="round"/>'+
+    '<rect x="43" y="65" width="14" height="12" fill="url(#fGold)" stroke="#C88E00" stroke-width="2.6"/>'+
+    '<rect x="30" y="77" width="40" height="12" rx="5" fill="url(#fGold)" stroke="#C88E00" stroke-width="2.6"/>'+
+    '<ellipse cx="40" cy="28" rx="6" ry="8" fill="#fff" opacity=".45"/>',
+  medal:'<path d="M34 6l13 24M66 6l-13 24" fill="none" stroke="#2F7FEE" stroke-width="9" stroke-linecap="round"/>'+
+    '<circle cx="50" cy="62" r="30" fill="url(#fGold)" stroke="#C88E00" stroke-width="3"/>'+
+    '<circle cx="50" cy="62" r="20" fill="none" stroke="#C88E00" stroke-width="2.4" opacity=".5"/>'+
+    '<path d="M50 50l4.4 9.2l10 1.4l-7.2 7l1.7 10l-8.9-4.7l-8.9 4.7l1.7-10l-7.2-7l10-1.4Z" fill="#fff" opacity=".6"/>',
+  star:'<path d="M50 7L63.5 37L95 40.5L71 62L78.8 93L50 76L21.2 93L29 62L5 40.5L36.5 37Z" fill="url(#fGold)" stroke="#C88E00" stroke-width="3" stroke-linejoin="round"/>'+
+    '<ellipse cx="41" cy="38" rx="7" ry="10" fill="#fff" opacity=".45"/>'
+};
+function setFinalIcon(name){$('fi').innerHTML=`<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">${GOLD}${FIN_IC[name]}</svg>`;}
+let port=null,writer=null,kitOn=false,connecting=false,disconnecting=false,serialToken=0;
+/* same flow as the Distance Detective: guarded connect / disconnect, one UI painter */
+function connectionUI(){
+  const dot=$('dot'),lab=$('connLabel'),btn=$('connBtn'),txt=$('connTxt');
+  if(dot)dot.classList.toggle('on',kitOn);
+  if(lab)lab.textContent=connecting?'Connecting…':kitOn?'Arduino mode':'Simulation mode';
+  if(txt)txt.textContent=disconnecting?'Disconnecting…':connecting?'Connecting…':kitOn?'🔌 Disconnect':'🔌 Connect Arduino';
+  if(btn){btn.disabled=connecting||disconnecting;btn.classList.toggle('on',kitOn);}
+  n.opts.classList.toggle('kit',kitOn);
+  document.body.classList.toggle('kitmode',kitOn);          /* real IR sensor is in charge: the on-screen button steps aside */
+  if(typeof phase!=='undefined'&&phase==='loadwait'){
+    $('irBtn').classList.toggle('attn',!kitOn);
+    if(!connecting&&!disconnecting)showAsk('load');
+  }
+}
+let reader=null;
+/* the board prints one word per line: TRAIN when its IR sensor sees the train.
+   RED / YELLOW / GREEN are only its echoes, so they are ignored. */
+async function listenIR(rd,token){
+  const dec=new TextDecoder();let buf='';
+  try{
+    while(token===serialToken){
+      const {value,done}=await rd.read();
+      if(done)break;
+      if(!value)continue;
+      buf+=dec.decode(value,{stream:true});
+      let i;
+      while((i=buf.search(/[\r\n]/))>=0){
+        const line=buf.slice(0,i).trim().toUpperCase();
+        buf=buf.slice(i+1);
+        if(line.includes('DETECTED')||line==='COTTON'||line==='TRAIN')clothesDetected();   /* sketch prints DETECTED */
+      }
+      if(buf.length>64)buf=buf.slice(-16);
+    }
+  }catch(e){}
+}
+async function connectArduino(){
+  if(connecting||disconnecting)return;
+  if(!('serial' in navigator)){
+    alert('Web Serial needs desktop Chrome or Edge. Connect the Arduino and reopen this page there.');
+    return;
+  }
+  connecting=true;const token=++serialToken;connectionUI();
+  let selected=null;
+  try{
+    selected=await navigator.serial.requestPort();
+    await selected.open({baudRate:9600});
+    if(token!==serialToken){await selected.close();return;}
+    port=selected;writer=selected.writable.getWriter();kitOn=true;
+    reader=selected.readable.getReader();listenIR(reader,token);
+    $('connBtn').classList.remove('attn');
+    tone(659,.14,0,'sine',.06);tone(988,.2,.1,'sine',.06);
+    announce('Fibre to Fabric kit connected.');
+    connectionUI();
+    led('off');led(light);        /* start clean, then show the light the screen is showing */
+  }catch(e){
+    kitOn=false;port=null;writer=null;reader=null;
+    if(selected)try{await selected.close();}catch(err){}
+    connectionUI();
+  }finally{connecting=false;connectionUI();}
+}
+async function disconnectArduino(){
+  if(disconnecting)return;
+  disconnecting=true;serialToken++;
+  const w=writer,p=port,rd=reader;
+  try{if(w)await w.write(new TextEncoder().encode(CH.off));}catch(e){}   /* all LEDs off */
+  kitOn=false;writer=null;port=null;reader=null;connectionUI();
+  try{if(rd){await rd.cancel();rd.releaseLock();}}catch(e){}
+  try{if(w)w.releaseLock();}catch(e){}
+  try{if(p)await p.close();}catch(e){}
+  disconnecting=false;connectionUI();
+  announce('Arduino disconnected.');
+}
+$('connBtn').onclick=()=>kitOn?disconnectArduino():connectArduino();
+$('hearBtn').onclick=()=>{const b=$('hearBtn');stopSpeech();speak(lastSay);announce(lastSay);
+  b.classList.add('speaking');setTimeout(()=>b.classList.remove('speaking'),2600);};
+/* one letter per action: F fibre · Y yarn · A fabric · C clothes · O off */
+function led(c){
+  if(!kitOn||!writer||!CH[c])return;
+  try{ writer.write(new TextEncoder().encode(CH[c])).catch(()=>{}); }catch(e){}
+}
+if('serial' in navigator)navigator.serial.addEventListener?.('disconnect',()=>{if(kitOn)disconnectArduino();});
+
+window.addEventListener('beforeunload',()=>{try{writer&&writer.releaseLock();port&&port.close();}catch(e){}});
+
+
+
+/* ---------- layout mode (laptop vs touch auto-fit) ---------- */
+/* touch devices always auto-fit; on top of that any small viewport (a resized desktop
+   window, a hybrid device, a projector split-screen) switches to the auto-fit shell too,
+   so the activity stays usable on more than a full-size laptop */
+const laptop=matchMedia('(any-hover:hover) and (any-pointer:fine)');
+let fitFrame=null;
+function fitMode(){
+  const auto=!laptop.matches || innerWidth<980 || innerHeight<520 || innerWidth<innerHeight;
+  document.documentElement.dataset.layoutMode=auto?'auto-fit':'original-laptop';
+}
+function scheduleFit(){if(fitFrame!==null)return;fitFrame=requestAnimationFrame(()=>{fitFrame=null;fitMode();});}
+if(laptop.addEventListener)laptop.addEventListener('change',scheduleFit);else laptop.addListener?.(scheduleFit);
+window.addEventListener('resize',scheduleFit,{passive:true});
+window.addEventListener('orientationchange',scheduleFit,{passive:true});
+fitMode();
+
+/* ---------- boot: empty field, waiting for the cotton ---------- */
+dealOptions(playedBefore());updateProgress();renderStrip();setMachine('empty');
+n.status.innerHTML=ASK.load.status;setBanner(ASK.load.banner);lastSay=ASK.load.say;
+
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a497b1992fe8ff9d',t:'MTc5MTgyNDc3Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
