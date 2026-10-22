@@ -1132,7 +1132,7 @@ try{
    picture does exactly that. A wrong pick is refused by the thing itself (the handle
    will not go any further) and the reason is spoken.
 
-   Task 1 · hand pump: push down, pull up, push down, pull up to fill the bucket.
+   Task 1 · hand pump: pull up, push down, pull up, push down to fill the bucket.
    Task 2 · swing: pull, push, pull, push to set it swinging.
    Task 3 · refrigerator: pull open, drink water, replace the bottle, push shut.
    Task 4 · lemon squeezer: pull open, add a lemon, push to squeeze, stir and drink.
@@ -1152,38 +1152,38 @@ const NS='http://www.w3.org/2000/svg';
 /* ---------- the tasks ---------- */
 const RULE='<span class="pk">Push</span> sends it away from you · <span class="pl">Pull</span> brings it toward you';
 const TASKS={
-  pump:{name:'the hand pump',seq:['push','pull','push','pull'],levels:[0,.43,.47,.94,1],
+  pump:{name:'the hand pump',seq:['pull','push','pull','push'],levels:[0,0,.48,.48,1],
     ask:[
-      {banner:'The bucket is <b>empty</b> and the pump handle is <b>up</b>. What should the kid do?',
-       status:'The handle is <b>up</b>. The bucket is <b>empty</b>.',
-       say:'The bucket is empty and the pump handle is up. What should the kid do? Push, or pull?'},
-      {banner:'Water came out! Now the handle is <b>down</b>. What next?',
-       status:'The handle is <b>down</b>. One stroke done.',
-       say:'Water came out. Now the handle is down. What should the kid do next? Push, or pull?'},
-      {banner:'Almost halfway! The handle is <b>up</b> again. What next?',
-       status:'The handle is <b>up</b>. The bucket is nearly half full.',
-       say:'The handle is up again and the bucket is nearly half full. What should she do next? Push, or pull?'},
-      {banner:'Handle <b>down</b>, bucket nearly full. What is the last move?',
-       status:'The bucket is <b>nearly full</b>. The handle is <b>down</b>.',
-       say:'The handle is down and the bucket is nearly full. What is the last move? Push, or pull?'}],
+      {banner:'The bucket is <b>empty</b> and the pump handle is <b>down</b>. How can the kid lift it?',
+       status:'The handle is <b>down</b>. The bucket is <b>empty</b>.',
+       say:'The bucket is empty and the pump handle is down. What lifts it? Pull, or push?'},
+      {banner:'The handle is <b>up</b>. What sends water into the bucket?',
+       status:'The handle is <b>up</b>. The pump is ready for a stroke.',
+       say:'The handle is up. What sends water into the bucket? Push, or pull?'},
+      {banner:'The bucket is partly full; the handle is <b>down</b>. What prepares the next stroke?',
+       status:'The handle is <b>down</b>. The bucket has some water.',
+       say:'The handle is down, and there is water in the bucket. What lifts the handle again? Pull, or push?'},
+      {banner:'The handle is <b>up again</b>. How can we fill the bucket?',
+       status:'The handle is <b>up</b>. One more downward stroke!',
+       say:'The handle is up again. What fills the bucket? Push, or pull?'}],
     ok:[
-      {b:'<b>Push!</b> The handle goes down and water gushes out',
-       s:'Push! The handle goes down, and the water gushes out.',
-       t:'A <b>push down</b> lowers the pump handle and sends out water.'},
-      {b:'<b>Pull!</b> The handle comes back up',
-       s:'Pull! The handle comes back up, ready for the next push.',
-       t:'A <b>pull up</b> raises the pump handle for the next stroke.'},
-      {b:'<b>Push!</b> Another gush almost fills the bucket!',
-       s:'Push! More water pours out and nearly fills the bucket.',
-       t:'Another push sent the handle <b>down</b> and brought more water.'},
-      {b:'<b>Pull!</b> Lift the handle; the last drops fill the bucket!',
-       s:'Pull! The handle rises while the last drops fill the bucket.',
-       t:'<b>Full bucket!</b> Push, pull, push, pull — four moves did the job.'}],
-    hint:{push:'Not yet! The handle is already up. Pulling cannot lift it higher. Push it down for water.',
-          pull:'Not yet! The handle is already down. Push cannot take it lower. Pull it back up.'},
-    hintLine:'On the hand pump, <b class="pl">pull up</b> the handle and <b class="pk">push down</b> the handle.',
-    dur:[2900,2400,2900,2400],
-    done:{b:'The bucket is <b>full</b>! Push, pull, push, pull — both forces helped',s:'The bucket is full!'}},
+      {b:'<b>Pull!</b> The handle rises, ready to pump',
+       s:'Pull the handle up. The bucket is still empty; now it is ready for a push.',
+       t:'A <b>pull up</b> lifts the handle. The bucket is still empty.'},
+      {b:'<b>Push!</b> Water gushes into the bucket',
+       s:'Push the handle down. Water flows into the bucket.',
+       t:'The first <b>push down</b> sends water into the bucket.'},
+      {b:'<b>Pull!</b> Lift the handle for another stroke',
+       s:'Pull the handle up again. The bucket keeps the water it already has.',
+       t:'The handle is <b>up</b> again; the water stays in the bucket.'},
+      {b:'<b>Push!</b> Another gush fills the bucket!',
+       s:'Push down once more. The water gushes out and the bucket fills!',
+       t:'<b>Full bucket!</b> Pull, push, pull, push — four moves did the job.'}],
+    hint:{pull:'Not yet! The handle is already down. Pull it up before pushing.',
+          push:'Not yet! The handle is already up. Push it down to send out water.'},
+    hintLine:'On the hand pump, <b class="pl">pull up</b> the handle and <b class="pk">push down</b> to send out water.',
+    dur:[2400,2900,2400,2900],
+    done:{b:'The bucket is <b>full</b>! Pull, push, pull, push — both forces helped',s:'The bucket is full!'}},
   swing:{name:'the swing',seq:['pull','push','pull','push'],
     ask:[
       {banner:'The swing is <b>away</b> from the helper. How can she bring it closer?',
@@ -1242,22 +1242,22 @@ const TASKS={
       {banner:'A glass of <b>water</b> and a lemon are ready. The squeezer is <b>closed</b>. How should the kid open it?',
        status:'The lemon is ready. First, open the <b>squeezer</b>.',
        say:'A glass of water and a lemon are ready. The squeezer is closed. What should the kid do to open it? Pull, or push?'},
-      {banner:'The squeezer is <b>open</b> and the lemon is <b>inside</b>. How should he squeeze it into the water?',
+      {banner:'The squeezer is <b>open</b> and the lemon is <b>inside</b>. How should she squeeze it into the water?',
        status:'The lemon is inside. The glass is ready underneath.',
        say:'The lemon is inside the open squeezer. What should he do to squeeze its juice into the glass? Push, or pull?'}],
     ok:[
-      {b:'<b>Pull!</b> The squeezer opens; he puts the lemon inside',
-       s:'Pull the squeezer open. Now he puts the lemon inside.',
-       t:'He pulled it open and put a <b>lemon half</b> inside.'},
+      {b:'<b>Pull!</b> The squeezer opens; she puts the lemon inside',
+       s:'Pull the squeezer open. Now she puts the lemon inside.',
+       t:'She pulled it open and put a <b>lemon half</b> inside.'},
       {b:'<b>Push!</b> Lemon juice pours into the glass — stir and drink!',
-       s:'Push to squeeze! Juice goes into the water. He stirs it, drinks, and smiles.',
+       s:'Push to squeeze! Juice goes into the water. She stirs it, drinks, and smiles.',
        t:'Lemon juice! He <b>stirs</b>, has a sip, and feels happy.'}],
     hint:{pull:'Not yet! The squeezer is closed. Pull the handle toward you to open it first.',
           push:'Not yet! The lemon is already inside. Push the handle down to squeeze the lemon.'},
     hintLine:'<b class="pl">Pull</b> to open the squeezer and add the lemon. <b class="pk">Push</b> to squeeze it. Then stir and drink!',
     dur:[3300,3900],
-    done:{b:'<b>Lemon juice!</b> He stirred, had a drink, and is <b>happy</b>!',
-          s:'Fresh lemon juice! He stirred it, drank it, and smiled.'}},
+    done:{b:'<b>Lemon juice!</b> She stirred, had a drink, and is <b>happy</b>!',
+          s:'Fresh lemon juice! She stirred it, drank it, and smiled.'}},
   bicycle:{name:'bicycle tyre and air pump',seq:['pull','push','pull','push'],
     ask:[
       {banner:'The tyre is <b>flat</b>. The pump handle is <b>down</b>. What next?',
@@ -1582,11 +1582,11 @@ const PUMP=(()=>{
   /* pull: the handle comes back up, a few drips follow */
   function pullStroke(L0,dL,done){
     busy(true);face(null);
-    SND.squeakUp();later(SND.clank,1040);later(SND.drips,380);
+    SND.squeakUp();later(SND.clank,1040);if(L0>0)later(SND.drips,380);
     runAnim(1300,(t,ms)=>{
       st.u=1-easeInOut(clamp(ms/1100,0,1));
       st.flow=0;st.level=L0+dL*clamp(ms/1200,0,1);
-      dripping(ms>150&&ms<1250);
+      dripping(L0>0&&ms>150&&ms<1250);
       poseHandle(st.u,ms);
     },()=>{dripping(false);st.level=L0+dL;poseHandle(0,0);busy(false);done&&done();});
   }
@@ -1620,8 +1620,8 @@ const PUMP=(()=>{
     },()=>{busy(false);done&&done();});
   }
   function reset(){
-    cancelAnim();st.u=0;st.level=0;st.flow=0;face(null);busy(false);dripping(false);pour(false);
-    poseHandle(0,0);
+    cancelAnim();st.u=1;st.level=0;st.flow=0;face(null);busy(false);dripping(false);pour(false);
+    poseHandle(1,0);
   }
   /* play move i (push or pull); levels[] says how full the bucket is before and after */
   function play(i,done){
@@ -1773,7 +1773,7 @@ const SWING=(()=>{
     },()=>{busy(false);done&&done();});
   }
   function reset(){cancelAnim();last=AN[0];kk=0;face(null);busy(false);$('sc-swing').classList.remove('full');pose(AN[0],{k:0});}
-  return {build,reset,play,refuse,celebrate,durations:{push:1900,pull:1900,celebrate:3400}};
+  return {build,reset,play,refuse,celebrate,boyPalette:MAP,durations:{push:1900,pull:1900,celebrate:3400}};
 })();
 /* ---------- task 3: open the refrigerator, take out water, close the door ----------
    The open animation finishes picking up the bottle BEFORE the second question.
@@ -2024,11 +2024,11 @@ SND.lStir=()=>{[0,.2,.4,.6].forEach((d,i)=>tone(1040+i*70,.045,d,'triangle',.018
 SND.lGulp=()=>{[0,.22,.45].forEach((d,i)=>{tone(320+i*90,.12,d,'sine',.031);tone(610+i*65,.065,d+.07,'sine',.019);});};
 const LEMON=(()=>{
   let G,upper,lever,shine,jaw,lemon,glass,fill,fluid,lemonTint,meniscus,pulp,glassGrip,glassShadow,swirl,
-      spoon,flow,drops,kid,shadow,smile,star,mouth;
-  let armL,armR,sleeveL,sleeveR,handL,handR;
+      spoon,flow,drops,kid,shadow,smile,star;
+  let sharedKid;
   let open=0,placed=false,ready=false,drink=0;
   /* Reference mechanism: a hinged, two-handled stainless citrus press held over
-     a glass. The boy is FRONT-FACING, including his face and both animated arms. */
+     a glass. The helper is cloned directly from the hand-pump and swing scenes. */
   const restGrip=p=>({x:711-7*p,y:365-76*p});
   /* A smaller press, pivoted into place so its drain lines up with the glass. */
   const rigPt=pt=>({x:97.6+pt.x*.84,y:68.96+pt.y*.84});
@@ -2044,7 +2044,6 @@ const LEMON=(()=>{
   <linearGradient id="ljWood" x2="0" y2="1"><stop stop-color="#E8B677"/><stop offset=".6" stop-color="#C78B61"/><stop offset="1" stop-color="#A66C50"/></linearGradient>
   <linearGradient id="ljMetal" x2="0" y2="1"><stop stop-color="#F6F8FD"/><stop offset=".35" stop-color="#B8D5E0"/><stop offset="1" stop-color="#718DA1"/></linearGradient>
   <linearGradient id="ljLemonG" x2="0" y2="1"><stop stop-color="#FFFDAA"/><stop offset=".45" stop-color="#FFE94F"/><stop offset="1" stop-color="#F0AC18"/></linearGradient>
-  <linearGradient id="ljShirt" x2="0" y2="1"><stop stop-color="#B3F9EF"/><stop offset=".5" stop-color="#2BBBC4"/><stop offset="1" stop-color="#0B788F"/></linearGradient>
   <radialGradient id="ljDay"><stop stop-color="#FFE786" stop-opacity=".66"/><stop offset="1" stop-color="#FFE786" stop-opacity="0"/></radialGradient>
   <clipPath id="ljWindowClip"><rect x="62" y="70" width="230" height="252" rx="14"/></clipPath>
   <clipPath id="ljGlassClip"><path d="M-38-95H38L31-3Q0 9-31-3Z"/></clipPath>
@@ -2222,51 +2221,23 @@ const LEMON=(()=>{
 </g>
 <!-- front-facing boy: two visible eyes, nose, smile, arms and hands on the two metal handles -->
 <ellipse id="ljKidShadow" cx="761" cy="607" rx="58" ry="9" fill="#583B2C" opacity=".17"/>
-<g id="ljKid" transform="translate(760 0)">
-  <path d="M-22 517Q-31 547-33 587M22 517Q31 547 33 587" fill="none" stroke="#203354" stroke-width="19" stroke-linecap="round"/>
-  <path d="M-42 587q15-13 31 0v11h-38q-3-7 7-11M13 587q15-13 33 0v11H8q-4-8 5-11" fill="#FCFCFA" stroke="#385B78" stroke-width="3"/>
-  <path d="M-39 449Q0 432 39 449L43 519Q1 536-43 519Z" fill="url(#ljShirt)" stroke="#117992" stroke-width="3"/>
-  <path d="M-29 456v45M29 456v45" stroke="#C2FFF4" stroke-width="3" opacity=".6"/>
-  <path d="M-41 509Q0 526 41 509v15Q0 538-41 525Z" fill="#173A5D"/>
-  <path d="M-13 448L0 461L13 448" fill="none" stroke="#ECFFFF" stroke-width="4"/>
-  <path d="M0 471l4 8l9 1l-7 6l2 10l-8-5l-8 5l2-10l-7-6l9-1Z" fill="#FFE847"/>
-  <path id="ljArmLeft" d="M-34 460L-62 411L-57 371" fill="none" stroke="#C98E68" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
-  <path id="ljArmRight" d="M34 460L-15 431L-49 406" fill="none" stroke="#C98E68" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
-  <path id="ljSleeveLeft" d="M-34 460L-45 444" fill="none" stroke="#27B6C6" stroke-width="19" stroke-linecap="round"/>
-  <path id="ljSleeveRight" d="M34 460L22 447" fill="none" stroke="#27B6C6" stroke-width="19" stroke-linecap="round"/>
-  <g id="ljHead" transform="translate(0 0)">
-    <rect x="-9" y="420" width="18" height="27" rx="7" fill="#DCAA86"/>
-    <ellipse cx="-34" cy="382" rx="8" ry="13" fill="#E7AE88"/>
-    <ellipse cx="34" cy="382" rx="8" ry="13" fill="#E7AE88"/>
-    <ellipse cx="0" cy="382" rx="35" ry="42" fill="#EDB990" stroke="#D7956C" stroke-width="2"/>
-    <path d="M-35 371Q-33 335 0 334Q31 333 36 370Q21 356 13 359Q-12 344-35 373Z" fill="#332319"/>
-    <path d="M-34 361Q-10 337 20 354" fill="none" stroke="#63402A" stroke-width="5" opacity=".52"/>
-    <path d="M-25 374q9-5 17 0M8 374q9-5 17 0" stroke="#65452C" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <ellipse cx="-16" cy="382" rx="8.5" ry="10" fill="#fff"/><ellipse cx="16" cy="382" rx="8.5" ry="10" fill="#fff"/>
-    <circle cx="-15" cy="383" r="4.4" fill="#28211C"/><circle cx="17" cy="383" r="4.4" fill="#28211C"/>
-    <circle cx="-16" cy="381" r="1.5" fill="#fff"/><circle cx="16" cy="381" r="1.5" fill="#fff"/>
-    <path d="M-2 391q2 5 6 0" fill="none" stroke="#CE8C65" stroke-width="2" stroke-linecap="round"/>
-    <ellipse cx="-26" cy="396" rx="5" ry="2.3" fill="#F19091" opacity=".6"/><ellipse cx="26" cy="396" rx="5" ry="2.3" fill="#F19091" opacity=".6"/>
-    <path id="ljMouth" d="M-11 404Q0 413 11 404" fill="none" stroke="#984A38" stroke-width="3" stroke-linecap="round"/>
-  </g>
-  <circle id="ljHandLeft" cx="-57" cy="371" r="9" fill="#EDB990" stroke="#CF946B" stroke-width="2"/>
-  <circle id="ljHandRight" cx="-49" cy="406" r="9" fill="#EDB990" stroke="#CF946B" stroke-width="2"/>
-</g>
+<g id="ljKid"></g>
 <g id="ljHappy" opacity="0" aria-hidden="true"><path d="M823 321v22m-11-11h22M376 434v22m-11-11h22" stroke="#FFD028" stroke-width="5" stroke-linecap="round"/>
   <circle cx="797" cy="339" r="4.4" fill="#FF86A4"/><circle cx="364" cy="473" r="4" fill="#FFC940"/></g>`;
     upper=$('ljUpperArm');lever=$('ljLever');shine=$('ljLeverSheen');jaw=$('ljJaw');lemon=$('ljLemon');
     glass=$('ljGlass');fill=$('ljLiquid');fluid=$('ljFluid');lemonTint=$('ljLemonTint');
     meniscus=$('ljMeniscus');pulp=$('ljPulp');glassGrip=$('ljGlassGrip');glassShadow=$('ljGlassShadow');swirl=$('ljSwirl');
     spoon=$('ljSpoon');flow=$('ljStream');drops=$('ljDrops');
-    kid=$('ljKid');shadow=$('ljKidShadow');smile=$('ljHappy');star=$('ljSurface');mouth=$('ljMouth');
-    armL=$('ljArmLeft');armR=$('ljArmRight');sleeveL=$('ljSleeveLeft');sleeveR=$('ljSleeveRight');
-    handL=$('ljHandLeft');handR=$('ljHandRight');
+    kid=$('ljKid');shadow=$('ljKidShadow');smile=$('ljHappy');star=$('ljSurface');
+    // Clone the exact pump/swing helper: same head, hairstyle, pink shirt,
+    // shoes and inverse-kinematic limbs, rather than just recolouring a boy.
+    sharedKid=makeKid(kid,'ljShared_');
   }
   function paint(o){
     const {p=0,park=0,lx=690,ly=513,lemonScale=1,kx=760,hx=worldGrip(p).x,hy=worldGrip(p).y,
       fx=695,fy=401,gx=505,gy=538,ga=0,juice=0,mix=0,stir=0,sip=0,joy=0}=o;
     open=p;
-    /* After squeezing, the boy sets the actual press down on the cutting board. */
+    /* After squeezing, she sets the actual press down on the cutting board. */
     $('ljPressRig').setAttribute('transform',`translate(${f1(97.6+170*park)} ${f1(68.96+90*park)}) scale(.84)`);
     const grip=restGrip(p),cupY=340-57*p;
     upper.setAttribute('d',`M399 345Q452 ${f1(cupY)} 531 ${f1(cupY+2)}Q615 ${f1(348-72*p)} ${f1(grip.x)} ${f1(grip.y+4)}`);
@@ -2309,18 +2280,15 @@ const LEMON=(()=>{
     const bob=joy?6*Math.sin(Math.PI*joy):0;
     kid.setAttribute('transform',`translate(${f1(kx)} ${f1(-bob)})`);
     shadow.setAttribute('cx',f1(kx));shadow.setAttribute('rx',f1(53-bob*.7));
-    function arm(path,sleeve,hand,shoulder,target,side){
-      const dx=target.x-shoulder.x,dy=target.y-shoulder.y,len=Math.hypot(dx,dy)||1;
-      const elbow={x:shoulder.x+dx*.52-side*dy/len*20,
-        y:shoulder.y+dy*.52+side*dx/len*20};
-      path.setAttribute('d',`M${f1(shoulder.x-kx)} ${f1(shoulder.y+bob)}L${f1(elbow.x-kx)} ${f1(elbow.y+bob)}L${f1(target.x-kx)} ${f1(target.y+bob)}`);
-      sleeve.setAttribute('d',`M${f1(shoulder.x-kx)} ${f1(shoulder.y+bob)}L${f1(shoulder.x+(elbow.x-shoulder.x)*.29-kx)} ${f1(shoulder.y+(elbow.y-shoulder.y)*.29+bob)}`);
-      hand.setAttribute('cx',f1(target.x-kx));hand.setAttribute('cy',f1(target.y+bob));
-    }
-    arm(armL,sleeveL,handL,{x:kx-34,y:458},{x:hx,y:hy},-1);
-    arm(armR,sleeveR,handR,{x:kx+34,y:458},{x:fx,y:fy},1);
-    mouth.setAttribute('d',joy>.2?'M-13 402Q0 422 13 402Z':sip>.12&&ga>4?'M-4 403Q0 399 4 403Q0 411-4 403Z':'M-11 404Q0 413 11 404');
-    mouth.setAttribute('fill',joy>.2||sip>.12&&ga>4?'#A84F48':'none');
+    // Transform world-space press / lemon / glass hand targets into the
+    // original helper's local coordinates; IK keeps BOTH hands on the objects.
+    const scale=1.8,ox=kx-590*scale,oy=596-590*scale-bob;
+    kid.setAttribute('transform',`translate(${f1(ox)} ${f1(oy)}) scale(${scale})`);
+    const target=(x,y)=>({x:(x-ox)/scale,y:(y-oy)/scale});
+    kidDraw(sharedKid,{hipY:536,lean:lerp(2,-5,clamp(joy,0,1)),
+      headRot:-8+clamp(ga,0,15)*.45+4*joy,
+      nearT:target(hx,hy),farT:target(fx,fy),
+      ankN:{x:582,y:590},ankF:{x:597,y:589}});
     smile.setAttribute('opacity',f1(clamp(joy*1.4,0,1)));
   }
   function resting(opened=false){const p=opened?1:0,grip=worldGrip(p);
@@ -2352,8 +2320,8 @@ const LEMON=(()=>{
           up=ease(ms,2490,390),down=ease(ms,3400,370),sip=.76*ease(ms,2860,670),
           joy=ease(ms,3810,230);
         const kx=lerp(745,587,walk),gr=worldGrip(p);
-        /* The smaller tumbler tilts at the SIDE of his face, with its near rim
-           meeting his lips instead of painting a wide cup across both eyes. */
+        /* The smaller tumbler tilts at the SIDE of her face, with its near rim
+           meeting her lips instead of covering her eyes. */
         const gx=lerp(lerp(505,kx-46,up),505,down),gy=lerp(lerp(538,468,up),538,down),ga=15*up*(1-down);
         let hx=lerp(gr.x+170*park,kx-58,release),hy=lerp(gr.y+90*park,420,release),
             fx=lerp(695+170*park,kx+30,release),fy=lerp(401+90*park,451,release);
@@ -2398,9 +2366,9 @@ SND.bCyclePull=()=>{sweep(330,570,.42,'triangle',.025);noiseBurst(.35,0,.014,100
 SND.bCyclePush=()=>{sweep(800,310,.56,'sawtooth',.016);noiseBurst(.64,.04,.025,1900,650,.7,'bandpass',.06);};
 SND.bCycleRoll=()=>{noiseBurst(.68,0,.017,720,530,.6,'bandpass',.15);tone(780,.15,.08,'triangle',.028);};
 const BICYCLE=(()=>{
-  let G,piston,rod,rodShine,gaugeNeedle,airPulse,armA,armB,handA,handB,tyre,glow,shine,air,bike,kid,rider,rearBike,
-      rearSpokes,frontSpokes,pedals,legA,legB,hoseLine,hoseHi,nozzle,shoeA,shoeB,backLegL,backLegR,backShoeL,backShoeR;
-  let handle=0,filled=0,ridden=false;
+  let G,piston,rod,rodShine,gaugeNeedle,airPulse,tyre,glow,shine,air,bike,kid,rider,rearBike,
+      rearSpokes,frontSpokes,pedals,hoseLine,hoseHi,nozzle,backLegL,backLegR,backShoeL,backShoeR,pumpBoy,cyclingBoy;
+  let handle=0,filled=0,ridden=false,rideRoad,rearTread,frontTread;
   const ease=(ms,at,len)=>smooth(clamp((ms-at)/len,0,1));
   const fmt=v=>Math.round(v*10)/10;
   const spoke=(cx,cy)=>Array.from({length:16},(_,i)=>{const a=i*Math.PI/8;
@@ -2491,29 +2459,7 @@ const BICYCLE=(()=>{
   <circle cx="438" cy="539" r="23" fill="none" stroke="#C4F4FF" stroke-width="2" opacity=".6"/></g>
 <!-- Child behind the bike before he climbs on -->
 <ellipse id="byKidShadow" cx="365" cy="578" rx="48" ry="8" fill="#39475A" opacity=".18"/>
-<g id="byKid" transform="translate(0 0)">
- <path d="M338 496L338 567M374 496L378 567" fill="none" stroke="#2E4364" stroke-width="17" stroke-linecap="round"/>
- <path d="M320 568q16-10 34 2v9h-37q-6-6 3-11M365 568q15-10 32 2v9h-38q-5-6 6-11" fill="#fff" stroke="#365670" stroke-width="3"/>
- <path d="M322 421Q354 403 388 421l6 81q-33 21-74 0Z" fill="#40C6C3" stroke="#127D8F" stroke-width="4"/>
- <path d="M322 491q34 14 72 0v18q-34 20-74 0Z" fill="#28516C"/>
- <path d="M354 437l5 12l13 1l-10 9l3 13l-11-7l-11 7l3-13l-10-9l13-1Z" fill="#FFF25B"/>
- <path id="byArmA" d="M324 432L288 396L229 351" fill="none" stroke="#D59A72" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
- <path id="byArmB" d="M385 432L326 388L307 351" fill="none" stroke="#D59A72" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
- <path d="M324 432l-11-12M385 432l-11-13" stroke="#26B9B9" stroke-width="17" stroke-linecap="round"/>
- <path d="M345 403v20M364 403v20" stroke="#D59A72" stroke-width="12"/>
- <circle cx="353" cy="365" r="39" fill="#F3BF9A" stroke="#D79B78" stroke-width="2"/>
- <path d="M314 357q1-45 42-45q38 0 39 42q-9-21-23-23q-34 0-58 26Z" fill="#34261D"/>
- <path d="M309 334q38-29 89-2l-4 13q-44-12-81 3Z" fill="#E94769" stroke="#A62F52" stroke-width="3"/>
- <path d="M310 342q-24 3-26 12q7 7 33-4" fill="#CF385D"/>
- <ellipse cx="338" cy="371" rx="8" ry="10" fill="white"/><ellipse cx="368" cy="371" rx="8" ry="10" fill="white"/>
- <circle cx="340" cy="371" r="4" fill="#2B2324"/><circle cx="369" cy="371" r="4" fill="#2B2324"/>
- <circle cx="338" cy="369" r="1.4" fill="#fff"/><circle cx="368" cy="369" r="1.4" fill="#fff"/>
- <path d="M330 359l11-2M363 357l11 2" stroke="#745044" stroke-width="2" stroke-linecap="round"/>
- <path d="M353 378q2 6 6 0" fill="none" stroke="#D99875" stroke-width="2"/>
- <path d="M341 391q13 12 26-2" fill="none" stroke="#A45246" stroke-width="3" stroke-linecap="round"/>
- <circle id="byHandA" cx="229" cy="351" r="8" fill="#F3BF9A" stroke="#D79B78" stroke-width="2"/>
- <circle id="byHandB" cx="307" cy="351" r="8" fill="#F3BF9A" stroke="#D79B78" stroke-width="2"/>
-</g>
+<g id="byKid"></g>
 <!-- The real tyre grows from a squashed lower sidewall into a broad round tyre. -->
 <g id="byBike" transform="translate(0 0)">
  <ellipse cx="589" cy="572" rx="234" ry="13" fill="#3E5761" opacity=".17"/>
@@ -2544,33 +2490,11 @@ const BICYCLE=(()=>{
  <circle cx="580" cy="492" r="9" fill="#8EA9AE"/>
  <g id="byPedals"><path d="M560 492h40" stroke="#324D5C" stroke-width="6" stroke-linecap="round"/><path d="M553 492h17m24 0h17" stroke="#223E4F" stroke-width="8" stroke-linecap="round"/></g>
  <!-- Same child mounts the saddle and cycles. Rider begins hidden. -->
- <g id="byRider" opacity="0">
-   <path id="byRideLegA" d="M541 386L548 438L580 473" fill="none" stroke="#274767" stroke-width="18" stroke-linejoin="round" stroke-linecap="round"/>
-   <path id="byRideLegB" d="M551 386L582 442L580 511" fill="none" stroke="#214262" stroke-width="18" stroke-linejoin="round" stroke-linecap="round"/>
-   <g id="byRideShoeA"><path d="M-4 0q12-6 26 0v7h-28Z" fill="#FAFAFA" stroke="#436273" stroke-width="2"/></g><g id="byRideShoeB"><path d="M-4 0q12-6 26 0v7h-28Z" fill="#FAFAFA" stroke="#436273" stroke-width="2"/></g>
-   <path d="M541 382q-14-36-10-72q16-29 46-9l24 75q-16 25-60 6" fill="#40C6C3" stroke="#127D8F" stroke-width="3.5"/>
-   <path d="M552 306q10 26 16 54" stroke="#B9FFF7" stroke-width="4" fill="none" opacity=".75"/>
-   <path d="M540 370q22 8 54-3l5 14q-27 15-56 5Z" fill="#28516C"/>
-   <path d="M567 319l4 9l10 1l-7 7l2 10l-9-5l-9 5l2-10l-7-7l10-1Z" fill="#FFF25B"/>
-   <path d="M572 309Q635 300 688 340" fill="none" stroke="#D59A72" stroke-width="16" stroke-linecap="round"/>
-   <path d="M527 317Q589 317 664 338" fill="none" stroke="#D59A72" stroke-width="15" stroke-linecap="round"/>
-   <path d="M527 317l14 0M572 309l12 0" stroke="#26B9B9" stroke-width="18" stroke-linecap="round"/>
-   <circle cx="664" cy="339" r="8" fill="#F3BF9A"/><circle cx="688" cy="340" r="8" fill="#F3BF9A"/>
-   <path d="M542 293v18" stroke="#D59A72" stroke-width="15"/>
-   <circle cx="541" cy="265" r="37" fill="#F3BF9A" stroke="#D79B78" stroke-width="2"/>
-   <!-- The child puts on a fitted cycling helmet before setting off. -->
-   <path d="M503 256q0-39 39-40q35-1 39 37q-15-14-35-11q-20-4-43 14Z" fill="#34261D"/>
-   <path d="M498 259q-1-49 43-51q44-1 46 49l-11 6q-15-23-35-23q-22 1-35 23Z"
-     fill="#E94C67" stroke="#9E2D48" stroke-width="3" stroke-linejoin="round"/>
-   <path d="M507 238q33-26 67 0" fill="none" stroke="#FF9A9D" stroke-width="4" opacity=".78" stroke-linecap="round"/>
-   <path d="M520 220l-2 12m17-15v13m17-11l2 11" stroke="#AD304E" stroke-width="3.5" stroke-linecap="round"/>
-   <path d="M505 256q-13-1-17 6q9 7 23 1" fill="#C63A54"/>
-   <path d="M506 260l8 25q18 17 48 0l15-25" fill="none" stroke="#344952" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-   <path d="M531 293h20" stroke="#35474D" stroke-width="4" stroke-linecap="round"/>
-   <ellipse cx="527" cy="267" rx="7" ry="9" fill="#fff"/><ellipse cx="554" cy="267" rx="7" ry="9" fill="#fff"/>
-   <circle cx="529" cy="268" r="3.6" fill="#2B2324"/><circle cx="556" cy="268" r="3.6" fill="#2B2324"/>
-   <path d="M530 284q13 11 26-2" fill="none" stroke="#A45246" stroke-width="3" stroke-linecap="round"/>
- </g>
+ <g id="byRider" opacity="0"><g id="bySwingRider"></g></g>
+</g>
+<g id="byRideRoad" opacity="0" pointer-events="none">
+  <path d="M629 409v12m5 24v16m5 26v20m8 30v23m14 40v35" fill="none" stroke="#fff8ea" stroke-width="3.3" stroke-linecap="round" opacity=".8"/>
+  <path d="M533 540l-32 20m271-37l31 17M466 622l-54 31m394-39l55 34" fill="none" stroke="#fff5df" stroke-width="3" opacity=".48"/>
 </g>
 <!-- The bicycle turns toward the lane before moving away: a TRUE rear view,
      with aligned wheels, a transverse bar and the rider's back, not a side bike slid upward. -->
@@ -2602,6 +2526,12 @@ const BICYCLE=(()=>{
   <path d="M580 345h20m70 0h20" stroke="#222F3B" stroke-width="13" stroke-linecap="round"/>
   <path d="M580 340h18m73 0h18" stroke="#82959E" stroke-width="3" opacity=".78" stroke-linecap="round"/>
   <circle cx="634" cy="468" r="11" fill="#E5F0ED" stroke="#5C7D86" stroke-width="4"/>
+  <!-- Tire sidewalls, turning hubs and road-facing reflector. -->
+  <ellipse id="byRearTread" cx="635" cy="508" rx="28" ry="60" fill="none" stroke="#131d23" stroke-width="2.3" stroke-dasharray="7 9" opacity=".63"/>
+  <ellipse id="byFrontTread" cx="670" cy="455" rx="18" ry="49" fill="none" stroke="#172229" stroke-width="1.7" stroke-dasharray="5 8" opacity=".55"/>
+  <path d="M628 409h14v7h-14Z" fill="#ad2632" stroke="#f78070" stroke-width="1.5"/>
+  <path d="M631 410h8" stroke="#fff0e8" stroke-width="1.4" opacity=".85"/>
+  <path d="M621 453h28" stroke="#0f343c" stroke-width="3" opacity=".54"/>
   <!-- Rider: both shoulders and feet face away up the lane. -->
   <path id="byBackLegL" d="M619 401Q604 437 615 486" fill="none" stroke="#26435F" stroke-width="19" stroke-linecap="round"/>
   <path id="byBackLegR" d="M650 401Q668 438 655 500" fill="none" stroke="#203D58" stroke-width="19" stroke-linecap="round"/>
@@ -2615,20 +2545,33 @@ const BICYCLE=(()=>{
   <path d="M609 324l-9 5m59-5l10 4" stroke="#29B9BD" stroke-width="17" stroke-linecap="round"/>
   <circle cx="578" cy="347" r="7.5" fill="#F3BF9A"/><circle cx="691" cy="347" r="7.5" fill="#F3BF9A"/>
   <path d="M627 292v25" stroke="#E2AA85" stroke-width="17" stroke-linecap="round"/>
-  <ellipse cx="635" cy="263" rx="34" ry="39" fill="#34251C" stroke="#754A3A" stroke-width="2"/>
+  <ellipse cx="635" cy="263" rx="34" ry="39" fill="#5A3318" stroke="#754A3A" stroke-width="2"/>
   <path d="M601 264Q597 210 635 208Q675 209 673 265q-14-9-36-8q-20-1-36 7Z"
     fill="#E94C67" stroke="#9E2D48" stroke-width="3.5"/>
   <path d="M605 240q29-22 58 0" fill="none" stroke="#FFA3A6" stroke-width="4" opacity=".84"/>
   <path d="M617 220v15m18-18v17m18-15v16" stroke="#B33755" stroke-width="4" stroke-linecap="round"/>
+  <path d="M613 245q22-12 44 0" stroke="#812039" stroke-width="2" fill="none" opacity=".7"/>
+  <path d="M615 225l-3 9m23-11v9m18-8l4 9" stroke="#601e32" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M608 316q21 8 50 0M608 329q8 5 16 6m39-5l-13 5" stroke="#bbf3e8" stroke-width="2" fill="none" opacity=".6"/>
   <path d="M606 259l8 24m50-24l-8 24" fill="none" stroke="#3E5058" stroke-width="3"/>
 </g>
 `;
     piston=$('byPiston');rod=$('byPistonRod');rodShine=$('byPistonSheen');gaugeNeedle=$('byNeedle');airPulse=$('byAirPulse');
-    armA=$('byArmA');armB=$('byArmB');handA=$('byHandA');handB=$('byHandB');
     tyre=$('byTyre');glow=$('byInflateGlow');shine=$('byTyreShine');air=$('byAir');
     bike=$('byBike');rearBike=$('byRearBike');kid=$('byKid');rider=$('byRider');rearSpokes=$('byRearSpokes');frontSpokes=$('byFrontSpokes');
-    pedals=$('byPedals');legA=$('byRideLegA');legB=$('byRideLegB');hoseLine=$('byHoseLine');hoseHi=$('byHoseHi');nozzle=$('byNozzle');shoeA=$('byRideShoeA');shoeB=$('byRideShoeB');
+    pedals=$('byPedals');hoseLine=$('byHoseLine');hoseHi=$('byHoseHi');nozzle=$('byNozzle');
+    // The seated swing boy is reused as SVG artwork, not redrawn as a lookalike.
+    // Both bicycle poses use the SAME makeKid source and colour map as SWING.ER.
+    pumpBoy=makeKid(kid,'byPumpBoy_',SWING.boyPalette);
+    cyclingBoy=makeKid($('bySwingRider'),'byRideBoy_',SWING.boyPalette);
+    const helmet=`<path d="M-20-70Q-21-90-1-91Q18-91 21-70Q4-78-20-70Z" fill="#E94769" stroke="#9E2D48" stroke-width="1.5"/>
+      <path d="M-19-74Q-5-86 13-79" fill="none" stroke="#FFA7B7" stroke-width="1.5" opacity=".8"/>
+      <path d="M-19-69q-7 1-8 5q5 4 11-1" fill="#C13658"/>
+      <path d="M-18-66l4 14m30-15l-3 14" stroke="#3E5058" stroke-width="1.2" fill="none"/>`;
+    kid.querySelector('#byPumpBoy_head').insertAdjacentHTML('beforeend',helmet);
+    rider.querySelector('#byRideBoy_head').insertAdjacentHTML('beforeend',helmet);
     backLegL=$('byBackLegL');backLegR=$('byBackLegR');backShoeL=$('byBackShoeL');backShoeR=$('byBackShoeR');
+    rideRoad=$('byRideRoad');rearTread=$('byRearTread');frontTread=$('byFrontTread');
   }
   function draw(o={}){
     const {h=handle,fill=filled,flow=0,dx=0,mount=0,turn=0,ride=0}=o;
@@ -2637,10 +2580,14 @@ const BICYCLE=(()=>{
     piston.setAttribute('transform',`translate(0 ${fmt(-80*h)})`);
     rod.setAttribute('d',`M266 357V${fmt(344-80*h)}`);
     rodShine.setAttribute('d',`M263 355V${fmt(344-80*h)}`);
-    armA.setAttribute('d',`M324 432 Q${fmt(297-8*h)} ${fmt(396-18*h)} 229 ${fmt(gripY)}`);
-    armB.setAttribute('d',`M385 432 Q${fmt(323-12*h)} ${fmt(394-14*h)} 307 ${fmt(gripY)}`);
-    handA.setAttribute('cy',fmt(gripY));handB.setAttribute('cy',fmt(gripY));
-    kid.setAttribute('transform',`translate(${fmt(dx)} 0)`);
+    // Original swing boy: same face, hair, skin, star shirt, shorts and shoes.
+    // The existing IK puppet grips both ends of the orange pump's T-handle.
+    const ps=2.15,px=345+dx-590*ps,py=601-590*ps;
+    kid.setAttribute('transform',`translate(${fmt(px)} ${fmt(py)}) scale(${ps})`);
+    const pumpGrip=(x,y)=>({x:(x-px)/ps,y:(y-py)/ps});
+    kidDraw(pumpBoy,{hipY:536,lean:-3+5*h,headRot:-8+5*h,
+      nearT:pumpGrip(232,gripY),farT:pumpGrip(302,gripY),
+      ankN:{x:582,y:590},ankF:{x:597,y:589}});
     kid.setAttribute('opacity',fmt(1-mount));
     $('byKidShadow').setAttribute('opacity',fmt(.18*(1-mount)));
     $('byKidShadow').setAttribute('cx',fmt(365+dx));
@@ -2672,7 +2619,13 @@ const BICYCLE=(()=>{
     bike.setAttribute('opacity',fmt(1-turn));
     rider.setAttribute('opacity',fmt(mount));
     rearBike.setAttribute('opacity',fmt(turn));
-    rearBike.setAttribute('transform',`translate(0 ${fmt(-150*ride)}) translate(635 520) scale(${(1-.43*ride).toFixed(3)}) translate(-635 -520)`);
+    const pedalBeat=Math.sin(ride*12*Math.PI),lean=ride*2.1*Math.sin(ride*6*Math.PI);
+    // Each pedal stroke carries weight from side to side, with a tiny rise/fall.
+    rearBike.setAttribute('transform',`translate(0 ${fmt(-150*ride+2.2*pedalBeat*ride)}) translate(635 520) rotate(${fmt(lean)}) scale(${(1-.43*ride).toFixed(3)}) translate(-635 -520)`);
+    rideRoad.setAttribute('opacity',fmt(ride>0?.54*Math.min(1,ride*5):0));
+    rideRoad.setAttribute('transform',`translate(0 ${fmt((ride*160)%44)})`);
+    rearTread.style.strokeDashoffset=fmt(-ride*125);
+    frontTread.style.strokeDashoffset=fmt(-ride*157);
     const spin=ride*145/70*180/Math.PI;
     rearSpokes.setAttribute('transform',`rotate(${fmt(spin)} 460 500)`);
     frontSpokes.setAttribute('transform',`rotate(${fmt(spin)} 715 500)`);
@@ -2680,10 +2633,14 @@ const BICYCLE=(()=>{
     pedals.setAttribute('transform',`rotate(${fmt(ride*630)} 580 492)`);
     const fA={x:580+18*Math.cos(a),y:492+18*Math.sin(a)},
           fB={x:580-18*Math.cos(a),y:492-18*Math.sin(a)};
-    legA.setAttribute('d',`M541 381Q${fmt(552+8*Math.sin(a))} 441 ${fmt(fA.x)} ${fmt(fA.y)}`);
-    legB.setAttribute('d',`M557 381Q${fmt(571-9*Math.sin(a))} 436 ${fmt(fB.x)} ${fmt(fB.y)}`);
-    shoeA.setAttribute('transform',`translate(${fmt(fA.x)} ${fmt(fA.y)})`);
-    shoeB.setAttribute('transform',`translate(${fmt(fB.x)} ${fmt(fB.y)})`);
+    // The same swing boy sits on the saddle, leans forward, grasps both bars
+    // and pedals with alternating feet. Mirror only this pose to face right.
+    const rs=2,rx=544+590*rs,ry=265-472*rs;
+    $('bySwingRider').setAttribute('transform',`translate(${fmt(rx)} ${fmt(ry)}) scale(${-rs} ${rs})`);
+    const onBike=(x,y)=>({x:(rx-x)/rs,y:(y-ry)/rs});
+    kidDraw(cyclingBoy,{hipY:536,lean:-10+2*Math.sin(a),headRot:-5,
+      nearT:onBike(664,338),farT:onBike(688,340),
+      ankN:onBike(fA.x,fA.y),ankF:onBike(fB.x,fB.y)});
     const pedal=Math.sin(ride*12*Math.PI),backL={x:615+5*pedal,y:490+13*pedal},backR={x:655-5*pedal,y:490-13*pedal};
     backLegL.setAttribute('d',`M619 401Q${fmt(611-3*pedal)} 441 ${fmt(backL.x)} ${fmt(backL.y)}`);
     backLegR.setAttribute('d',`M650 401Q${fmt(659+3*pedal)} 441 ${fmt(backR.x)} ${fmt(backR.y)}`);
@@ -2716,7 +2673,7 @@ const BICYCLE=(()=>{
   function celebrate(done){
     n.scene.classList.add('busy');later(SND.bCycleRoll,1550);later(cheerSnd,2000);
     runAnim(3500,(t,ms)=>{
-      const walk=ease(ms,0,740),mount=ease(ms,600,470),turn=ease(ms,1060,510),ride=ease(ms,1560,1620);
+      const walk=ease(ms,0,700),mount=ease(ms,550,420),turn=ease(ms,1300,440),ride=ease(ms,1720,1560);
       draw({h:0,fill:1,dx:180*walk,mount,turn,ride});
     },()=>{ridden=true;draw({h:0,fill:1,dx:180,mount:1,turn:1,ride:1});
       n.scene.classList.remove('busy');done&&done();});
@@ -3096,5 +3053,5 @@ n.status.innerHTML=TASKS[taskOrder[0]].ask[0].status;
 setBanner(TASKS[taskOrder[0]].ask[0].banner);
 lastSay=TASKS[taskOrder[0]].ask[0].say;
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4e1c709ffde2e88',t:'MTc5MjYwMTU5Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4e61c98d8f70029',t:'MTc5MjY0NzA0Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
